@@ -146,6 +146,9 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         notes: ''
     });
 
+    // Leave Form
+    const leaveForm = ref({ memberId: '', selectedRegId: '', shiftDate: '', shiftType: '', department: '', reason: '' });
+
     watch(
         () => [loggedInMemberIdRef ? loggedInMemberIdRef.value : '', currentUserRoleRef ? currentUserRoleRef.value : ''],
         ([newId, role]) => {
@@ -232,7 +235,6 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     };
 
     // Leave Form & Approvals
-    const leaveForm = ref({ memberId: '', selectedRegId: '', shiftDate: '', shiftType: '', department: '', reason: '' });
     const leaveStatusFilter = ref('all');
 
     const availableRegisteredShifts = computed(() => {
