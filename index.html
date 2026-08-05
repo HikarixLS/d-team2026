@@ -36,41 +36,41 @@
         };
     </script>
 
-    <!-- Firebase SDK v10 (ES Modules) -->
-    <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    <!-- Firebase SDK v10 (Async Load into Window) -->
+    <script>
+        (async function() {
+            try {
+                const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+                const { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, getDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                const { getAuth, signInAnonymously } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
 
-        window.FirebaseSDK = {
-            initializeApp,
-            getApps,
-            getApp,
-            getFirestore,
-            collection,
-            doc,
-            setDoc,
-            deleteDoc,
-            onSnapshot,
-            getDocs,
-            getDoc,
-            getAuth,
-            signInAnonymously
-        };
+                window.FirebaseSDK = {
+                    initializeApp,
+                    getApps,
+                    getApp,
+                    getFirestore,
+                    collection,
+                    doc,
+                    setDoc,
+                    deleteDoc,
+                    onSnapshot,
+                    getDocs,
+                    getDoc,
+                    getAuth,
+                    signInAnonymously
+                };
 
-        try {
-            const apps = getApps();
-            window.firebaseApp = apps.length ? getApp() : initializeApp(window.firebaseConfig);
-            window.firebaseDb = getFirestore(window.firebaseApp);
-            window.firebaseAuth = getAuth(window.firebaseApp);
-            signInAnonymously(window.firebaseAuth).catch(err => console.warn("Anonymous auth note:", err.message));
-        } catch(e) {
-            console.warn("Eager Firebase Init:", e);
-        }
-
-        window.dispatchEvent(new Event('firebase-sdk-ready'));
+                const apps = getApps();
+                window.firebaseApp = apps.length ? getApp() : initializeApp(window.firebaseConfig);
+                window.firebaseDb = getFirestore(window.firebaseApp);
+                window.firebaseAuth = getAuth(window.firebaseApp);
+                signInAnonymously(window.firebaseAuth).catch(err => console.warn("Anonymous auth note:", err.message));
+                window.dispatchEvent(new Event('firebase-sdk-ready'));
+            } catch(e) {
+                console.warn("Eager Firebase Init Error:", e);
+            }
+        })();
     </script>
-
 </head>
 <body>
     <div id="app"></div>
