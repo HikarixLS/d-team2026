@@ -20,8 +20,10 @@ let unsubShifts = null;
 let unsubRegistrations = null;
 let unsubLeaveRequests = null;
 let unsubAdmins = null;
+let unsubActivities = null;
+let unsubCheckIns = null;
 
-export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts) {
+export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef) {
     const { showToast } = useToast();
 
     const cloudStatusText = computed(() => isCloudConnected.value ? '🟢 Cloud' : (hasFirebaseConfig.value ? '🟡 Đang kết nối...' : '🔴 Local Mode'));
@@ -64,6 +66,8 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         if (unsubRegistrations) unsubRegistrations();
         if (unsubLeaveRequests) unsubLeaveRequests();
         if (unsubAdmins) unsubAdmins();
+        if (unsubActivities) unsubActivities();
+        if (unsubCheckIns) unsubCheckIns();
 
         if (!db) return;
 
@@ -122,6 +126,24 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 snapshot.forEach((docSnap) => list.push(docSnap.data()));
                 if (list.length > 0 && adminAccounts) adminAccounts.value = list;
             }, (err) => { /* ignore if admins collection absent */ });
+
+            const actRefCol = collection(db, 'activities');
+            unsubActivities = onSnapshot(actRefCol, (snapshot) => {
+                const list = [];
+                snapshot.forEach((docSnap) => list.push(docSnap.data()));
+                list.sort((a, b) => new Date(b.date) - new Date(a.date));
+                if (activitiesRef) activitiesRef.value = list;
+                isCloudConnected.value = true;
+            }, handleSnapshotError);
+
+            const chkRefCol = collection(db, 'activity_checkins');
+            unsubCheckIns = onSnapshot(chkRefCol, (snapshot) => {
+                const list = [];
+                snapshot.forEach((docSnap) => list.push(docSnap.data()));
+                list.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                if (activityCheckInsRef) activityCheckInsRef.value = list;
+                isCloudConnected.value = true;
+            }, handleSnapshotError);
         } catch (e) {
             console.warn("Lỗi kết nối Cloud:", e);
             isCloudConnected.value = false;

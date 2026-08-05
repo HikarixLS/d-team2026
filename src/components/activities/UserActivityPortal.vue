@@ -1,0 +1,238 @@
+<template>
+  <div class="space-y-6">
+    <!-- User Welcome Hero Banner -->
+    <div class="bg-gradient-to-r from-sky-900 via-indigo-900 to-blue-950 rounded-3xl p-6 text-white shadow-xl border border-sky-700/40 relative overflow-hidden">
+      <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/20 text-sky-300 text-xs font-black mb-2 border border-sky-400/30">
+            <i class="fa-solid fa-user-graduate"></i> Không Gian Thành Viên
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Cổng Hoạt Động Cá Nhân</h2>
+          <p class="text-xs sm:text-sm text-sky-200 mt-1">
+            Tổng hợp hoạt động tháng {{ selectedMonthText }} • Bấm điểm danh hoặc gửi đơn xin nghỉ hoạt động.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 bg-sky-950/60 backdrop-blur-md px-4 py-3 rounded-2xl border border-sky-700/50">
+          <div class="w-10 h-10 rounded-xl bg-sky-500 text-white font-black text-lg flex items-center justify-center shadow-md">
+            {{ activeMemberName.charAt(0).toUpperCase() }}
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white">{{ activeMemberName }}</div>
+            <div class="text-[11px] text-sky-300">MSSV: {{ loggedInMemberId }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Monthly Summary Cards (User Requirement) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <!-- Total Activities this Month -->
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl shrink-0">
+          <i class="fa-solid fa-calendar-days"></i>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-slate-800 dark:text-white leading-none">
+            {{ monthlyActivities.length }}
+          </div>
+          <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
+            Hoạt Động Tháng
+          </div>
+        </div>
+      </div>
+
+      <!-- Joined / Attended Activities -->
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
+          <i class="fa-solid fa-user-check"></i>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-none">
+            {{ userAttendedCount }}
+          </div>
+          <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
+            Đã Tham Gia
+          </div>
+        </div>
+      </div>
+
+      <!-- Leave Requested Activities -->
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
+          <i class="fa-solid fa-file-signature"></i>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-amber-600 dark:text-amber-400 leading-none">
+            {{ userLeaveCount }}
+          </div>
+          <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
+            Đã Xin Nghỉ
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendance Participation Rate -->
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xl shrink-0">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-sky-600 dark:text-sky-400 leading-none">
+            {{ participationRate }}%
+          </div>
+          <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
+            Tỷ Lệ Chuyên Cần
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Activities List -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 class="font-extrabold text-slate-800 dark:text-white text-lg flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-indigo-600"></i> Danh Sách Hoạt Động Trong Tháng
+          </h3>
+          <p class="text-xs text-slate-500 font-medium">Toàn bộ hoạt động được xếp lịch cho bạn điểm danh hoặc báo vắng.</p>
+        </div>
+
+        <!-- Month Filter Selector -->
+        <div class="flex items-center gap-2 text-xs font-bold bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <span class="text-slate-500">Tháng:</span>
+          <input type="month" :value="selectedMonth" @input="$emit('update:selectedMonth', $event.target.value)"
+                 class="bg-transparent font-bold text-slate-800 dark:text-white focus:outline-none cursor-pointer">
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-if="monthlyActivities.length === 0" class="py-12 text-center text-slate-400 space-y-2">
+        <i class="fa-solid fa-calendar-xmark text-4xl text-slate-300"></i>
+        <div class="font-bold text-sm">Không có hoạt động nào diễn ra trong tháng {{ selectedMonthText }}.</div>
+        <div class="text-xs">Vui lòng chọn tháng khác hoặc chờ Admin cập nhật thêm hoạt động mới.</div>
+      </div>
+
+      <!-- Activities Grid -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-for="act in monthlyActivities" :key="act.id"
+             class="bg-slate-50/70 dark:bg-slate-800/40 rounded-3xl p-5 border border-slate-200/70 dark:border-slate-800 hover:border-indigo-300 transition flex flex-col justify-between space-y-4">
+          <!-- Top Info -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                {{ act.semester }}
+              </span>
+
+              <!-- Status Badge -->
+              <span v-if="getUserCheckInRecord(act.id)?.status === 'present'"
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 flex items-center gap-1">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i> Đã Điểm Danh
+              </span>
+
+              <span v-else-if="getUserCheckInRecord(act.id)?.status === 'leave'"
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 flex items-center gap-1">
+                <i class="fa-solid fa-clock"></i> Đã Xin Nghỉ
+              </span>
+
+              <span v-else
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                ⏳ Chưa Điểm Danh
+              </span>
+            </div>
+
+            <h4 class="font-extrabold text-slate-800 dark:text-white text-base leading-snug">{{ act.name }}</h4>
+
+            <div class="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-400 font-medium">
+              <p class="flex items-center gap-1.5">
+                <i class="fa-solid fa-calendar-day text-indigo-500"></i>
+                <span class="font-bold">Ngày diễn ra:</span> {{ formatDate(act.date) }}
+              </p>
+              <p class="flex items-center gap-1.5">
+                <i class="fa-solid fa-location-dot text-rose-500"></i>
+                <span class="font-bold">Địa điểm:</span> {{ act.location || 'Trường ĐH' }}
+              </p>
+            </div>
+
+            <p v-if="act.description" class="text-xs text-slate-500 italic mt-2 line-clamp-2">
+              "{{ act.description }}"
+            </p>
+
+            <div v-if="getUserCheckInRecord(act.id)?.leaveReason"
+                 class="mt-3 p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-200">
+              <span class="font-bold">Lý do xin nghỉ:</span> {{ getUserCheckInRecord(act.id)?.leaveReason }}
+            </div>
+          </div>
+
+          <!-- Bottom Action Buttons (Check-in & Request Leave) -->
+          <div class="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 grid grid-cols-2 gap-2 text-xs">
+            <!-- Điểm danh Button -->
+            <button @click="$emit('check-in', act.id)"
+                    class="py-2.5 px-3 rounded-2xl font-extrabold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                    :class="getUserCheckInRecord(act.id)?.status === 'present' ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700 text-white'">
+              <i class="fa-solid fa-user-check"></i>
+              <span>{{ getUserCheckInRecord(act.id)?.status === 'present' ? 'Đã Điểm Danh' : 'Điểm Danh' }}</span>
+            </button>
+
+            <!-- Xin nghỉ Button -->
+            <button @click="$emit('open-leave-modal', act)"
+                    class="py-2.5 px-3 rounded-2xl font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
+                    :class="getUserCheckInRecord(act.id)?.status === 'leave' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200'">
+              <i class="fa-solid fa-file-pen"></i>
+              <span>Xin Nghỉ</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue';
+
+const props = defineProps({
+  activities: Array,
+  selectedMonth: String,
+  loggedInMemberId: String,
+  activeMemberName: String,
+  getUserCheckInRecord: Function,
+  formatDate: Function
+});
+
+defineEmits(['update:selectedMonth', 'check-in', 'open-leave-modal']);
+
+const selectedMonthText = computed(() => {
+  if (!props.selectedMonth) return '';
+  const parts = props.selectedMonth.split('-');
+  return `${parts[1]}/${parts[0]}`;
+});
+
+// Monthly Filtered Activities
+const monthlyActivities = computed(() => {
+  if (!props.activities) return [];
+  return props.activities.filter(a => a.date && a.date.startsWith(props.selectedMonth));
+});
+
+// Attended count for this user in selected month
+const userAttendedCount = computed(() => {
+  return monthlyActivities.value.filter(act => {
+    const rec = props.getUserCheckInRecord(act.id);
+    return rec && rec.status === 'present';
+  }).length;
+});
+
+// Leave count for this user in selected month
+const userLeaveCount = computed(() => {
+  return monthlyActivities.value.filter(act => {
+    const rec = props.getUserCheckInRecord(act.id);
+    return rec && rec.status === 'leave';
+  }).length;
+});
+
+// Participation Rate %
+const participationRate = computed(() => {
+  if (monthlyActivities.value.length === 0) return 0;
+  return Math.round((userAttendedCount.value / monthlyActivities.value.length) * 100);
+});
+</script>

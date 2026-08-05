@@ -339,6 +339,42 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         });
     });
 
+    const deleteRegistration = async (regId) => {
+        registrations.value = registrations.value.filter(r => r.id !== regId);
+        localStorage.setItem('local_registrations', JSON.stringify(registrations.value));
+
+        if (window.firebaseDb && window.FirebaseSDK) {
+            try {
+                const { collection, doc, deleteDoc: delDoc } = window.FirebaseSDK;
+                await delDoc(doc(collection(window.firebaseDb, 'registrations'), regId));
+            } catch (e) {
+                console.warn('Lỗi xóa đăng ký ca trên Cloud:', e);
+            }
+        }
+        showToast('Đã hủy lịch đăng ký ca thành công!');
+    };
+
+    const confirmDeleteRegistration = (regObj) => {
+        if (!regObj) return;
+        const regName = getMemberName(regObj.memberId);
+        const shiftInfo = `${regObj.shiftType} ngày ${formatDate(regObj.date)}`;
+
+        if (deleteModalRef && deleteModalRef.value) {
+            deleteModalRef.value = {
+                show: true,
+                title: 'Hủy Lịch Đăng Ký?',
+                message: `Bạn có chắc muốn hủy lịch đăng ký ${shiftInfo} của ${regName} [MSSV: ${regObj.memberId}]?`,
+                action: async () => {
+                    await deleteRegistration(regObj.id);
+                }
+            };
+        } else {
+            if (confirm(`Bạn có chắc muốn hủy lịch đăng ký ${shiftInfo} của ${regName}?`)) {
+                deleteRegistration(regObj.id);
+            }
+        }
+    };
+
     return {
         shifts,
         registrations,
@@ -371,6 +407,8 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         pendingLeaveCount,
         updateLeaveStatus,
         historyFilter,
-        searchedShifts
+        searchedShifts,
+        deleteRegistration,
+        confirmDeleteRegistration
     };
 }

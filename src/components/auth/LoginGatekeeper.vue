@@ -45,10 +45,10 @@
         </div>
 
         <div v-if="loginRole === 'admin'">
-          <label class="block text-xs font-bold uppercase tracking-wider text-amber-200 mb-1.5">Mật Khẩu Admin <span class="text-rose-400">*</span></label>
+          <label class="block text-xs font-bold uppercase tracking-wider text-amber-200 mb-1.5">Mật Khẩu Quản Trị <span class="text-rose-400">*</span></label>
           <div class="relative">
             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-amber-400"><i class="fa-solid fa-lock"></i></span>
-            <input type="password" v-model="loginForm.password" required placeholder="Nhập mật khẩu Admin..."
+            <input type="password" v-model="loginForm.password" required placeholder="Nhập mật khẩu quản trị..."
                    class="w-full bg-slate-950/60 border border-amber-500/40 rounded-xl py-3 pl-10 pr-4 text-sm font-semibold text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400">
           </div>
         </div>

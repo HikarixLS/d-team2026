@@ -37,8 +37,8 @@
           <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Vai Trò Hệ Thống <span class="text-red-500">*</span></label>
           <select v-model="memberForm.role" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold"
                   :class="memberForm.role === 'admin' ? 'bg-amber-50 text-amber-900 border-amber-400' : 'bg-indigo-50 text-indigo-900 border-indigo-300'">
-            <option value="member">👤 Thành Viên (User)</option>
-            <option value="admin">👑 Quản Trị Viên (Admin)</option>
+            <option value="member">👤 Thành Viên</option>
+            <option value="admin">👑 Quản Trị Viên</option>
           </select>
         </div>
 

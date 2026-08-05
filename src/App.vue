@@ -9,7 +9,7 @@
                      :loginForm="loginForm"
                      :isCloudConnected="isCloudConnected"
                      :hasFirebaseConfig="hasFirebaseConfig"
-                     @login="handleLogin"
+                     @login="handleLoginWithTabReset"
                      @retry-cloud="initCloudRealtime" />
 
     <!-- Master App Workspace Layout -->
@@ -56,6 +56,29 @@
             <button @click="selectedWeek = '4'" class="px-3 py-1.5 rounded-xl font-bold transition cursor-pointer"
                     :class="selectedWeek === '4' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">Tuần 4 (26-Cuối)</button>
           </div>
+        </div>
+
+        <!-- TAB MỚI: QUẢN LÝ HOẠT ĐỘNG (ADMIN) HOẶC CỔNG HOẠT ĐỘNG (USER) -->
+        <div v-show="currentTab === 'activities'">
+          <!-- Admin View: Quản lý & Tạo hoạt động & Xem tổng lượt điểm danh -->
+          <AdminActivityManager v-if="currentUserRole === 'admin'"
+                                :activities="activities"
+                                :getActivityStats="getActivityStats"
+                                :formatDate="formatDate"
+                                @create-activity="createActivity"
+                                @delete-activity="deleteActivity"
+                                @open-detail="openActivityDetailModal" />
+
+          <!-- User View: Trang riêng tổng hợp hoạt động tháng, điểm danh, xin nghỉ -->
+          <UserActivityPortal v-else
+                              :activities="activities"
+                              v-model:selectedMonth="selectedMonth"
+                              :loggedInMemberId="loggedInMemberId"
+                              :activeMemberName="getMemberName(loggedInMemberId)"
+                              :getUserCheckInRecord="getUserCheckInRecord"
+                              :formatDate="formatDate"
+                              @check-in="checkInActivity"
+                              @open-leave-modal="openLeaveActivityModal" />
         </div>
 
         <!-- Tab 1: Ghi ca -->
@@ -173,6 +196,18 @@
                       @save="saveBatchMembers" />
 
     <ConfirmDeleteModal :deleteModal="deleteModal" />
+
+    <!-- Modals cho Quản lý Hoạt Động & Điểm danh -->
+    <ActivityDetailModal :show="showActivityDetailModal"
+                         :activity="selectedActivityForDetail"
+                         :stats="selectedActivityForDetail ? getActivityStats(selectedActivityForDetail.id) : {}"
+                         :formatDate="formatDate"
+                         @close="showActivityDetailModal = false" />
+
+    <LeaveActivityModal :show="showLeaveActivityModal"
+                        :activity="selectedActivityForLeave"
+                        @close="showLeaveActivityModal = false"
+                        @confirm="handleConfirmLeaveActivity" />
   </div>
 </template>
 
@@ -186,6 +221,7 @@ import { useAuth } from './composables/useAuth.js';
 import { useCloud } from './composables/useCloud.js';
 import { useMembers } from './composables/useMembers.js';
 import { useShifts } from './composables/useShifts.js';
+import { useActivities } from './composables/useActivities.js';
 
 // Components
 import Toast from './components/common/Toast.vue';
@@ -198,29 +234,35 @@ import TabLeaveRequests from './components/tabs/TabLeaveRequests.vue';
 import TabDashboard from './components/tabs/TabDashboard.vue';
 import TabShiftHistory from './components/tabs/TabShiftHistory.vue';
 import TabMembersList from './components/tabs/TabMembersList.vue';
+import AdminActivityManager from './components/activities/AdminActivityManager.vue';
+import UserActivityPortal from './components/activities/UserActivityPortal.vue';
+
+// Modals
 import ConfigModal from './components/modals/ConfigModal.vue';
 import MemberModal from './components/modals/MemberModal.vue';
 import BatchImportModal from './components/modals/BatchImportModal.vue';
 import ConfirmDeleteModal from './components/modals/ConfirmDeleteModal.vue';
+import ActivityDetailModal from './components/modals/ActivityDetailModal.vue';
+import LeaveActivityModal from './components/modals/LeaveActivityModal.vue';
 
 // State & Navigation
-const currentTab = ref('entry');
+const currentTab = ref('activities');
 const showMobileMenu = ref(false);
 
 const { toast, showToast } = useToast();
 const { isDarkMode, applyTheme, toggleTheme } = useTheme();
 
 // Composables wiring
-const membersModule = useMembers(null, null, null, null, null);
+const authModule = useAuth(null);
+const { isLoggedIn, loginRole, loginForm, currentUserRole, loggedInMemberId, adminAccounts, handleLogin, logout } = authModule;
+
+const membersModule = useMembers(currentUserRole, loggedInMemberId, null, null, null);
 const {
   members, memberFilterSearch, memberFilterDept, memberFilterTarget, resetMemberFilters,
   getDeptColorClass, filteredMembersList, showMemberModal, editingMember, memberForm,
   openMemberModal, saveMember, confirmDeleteMember, showBatchModal, batchText,
   openBatchModal, saveBatchMembers, pushAllMembersToCloud, deleteModal
 } = membersModule;
-
-const authModule = useAuth(members);
-const { isLoggedIn, loginRole, loginForm, currentUserRole, loggedInMemberId, adminAccounts, handleLogin, logout } = authModule;
 
 const shiftsModule = useShifts(members, currentUserRole, loggedInMemberId, deleteModal);
 const {
@@ -233,29 +275,74 @@ const {
   updateLeaveStatus, historyFilter, searchedShifts, confirmDeleteRegistration
 } = shiftsModule;
 
-const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts);
+const activitiesModule = useActivities(members, loggedInMemberId);
+const {
+  activities, activityCheckIns, createActivity, deleteActivity,
+  checkInActivity, requestLeaveActivity, getUserCheckInRecord, getActivityStats
+} = activitiesModule;
+
+const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts, activities, activityCheckIns);
 const {
   isCloudConnected, hasFirebaseConfig, showConfigModal, configInput, cloudStatusText,
   openConfigModal, resetConfigToDefault, saveFirebaseConfig, initCloudRealtime
 } = cloudModule;
 
+// Modal States for Activities
+const showActivityDetailModal = ref(false);
+const selectedActivityForDetail = ref(null);
+
+const showLeaveActivityModal = ref(false);
+const selectedActivityForLeave = ref(null);
+
+const openActivityDetailModal = (act) => {
+  selectedActivityForDetail.value = act;
+  showActivityDetailModal.value = true;
+};
+
+const openLeaveActivityModal = (act) => {
+  selectedActivityForLeave.value = act;
+  showLeaveActivityModal.value = true;
+};
+
+const handleConfirmLeaveActivity = (reason) => {
+  if (selectedActivityForLeave.value) {
+    requestLeaveActivity(selectedActivityForLeave.value.id, reason);
+  }
+};
+
+const handleLoginWithTabReset = () => {
+  handleLogin();
+  if (isLoggedIn.value) {
+    currentTab.value = 'activities';
+  }
+};
+
 // Computed UI Helpers
-const userRoleBadgeText = computed(() => currentUserRole.value === 'admin' ? `Admin [${loggedInMemberId.value}]` : `Thành Viên [${loggedInMemberId.value}]`);
+const userRoleBadgeText = computed(() => currentUserRole.value === 'admin' ? `Quản Trị Viên [${loggedInMemberId.value}]` : `Thành Viên [${loggedInMemberId.value}]`);
 const leaveListTitle = computed(() => currentUserRole.value === 'admin' ? 'Quản Lý & Duyệt Đơn Xin Nghỉ Phép' : 'Danh Sách Đơn Xin Nghỉ Phép Của Tôi');
-const getLeaveStatusBadgeText = (status) => status === 'Chờ duyệt' ? '⏳ Chờ Admin duyệt' : (status === 'Đã duyệt' ? '✅ Đã duyệt' : '✕ Đã từ chối');
+const getLeaveStatusBadgeText = (status) => status === 'Chờ duyệt' ? '⏳ Chờ xét duyệt' : (status === 'Đã duyệt' ? '✅ Đã duyệt' : '✕ Đã từ chối');
 const formatCreatedAt = (dt) => dt ? new Date(dt).toLocaleString('vi-VN') : 'vừa xong';
 const pieChartTitle = computed(() => currentUserRole.value === 'admin' ? 'Biểu Đồ Tròn: Tỷ Lệ Thành Viên Đạt Chỉ Tiêu (10 Ca/Tháng)' : 'Biểu Đồ Tròn: Tiến Độ Ca Trực Cá Nhân (10 Ca/Tháng)');
 const historySubtitle = computed(() => currentUserRole.value === 'admin' ? 'Danh sách toàn bộ ca trực ghi nhận từ sổ gốc' : 'Nhật ký các ca trực cá nhân của tôi');
 
-// Navigation Tabs Config
-const tabs = computed(() => [
-  { id: 'entry', label: 'Ghi Ca Trực', shortLabel: 'Ghi ca', icon: 'fa-solid fa-pen-to-square' },
-  { id: 'register', label: 'Đăng Ký Ca', shortLabel: 'Đăng ký', icon: 'fa-solid fa-calendar-plus' },
-  { id: 'leave', label: 'Xin Nghỉ Phép', shortLabel: 'Nghỉ phép', icon: 'fa-solid fa-file-pen', badge: (pendingLeaveCount.value > 0 && currentUserRole.value === 'admin') ? pendingLeaveCount.value : null },
-  { id: 'dashboard', label: 'Thống Kê & Chỉ Tiêu', shortLabel: 'Thống kê', icon: 'fa-solid fa-chart-pie' },
-  { id: 'history', label: 'Nhật Ký & Tra Cứu', shortLabel: 'Nhật ký', icon: 'fa-solid fa-clock-rotate-left' },
-  { id: 'members', label: 'Danh Sách Thành Viên', shortLabel: 'Thành viên', icon: 'fa-solid fa-users' }
-]);
+// Navigation Tabs Config (Roles Separation)
+const tabs = computed(() => {
+  const isAdmin = currentUserRole.value === 'admin';
+  return [
+    {
+      id: 'activities',
+      label: isAdmin ? 'Quản Lý Hoạt Động' : 'Trang Hoạt Động',
+      shortLabel: 'Hoạt động',
+      icon: 'fa-solid fa-calendar-check'
+    },
+    { id: 'entry', label: 'Ghi Ca Trực', shortLabel: 'Ghi ca', icon: 'fa-solid fa-pen-to-square' },
+    { id: 'register', label: 'Đăng Ký Ca', shortLabel: 'Đăng ký', icon: 'fa-solid fa-calendar-plus' },
+    { id: 'leave', label: 'Xin Nghỉ Phép', shortLabel: 'Nghỉ phép', icon: 'fa-solid fa-file-pen', badge: (pendingLeaveCount.value > 0 && isAdmin) ? pendingLeaveCount.value : null },
+    { id: 'dashboard', label: 'Thống Kê & Chỉ Tiêu', shortLabel: 'Thống kê', icon: 'fa-solid fa-chart-pie' },
+    { id: 'history', label: 'Nhật Ký & Tra Cứu', shortLabel: 'Nhật ký', icon: 'fa-solid fa-clock-rotate-left' },
+    { id: 'members', label: 'Danh Sách Thành Viên', shortLabel: 'Thành viên', icon: 'fa-solid fa-users' }
+  ];
+});
 
 // Excel Export Helper
 const exportToExcel = () => {

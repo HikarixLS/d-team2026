@@ -29,6 +29,11 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
 
     const toPlainObject = (obj) => JSON.parse(JSON.stringify(obj));
 
+    const getRole = () => {
+        if (!currentUserRoleRef) return 'admin';
+        return typeof currentUserRoleRef === 'string' ? currentUserRoleRef : (currentUserRoleRef.value || 'admin');
+    };
+
     const resetMemberFilters = () => {
         memberFilterSearch.value = '';
         memberFilterDept.value = 'all';
@@ -37,18 +42,19 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
 
     const getDeptColorClass = (dept) => {
         switch (dept) {
-            case 'Ban Điều hành': return 'bg-purple-100 text-purple-800 border-purple-300';
-            case 'Ban Hành chính': return 'bg-sky-100 text-sky-800 border-sky-300';
-            case 'Ban Nhân sự': return 'bg-emerald-100 text-emerald-800 border-emerald-300';
-            case 'Ban Truyền thông': return 'bg-amber-100 text-amber-800 border-amber-300';
-            default: return 'bg-slate-100 text-slate-700 border-slate-300';
+            case 'Ban Điều hành': return 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800';
+            case 'Ban Hành chính': return 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800';
+            case 'Ban Nhân sự': return 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800';
+            case 'Ban Truyền thông': return 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800';
+            default: return 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
         }
     };
 
     const filteredMembersList = computed(() => {
         let list = members.value;
+        const currentRole = getRole();
 
-        if (currentUserRoleRef && currentUserRoleRef.value === 'member' && loggedInMemberIdRef && loggedInMemberIdRef.value) {
+        if (currentRole === 'member' && loggedInMemberIdRef && loggedInMemberIdRef.value) {
             list = list.filter(m => m.id === loggedInMemberIdRef.value);
         }
 
@@ -63,14 +69,14 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
 
         if (memberFilterTarget.value !== 'all') {
             list = list.filter(m => {
-                const actualCnt = shiftsRef && selectedMonthRef ? shiftsRef.value.filter(s => s.memberId === m.id && s.date && s.date.substring(0, 7) === selectedMonthRef.value).length : 0;
+                const actualCnt = shiftsRef && selectedMonthRef && selectedMonthRef.value ? shiftsRef.value.filter(s => s.memberId === m.id && s.date && s.date.substring(0, 7) === selectedMonthRef.value).length : 0;
                 return memberFilterTarget.value === 'pass' ? actualCnt >= 10 : actualCnt < 10;
             });
         }
 
         return list.map(m => {
-            const actualCnt = shiftsRef && selectedMonthRef ? shiftsRef.value.filter(s => s.memberId === m.id && s.date && s.date.substring(0, 7) === selectedMonthRef.value).length : 0;
-            const regCnt = registrationsRef && selectedMonthRef ? registrationsRef.value.filter(r => r.memberId === m.id && r.date && r.date.substring(0, 7) === selectedMonthRef.value).length : 0;
+            const actualCnt = shiftsRef && selectedMonthRef && selectedMonthRef.value ? shiftsRef.value.filter(s => s.memberId === m.id && s.date && s.date.substring(0, 7) === selectedMonthRef.value).length : 0;
+            const regCnt = registrationsRef && selectedMonthRef && selectedMonthRef.value ? registrationsRef.value.filter(r => r.memberId === m.id && r.date && r.date.substring(0, 7) === selectedMonthRef.value).length : 0;
             return {
                 ...m,
                 actualCount: actualCnt,
@@ -81,7 +87,8 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
     });
 
     const openMemberModal = (m = null) => {
-        if (currentUserRoleRef.value !== 'admin') return showToast('Chỉ Admin mới có quyền quản lý thành viên!', 'error');
+        const role = getRole();
+        if (role !== 'admin') return showToast('Chỉ Quản trị viên mới có quyền quản lý thành viên!', 'error');
         if (m) {
             editingMember.value = m;
             memberForm.value = { ...m, role: m.role || 'member', targetShifts: 10 };
@@ -93,7 +100,8 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
     };
 
     const saveMember = async () => {
-        if (currentUserRoleRef.value !== 'admin') return showToast('Chỉ Admin mới có quyền thực hiện!', 'error');
+        const role = getRole();
+        if (role !== 'admin') return showToast('Chỉ Quản trị viên mới có quyền thực hiện!', 'error');
         if (!memberForm.value.id || !memberForm.value.id.trim()) return showToast('Vui lòng nhập MSSV (ID)!', 'error');
         if (!memberForm.value.name || !memberForm.value.name.trim()) return showToast('Vui lòng nhập Họ tên!', 'error');
 
@@ -110,6 +118,8 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
         const idx = members.value.findIndex(m => m.id === mId);
         if (idx !== -1) members.value[idx] = mData;
         else members.value.push(mData);
+
+        localStorage.setItem('local_members', JSON.stringify(members.value));
 
         if (window.firebaseDb && window.FirebaseSDK) {
             try {
@@ -133,6 +143,7 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
             message: `Bạn có chắc muốn xóa thành viên ${m.name} [MSSV: ${m.id}]?`,
             action: async () => {
                 members.value = members.value.filter(i => i.id !== m.id);
+                localStorage.setItem('local_members', JSON.stringify(members.value));
                 if (window.firebaseDb && window.FirebaseSDK) {
                     try {
                         const { collection, doc, deleteDoc: delDoc } = window.FirebaseSDK;
@@ -145,13 +156,15 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
     };
 
     const openBatchModal = () => {
-        if (currentUserRoleRef.value !== 'admin') return showToast('Chỉ Admin mới có quyền!', 'error');
+        const role = getRole();
+        if (role !== 'admin') return showToast('Chỉ Quản trị viên mới có quyền!', 'error');
         batchText.value = '';
         showBatchModal.value = true;
     };
 
     const saveBatchMembers = async () => {
-        if (currentUserRoleRef.value !== 'admin') return showToast('Chỉ Admin mới có quyền!', 'error');
+        const role = getRole();
+        if (role !== 'admin') return showToast('Chỉ Quản trị viên mới có quyền!', 'error');
         if (!batchText.value || !batchText.value.trim()) return showToast('Vui lòng dán danh sách!', 'error');
         const lines = batchText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         let count = 0;
@@ -178,6 +191,7 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
             }
         }
 
+        localStorage.setItem('local_members', JSON.stringify(members.value));
         showToast(`Đã nhập thành công ${count} thành viên!`);
         showBatchModal.value = false;
     };
