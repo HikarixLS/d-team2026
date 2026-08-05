@@ -9,7 +9,7 @@
           </div>
           <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Cổng Hoạt Động Cá Nhân</h2>
           <p class="text-xs sm:text-sm text-sky-200 mt-1">
-            Tổng hợp hoạt động tháng {{ selectedMonthText }} • Bấm điểm danh hoặc gửi đơn xin nghỉ hoạt động.
+            Tổng hợp hoạt động tháng {{ selectedMonthText }} • Bấm điểm danh đúng ngày hoặc gửi đơn xin nghỉ hoạt động.
           </p>
         </div>
 
@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <!-- Personal Monthly Summary Cards (User Requirement) -->
+    <!-- Personal Monthly Summary Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
       <!-- Total Activities this Month -->
       <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3">
@@ -95,7 +95,7 @@
           <h3 class="font-extrabold text-slate-800 dark:text-white text-lg flex items-center gap-2">
             <i class="fa-solid fa-list-check text-indigo-600"></i> Danh Sách Hoạt Động Trong Tháng
           </h3>
-          <p class="text-xs text-slate-500 font-medium">Toàn bộ hoạt động được xếp lịch cho bạn điểm danh hoặc báo vắng.</p>
+          <p class="text-xs text-slate-500 font-medium">Quy định: Chỉ được tự điểm danh đúng trong ngày diễn ra ca trực (Quên điểm danh sẽ nhờ Admin điểm danh hộ/bù).</p>
         </div>
 
         <!-- Month Filter Selector -->
@@ -110,7 +110,7 @@
       <div v-if="monthlyActivities.length === 0" class="py-12 text-center text-slate-400 space-y-2">
         <i class="fa-solid fa-calendar-xmark text-4xl text-slate-300"></i>
         <div class="font-bold text-sm">Không có hoạt động nào diễn ra trong tháng {{ selectedMonthText }}.</div>
-        <div class="text-xs">Vui lòng chọn tháng khác hoặc chờ Admin cập nhật thêm hoạt động mới.</div>
+        <div class="text-xs">Vui lòng chọn tháng khác hoặc chờ Quản trị viên cập nhật thêm hoạt động mới.</div>
       </div>
 
       <!-- Activities Grid -->
@@ -124,20 +124,31 @@
                 {{ act.semester }}
               </span>
 
-              <!-- Status Badge -->
+              <!-- Status Badges for Date Enforcement -->
               <span v-if="getUserCheckInRecord(act.id)?.status === 'present'"
-                    class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 flex items-center gap-1">
-                <i class="fa-solid fa-circle-check text-emerald-500"></i> Đã Điểm Danh
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1 border border-emerald-300">
+                <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                {{ getUserCheckInRecord(act.id)?.adminCheckedIn ? 'Đã Đ.Danh (Admin Hộ)' : 'Đã Điểm Danh' }}
               </span>
 
               <span v-else-if="getUserCheckInRecord(act.id)?.status === 'leave'"
-                    class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 flex items-center gap-1">
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 flex items-center gap-1 border border-amber-300">
                 <i class="fa-solid fa-clock"></i> Đã Xin Nghỉ
               </span>
 
+              <span v-else-if="act.date === todayDate"
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500 text-white animate-pulse flex items-center gap-1">
+                <i class="fa-solid fa-bolt"></i> Sẵn Sàng Điểm Danh (Hôm Nay)
+              </span>
+
+              <span v-else-if="act.date > todayDate"
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300">
+                🗓️ Chưa Đến Ngày ({{ formatDate(act.date) }})
+              </span>
+
               <span v-else
-                    class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                ⏳ Chưa Điểm Danh
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300">
+                ⚠️ Quá Hạn (Cần Admin điểm danh bù)
               </span>
             </div>
 
@@ -147,6 +158,7 @@
               <p class="flex items-center gap-1.5">
                 <i class="fa-solid fa-calendar-day text-indigo-500"></i>
                 <span class="font-bold">Ngày diễn ra:</span> {{ formatDate(act.date) }}
+                <span v-if="act.date === todayDate" class="text-emerald-600 font-black ml-1">(Hôm nay)</span>
               </p>
               <p class="flex items-center gap-1.5">
                 <i class="fa-solid fa-location-dot text-rose-500"></i>
@@ -164,14 +176,22 @@
             </div>
           </div>
 
-          <!-- Bottom Action Buttons (Check-in & Request Leave) -->
+          <!-- Bottom Action Buttons (Check-in & Request Leave with Tightened Permissions) -->
           <div class="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 grid grid-cols-2 gap-2 text-xs">
             <!-- Điểm danh Button -->
             <button @click="$emit('check-in', act.id)"
-                    class="py-2.5 px-3 rounded-2xl font-extrabold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
-                    :class="getUserCheckInRecord(act.id)?.status === 'present' ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700 text-white'">
-              <i class="fa-solid fa-user-check"></i>
-              <span>{{ getUserCheckInRecord(act.id)?.status === 'present' ? 'Đã Điểm Danh' : 'Điểm Danh' }}</span>
+                    :disabled="getUserCheckInRecord(act.id)?.status !== 'present' && act.date !== todayDate"
+                    class="py-2.5 px-3 rounded-2xl font-extrabold transition flex items-center justify-center gap-1.5 shadow-xs"
+                    :class="[
+                      getUserCheckInRecord(act.id)?.status === 'present'
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer'
+                        : (act.date === todayDate
+                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer active:scale-95 shadow-md'
+                            : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300/60')
+                    ]"
+                    :title="getCheckInButtonTitle(act)">
+              <i class="fa-solid" :class="getUserCheckInRecord(act.id)?.status === 'present' ? 'fa-user-check' : (act.date === todayDate ? 'fa-bolt' : 'fa-lock')"></i>
+              <span>{{ getCheckInButtonText(act) }}</span>
             </button>
 
             <!-- Xin nghỉ Button -->
@@ -202,19 +222,19 @@ const props = defineProps({
 
 defineEmits(['update:selectedMonth', 'check-in', 'open-leave-modal']);
 
+const todayDate = computed(() => new Date().toISOString().split('T')[0]);
+
 const selectedMonthText = computed(() => {
   if (!props.selectedMonth) return '';
   const parts = props.selectedMonth.split('-');
   return `${parts[1]}/${parts[0]}`;
 });
 
-// Monthly Filtered Activities
 const monthlyActivities = computed(() => {
   if (!props.activities) return [];
   return props.activities.filter(a => a.date && a.date.startsWith(props.selectedMonth));
 });
 
-// Attended count for this user in selected month
 const userAttendedCount = computed(() => {
   return monthlyActivities.value.filter(act => {
     const rec = props.getUserCheckInRecord(act.id);
@@ -222,7 +242,6 @@ const userAttendedCount = computed(() => {
   }).length;
 });
 
-// Leave count for this user in selected month
 const userLeaveCount = computed(() => {
   return monthlyActivities.value.filter(act => {
     const rec = props.getUserCheckInRecord(act.id);
@@ -230,9 +249,24 @@ const userLeaveCount = computed(() => {
   }).length;
 });
 
-// Participation Rate %
 const participationRate = computed(() => {
   if (monthlyActivities.value.length === 0) return 0;
   return Math.round((userAttendedCount.value / monthlyActivities.value.length) * 100);
 });
+
+const getCheckInButtonText = (act) => {
+  const rec = props.getUserCheckInRecord(act.id);
+  if (rec?.status === 'present') return 'Đã Điểm Danh';
+  if (act.date === todayDate.value) return 'Điểm Danh Ngay';
+  if (act.date > todayDate.value) return 'Chưa Đến Ngày';
+  return 'Quá Hạn Điểm Danh';
+};
+
+const getCheckInButtonTitle = (act) => {
+  const rec = props.getUserCheckInRecord(act.id);
+  if (rec?.status === 'present') return 'Bạn đã hoàn thành điểm danh ca này';
+  if (act.date === todayDate.value) return 'Bấm để điểm danh hoạt động hôm nay!';
+  if (act.date > todayDate.value) return `Chưa đến ngày diễn ra (${props.formatDate(act.date)}). Không thể điểm danh trước!`;
+  return `Đã quá hạn điểm danh ngày ${props.formatDate(act.date)}. Vui lòng liên hệ Admin để điểm danh bù.`;
+};
 </script>

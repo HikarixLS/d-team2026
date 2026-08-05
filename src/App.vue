@@ -202,8 +202,10 @@
     <ActivityDetailModal :show="showActivityDetailModal"
                          :activity="selectedActivityForDetail"
                          :stats="selectedActivityForDetail ? getActivityStats(selectedActivityForDetail.id) : {}"
+                         :members="members"
                          :formatDate="formatDate"
-                         @close="showActivityDetailModal = false" />
+                         @close="showActivityDetailModal = false"
+                         @admin-checkin="handleAdminCheckInActivity" />
 
     <LeaveActivityModal :show="showLeaveActivityModal"
                         :activity="selectedActivityForLeave"
@@ -276,7 +278,7 @@ const {
   updateLeaveStatus, historyFilter, searchedShifts, confirmDeleteRegistration
 } = shiftsModule;
 
-const activitiesModule = useActivities(members, loggedInMemberId);
+const activitiesModule = useActivities(members, loggedInMemberId, currentUserRole);
 const {
   activities, activityCheckIns, createActivity, deleteActivity,
   checkInActivity, requestLeaveActivity, getUserCheckInRecord, getActivityStats
@@ -309,6 +311,10 @@ const handleConfirmLeaveActivity = (reason) => {
   if (selectedActivityForLeave.value) {
     requestLeaveActivity(selectedActivityForLeave.value.id, reason);
   }
+};
+
+const handleAdminCheckInActivity = ({ activityId, memberId }) => {
+  checkInActivity(activityId, memberId);
 };
 
 const handleLoginWithTabReset = () => {

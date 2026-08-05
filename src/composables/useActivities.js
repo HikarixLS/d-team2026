@@ -40,10 +40,17 @@ const savedCheckIns = localStorage.getItem('local_activity_checkins');
 const activities = ref(savedActivities ? JSON.parse(savedActivities) : defaultActivities);
 const activityCheckIns = ref(savedCheckIns ? JSON.parse(savedCheckIns) : defaultCheckIns);
 
-export function useActivities(membersRef, loggedInMemberIdRef) {
+export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRef) {
     const { showToast } = useToast();
 
     const toPlainObject = (obj) => JSON.parse(JSON.stringify(obj));
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return dateStr;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    };
 
     const persistLocal = () => {
         localStorage.setItem('local_activities', JSON.stringify(activities.value));
@@ -127,10 +134,33 @@ export function useActivities(membersRef, loggedInMemberIdRef) {
         showToast(`Đã xóa hoạt động "${actName}"!`);
     };
 
-    const checkInActivity = async (activityId) => {
-        const memberId = loggedInMemberIdRef.value;
+    // Check-in Activity with strict date permission & Admin check-in on behalf
+    const checkInActivity = async (activityId, targetMemberId = null) => {
+        const memberId = targetMemberId || (loggedInMemberIdRef ? loggedInMemberIdRef.value : '');
+        const isAdminOperation = Boolean(targetMemberId) || (currentUserRoleRef && (currentUserRoleRef.value === 'admin' || currentUserRoleRef === 'admin'));
+
         if (!memberId) {
-            return showToast('Bạn chưa đăng nhập MSSV!', 'error');
+            return showToast('Chưa chọn thành viên hoặc chưa đăng nhập MSSV!', 'error');
+        }
+
+        const act = activities.value.find(a => a.id === activityId);
+        if (!act) return showToast('Không tìm thấy hoạt động!', 'error');
+
+        const todayDate = new Date().toISOString().split('T')[0];
+
+        // Tighten check-in rules for regular members: ONLY allowed on the exact day of activity
+        if (!isAdminOperation) {
+            if (act.date > todayDate) {
+                return showToast(`Chưa đến ngày diễn ra (${formatDate(act.date)}). Không thể điểm danh trước!`, 'warning');
+            }
+            if (act.date < todayDate) {
+                const existing = activityCheckIns.value.find(
+                    c => c.activityId === activityId && c.memberId.toLowerCase() === memberId.toLowerCase()
+                );
+                if (!existing || existing.status !== 'present') {
+                    return showToast(`Hoạt động ngày ${formatDate(act.date)} đã quá hạn! Nhờ Quản trị viên điểm danh bù.`, 'error');
+                }
+            }
         }
 
         const memberObj = membersRef?.value?.find(m => m.id === memberId);
@@ -141,16 +171,19 @@ export function useActivities(membersRef, loggedInMemberIdRef) {
         );
 
         if (existing) {
-            if (existing.status === 'present') {
+            if (existing.status === 'present' && !isAdminOperation) {
                 return showToast('Bạn đã điểm danh hoạt động này rồi!', 'warning');
-            } else {
-                existing.status = 'present';
-                existing.timestamp = new Date().toISOString();
-                existing.leaveReason = '';
-                persistLocal();
-                await syncCheckInToCloud(existing);
-                return showToast(`Đã chuyển sang: Điểm Danh thành công cho "${memberName}"! ✅`);
             }
+            existing.status = 'present';
+            existing.timestamp = new Date().toISOString();
+            existing.leaveReason = '';
+            if (isAdminOperation) existing.adminCheckedIn = true;
+            persistLocal();
+            await syncCheckInToCloud(existing);
+            return showToast(isAdminOperation 
+                ? `Quản trị viên đã điểm danh hộ/bù cho "${memberName}" [${memberId}]! 👑`
+                : `Đã chuyển trạng thái sang: Điểm Danh thành công cho "${memberName}"! ✅`
+            );
         }
 
         const newChk = {
@@ -160,18 +193,22 @@ export function useActivities(membersRef, loggedInMemberIdRef) {
             memberName,
             timestamp: new Date().toISOString(),
             status: 'present',
-            leaveReason: ''
+            leaveReason: '',
+            adminCheckedIn: isAdminOperation
         };
 
         activityCheckIns.value.unshift(newChk);
         persistLocal();
         await syncCheckInToCloud(newChk);
 
-        showToast(`Điểm danh hoạt động thành công! 🎉 (${memberName})`);
+        showToast(isAdminOperation 
+            ? `Quản trị viên đã điểm danh hộ/bù thành công cho "${memberName}"! 👑`
+            : `Điểm danh hoạt động thành công! 🎉 (${memberName})`
+        );
     };
 
     const requestLeaveActivity = async (activityId, leaveReason) => {
-        const memberId = loggedInMemberIdRef.value;
+        const memberId = loggedInMemberIdRef ? loggedInMemberIdRef.value : '';
         if (!memberId) {
             return showToast('Bạn chưa đăng nhập MSSV!', 'error');
         }
@@ -213,7 +250,7 @@ export function useActivities(membersRef, loggedInMemberIdRef) {
     };
 
     const getUserCheckInRecord = (activityId) => {
-        const memberId = loggedInMemberIdRef.value;
+        const memberId = loggedInMemberIdRef ? loggedInMemberIdRef.value : '';
         if (!memberId) return null;
         return activityCheckIns.value.find(
             c => c.activityId === activityId && c.memberId.toLowerCase() === memberId.toLowerCase()

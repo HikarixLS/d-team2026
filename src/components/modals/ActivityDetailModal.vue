@@ -14,7 +14,7 @@
             <span><i class="fa-solid fa-location-dot text-rose-500"></i> {{ activity?.location || 'Trường ĐH' }}</span>
           </p>
         </div>
-        <button @click="$emit('close')" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl">
+        <button @click="$emit('close')" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl cursor-pointer">
           <i class="fa-solid fa-xmark text-xl"></i>
         </button>
       </div>
@@ -38,6 +38,27 @@
             <div class="text-xl font-black text-amber-600 dark:text-amber-400">{{ stats?.totalLeaves || 0 }}</div>
             <div class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Đã xin nghỉ</div>
           </div>
+        </div>
+      </div>
+
+      <!-- Admin Check-In On Behalf Form -->
+      <div class="mb-4 p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-2xl border border-indigo-200/70 dark:border-indigo-900/60 space-y-2">
+        <div class="text-xs font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 uppercase">
+          <i class="fa-solid fa-user-shield text-indigo-600"></i> Quản Trị Viên Điểm Danh Hộ / Điểm Danh Bù
+        </div>
+        <div class="flex flex-col sm:flex-row items-center gap-2">
+          <select v-model="selectedAdminMemberId"
+                  class="w-full text-xs border border-indigo-200 dark:border-indigo-800 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 font-bold text-slate-800 dark:text-white focus:outline-none">
+            <option value="">-- Chọn thành viên để điểm danh hộ/bù --</option>
+            <option v-for="m in members" :key="m.id" :value="m.id">
+              [{{ m.id }}] {{ m.name }} - {{ m.department }}
+            </option>
+          </select>
+          <button @click="handleAdminCheckIn"
+                  :disabled="!selectedAdminMemberId"
+                  class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold rounded-xl text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap">
+            <i class="fa-solid fa-plus-circle"></i> Điểm Danh Hộ
+          </button>
         </div>
       </div>
 
@@ -65,8 +86,8 @@
                 </div>
               </div>
               <div class="text-right">
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                  <i class="fa-solid fa-check"></i> Có mặt
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center gap-1 justify-end">
+                  <i class="fa-solid fa-check"></i> {{ item.adminCheckedIn ? 'Admin Điểm Danh Hộ' : 'Có Mặt' }}
                 </span>
                 <div class="text-[10px] text-slate-400 mt-0.5">{{ formatTime(item.timestamp) }}</div>
               </div>
@@ -122,16 +143,28 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref } from 'vue';
 
 const props = defineProps({
   show: Boolean,
   activity: Object,
   stats: Object,
+  members: Array,
   formatDate: Function
 });
 
-defineEmits(['close']);
+const emit = defineEmits(['close', 'admin-checkin']);
+
+const selectedAdminMemberId = ref('');
+
+const handleAdminCheckIn = () => {
+  if (!selectedAdminMemberId.value || !props.activity) return;
+  emit('admin-checkin', {
+    activityId: props.activity.id,
+    memberId: selectedAdminMemberId.value
+  });
+  selectedAdminMemberId.value = '';
+};
 
 const formatTime = (ts) => {
   if (!ts) return '';
