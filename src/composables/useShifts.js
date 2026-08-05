@@ -140,11 +140,27 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
 
     // Registration Form
     const regForm = ref({
-        memberId: '',
+        memberId: loggedInMemberIdRef ? loggedInMemberIdRef.value : '',
         date: new Date().toISOString().split('T')[0],
         shiftType: 'Ca 1',
         notes: ''
     });
+
+    watch(
+        () => [loggedInMemberIdRef ? loggedInMemberIdRef.value : '', currentUserRoleRef ? currentUserRoleRef.value : ''],
+        ([newId, role]) => {
+            if (newId && (role !== 'admin' || !regForm.value.memberId)) {
+                regForm.value.memberId = newId;
+            }
+            if (newId && !shiftForm.value.memberId) {
+                shiftForm.value.memberId = newId;
+            }
+            if (newId && !leaveForm.value.memberId) {
+                leaveForm.value.memberId = newId;
+            }
+        },
+        { immediate: true }
+    );
 
     const isShiftTakenOnDate = (shiftType, dateStr) => {
         if (!dateStr) return false;
@@ -163,6 +179,11 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     });
 
     const saveRegistration = async () => {
+        // Enforce memberId for non-admin users or if empty
+        if ((!currentUserRoleRef || currentUserRoleRef.value !== 'admin' || !regForm.value.memberId) && loggedInMemberIdRef && loggedInMemberIdRef.value) {
+            regForm.value.memberId = loggedInMemberIdRef.value;
+        }
+
         if (!regForm.value.memberId) return showToast('Vui lòng chọn Thành Viên Đăng Ký!', 'error');
         if (!regForm.value.date) return showToast('Vui lòng chọn Ngày Đăng Ký!', 'error');
 

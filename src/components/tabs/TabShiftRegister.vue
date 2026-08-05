@@ -12,16 +12,33 @@
 
         <form @submit.prevent="$emit('save-registration')" class="space-y-3.5">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
               Thành Viên Đăng Ký <span class="text-red-500">*</span>
             </label>
-            <select v-model="regForm.memberId" required :disabled="currentUserRole !== 'admin'"
-                    class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white font-medium">
+
+            <!-- Admin view: Select Member Dropdown -->
+            <select v-if="currentUserRole === 'admin'" v-model="regForm.memberId" required
+                    class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white dark:bg-slate-900 dark:text-white font-medium">
               <option value="" disabled>-- Chọn thành viên --</option>
               <option v-for="m in members" :key="m.id" :value="m.id">
                 [{{ m.id }}] {{ m.name }} ({{ m.department || 'Ban chưa đặt' }})
               </option>
             </select>
+
+            <!-- Member view: Auto-filled Logged In Member Card -->
+            <div v-else class="p-3 bg-sky-50/80 dark:bg-sky-950/40 rounded-xl border border-sky-200/80 dark:border-sky-900/60 flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-sky-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+                {{ getMemberName(loggedInMemberId)?.charAt(0)?.toUpperCase() || 'U' }}
+              </div>
+              <div class="overflow-hidden">
+                <div class="text-xs font-black text-slate-800 dark:text-white truncate">
+                  {{ getMemberName(loggedInMemberId) }}
+                </div>
+                <div class="text-[11px] text-sky-600 dark:text-sky-300 font-bold truncate">
+                  MSSV: {{ loggedInMemberId }} • {{ getMemberDept(loggedInMemberId) }}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
