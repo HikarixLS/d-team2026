@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sổ Ca Trực Điện Tử (Vue 3 Single File Components)</title>
+    <!-- Tailwind CSS -->
+    <script>
+        const _origWarn = console.warn;
+        console.warn = function (...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('tailwindcss.com')) return;
+            _origWarn.apply(console, args);
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Vue 3 Production Build CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Firebase Hardcoded Configuration (Auto-connect for Mobile & Web) -->
+    <script>
+        window.__app_id = "shift-log-global-v1";
+        window.firebaseConfig = {
+            apiKey: "AIzaSyB8jLfFekVckhfzP0WtRp3j0lkk9K7-2dU",
+            authDomain: "sctdt-a6bf9.firebaseapp.com",
+            projectId: "sctdt-a6bf9",
+            storageBucket: "sctdt-a6bf9.firebasestorage.app",
+            messagingSenderId: "714742650479",
+            appId: "1:714742650479:web:682395660baa0cf6ebdf9a"
+        };
+    </script>
+
+    <!-- Firebase SDK v10 (ES Modules) -->
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        window.FirebaseSDK = {
+            initializeApp,
+            getApps,
+            getApp,
+            getFirestore,
+            collection,
+            doc,
+            setDoc,
+            deleteDoc,
+            onSnapshot,
+            getDocs,
+            getDoc,
+            getAuth,
+            signInAnonymously
+        };
+
+        try {
+            const apps = getApps();
+            window.firebaseApp = apps.length ? getApp() : initializeApp(window.firebaseConfig);
+            window.firebaseDb = getFirestore(window.firebaseApp);
+            window.firebaseAuth = getAuth(window.firebaseApp);
+            signInAnonymously(window.firebaseAuth).catch(err => console.warn("Anonymous auth note:", err.message));
+        } catch(e) {
+            console.warn("Eager Firebase Init:", e);
+        }
+
+        window.dispatchEvent(new Event('firebase-sdk-ready'));
+    </script>
+
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

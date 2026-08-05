@@ -1,0 +1,320 @@
+/* ==========================================================================
+   SỔ CA TRỰC ĐIỆN TỬ - STYLES & PRINT LAYOUT SYSTEM
+   ========================================================================== */
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Custom Webkit Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Prevent Vue unparsed mustache flicker */
+[v-cloak] { 
+    display: none !important; 
+}
+
+/* ==========================================================================
+   ADVANCED UI ANIMATIONS & EFFECTS (HIỆU ỨNG GIAO DIỆN HIỆN ĐẠI & SANG TRỌNG)
+   ========================================================================== */
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+    50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.6); }
+}
+
+@keyframes goldGlow {
+    0%, 100% { box-shadow: 0 0 18px rgba(245, 158, 11, 0.4); transform: scale(1); }
+    50% { box-shadow: 0 0 28px rgba(245, 158, 11, 0.7); transform: scale(1.02); }
+}
+
+@keyframes floatIcon {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+}
+
+/* Page & Card Entrance Animation */
+main > div, .bg-white, .rounded-xl, .rounded-2xl, .rounded-3xl {
+    animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) ease-out;
+}
+
+/* Interactive Card & Container Hover Dynamics */
+.shadow-sm, .shadow-md, .shadow-lg {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+
+.bg-white:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+body.dark-mode .bg-white:hover {
+    border-color: rgba(129, 140, 248, 0.4) !important;
+}
+
+/* Modern Button Animations & Click Effects */
+button {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(1px) scale(0.98) !important;
+}
+
+/* Podium Rank 1 Glowing Visual Effect */
+.border-amber-400 {
+    animation: goldGlow 3s infinite ease-in-out;
+}
+
+/* Floating Crowns / Icons */
+.fa-crown, .fa-trophy, .fa-fire {
+    display: inline-block;
+    animation: floatIcon 2.5s infinite ease-in-out;
+}
+
+/* Smooth Table Row Transitions */
+table tbody tr {
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+table tbody tr:hover {
+    transform: scale(1.002);
+}
+
+/* ==========================================================================
+   DARK MODE COMPREHENSIVE COLOR SYSTEM (KHẮC PHỤC TRIỆT ĐỂ LỖI TƯƠNG PHẢN MÀU)
+   ========================================================================== */
+body.dark-mode {
+    background-color: #0b0f19 !important;
+    color: #f8fafc !important;
+}
+
+/* Container Background Overrides */
+body.dark-mode .bg-white {
+    background-color: #151e32 !important;
+    color: #f8fafc !important;
+    border-color: #27354f !important;
+}
+
+body.dark-mode .bg-slate-50,
+body.dark-mode .bg-slate-100 {
+    background-color: #0b0f19 !important;
+    color: #e2e8f0 !important;
+    border-color: #27354f !important;
+}
+
+body.dark-mode .bg-slate-50\/90,
+body.dark-mode .bg-slate-50\/50 {
+    background-color: #0e1526 !important;
+}
+
+body.dark-mode .bg-indigo-50,
+body.dark-mode .bg-indigo-50\/70,
+body.dark-mode .bg-indigo-100 {
+    background-color: #1a233d !important;
+    color: #e0e7ff !important;
+    border-color: #312e81 !important;
+}
+
+body.dark-mode .bg-amber-50,
+body.dark-mode .bg-amber-100 {
+    background-color: #291c09 !important;
+    color: #fef3c7 !important;
+    border-color: #78350f !important;
+}
+
+body.dark-mode .bg-emerald-50,
+body.dark-mode .bg-emerald-100 {
+    background-color: #062c19 !important;
+    color: #d1fae5 !important;
+    border-color: #065f46 !important;
+}
+
+body.dark-mode .bg-sky-50,
+body.dark-mode .bg-sky-100 {
+    background-color: #082f49 !important;
+    color: #e0f2fe !important;
+    border-color: #075985 !important;
+}
+
+body.dark-mode .bg-rose-50,
+body.dark-mode .bg-rose-100 {
+    background-color: #311019 !important;
+    color: #ffe4e6 !important;
+    border-color: #9f1239 !important;
+}
+
+/* High Contrast Text Classes in Dark Mode */
+body.dark-mode .text-slate-900,
+body.dark-mode .text-slate-800,
+body.dark-mode .text-slate-700 {
+    color: #f8fafc !important;
+}
+
+body.dark-mode .text-slate-600,
+body.dark-mode .text-slate-500,
+body.dark-mode .text-slate-400 {
+    color: #cbd5e1 !important;
+}
+
+body.dark-mode .text-indigo-600,
+body.dark-mode .text-indigo-700,
+body.dark-mode .text-indigo-800,
+body.dark-mode .text-indigo-900 {
+    color: #818cf8 !important;
+}
+
+body.dark-mode .text-sky-600,
+body.dark-mode .text-sky-700,
+body.dark-mode .text-sky-800 {
+    color: #38bdf8 !important;
+}
+
+body.dark-mode .text-amber-600,
+body.dark-mode .text-amber-700,
+body.dark-mode .text-amber-800,
+body.dark-mode .text-amber-900 {
+    color: #fbbf24 !important;
+}
+
+body.dark-mode .text-emerald-600,
+body.dark-mode .text-emerald-700,
+body.dark-mode .text-emerald-800 {
+    color: #34d399 !important;
+}
+
+body.dark-mode .text-rose-600,
+body.dark-mode .text-rose-700,
+body.dark-mode .text-rose-800 {
+    color: #f87171 !important;
+}
+
+/* Border Overrides */
+body.dark-mode .border-slate-100,
+body.dark-mode .border-slate-200,
+body.dark-mode .border-slate-300 {
+    border-color: #27354f !important;
+}
+
+body.dark-mode .border-indigo-100,
+body.dark-mode .border-indigo-200 {
+    border-color: #312e81 !important;
+}
+
+/* Form Controls & Dropdowns */
+body.dark-mode input:not([type="submit"]):not([type="button"]),
+body.dark-mode select,
+body.dark-mode textarea {
+    background-color: #0b0f19 !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+/* Table Specifics for High Contrast Legibility */
+body.dark-mode table {
+    background-color: #151e32 !important;
+    color: #f8fafc !important;
+}
+
+body.dark-mode table thead tr {
+    background-color: #0b0f19 !important;
+    color: #cbd5e1 !important;
+    border-color: #27354f !important;
+}
+
+body.dark-mode table tbody tr {
+    background-color: #151e32 !important;
+    border-color: #27354f !important;
+}
+
+body.dark-mode table tbody tr:hover {
+    background-color: #1c2842 !important;
+}
+
+body.dark-mode table td,
+body.dark-mode table th {
+    border-color: #27354f !important;
+}
+
+/* Badge & Special Pill Overrides */
+body.dark-mode .bg-amber-100.text-amber-800 {
+    background-color: #3a2206 !important;
+    color: #fde047 !important;
+    border-color: #854d0e !important;
+}
+
+body.dark-mode .bg-emerald-100.text-emerald-800 {
+    background-color: #064e3b !important;
+    color: #6ee7b7 !important;
+    border-color: #047857 !important;
+}
+
+body.dark-mode .bg-indigo-100.text-indigo-700 {
+    background-color: #312e81 !important;
+    color: #c7d2fe !important;
+}
+
+/* Dividers */
+body.dark-mode .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+body.dark-mode .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #27354f !important;
+}
+
+/* ==========================================================================
+   PRINT MEDIA STYLES (Dành riêng cho In Báo Cáo A4)
+   ========================================================================== */
+@media print {
+    header, footer, nav, .no-print, button, input[type="month"], select {
+        display: none !important;
+    }
+    body {
+        background-color: white !important;
+        color: black !important;
+    }
+    main {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .shadow-sm, .shadow-lg, .shadow {
+        box-shadow: none !important;
+    }
+    .border {
+        border-color: #000 !important;
+    }
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+    th, td {
+        border: 1px solid #000 !important;
+        padding: 6px !important;
+        font-size: 11px !important;
+    }
+}
