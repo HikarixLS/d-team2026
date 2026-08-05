@@ -7,8 +7,13 @@ export function useTheme() {
     const { showToast } = useToast();
 
     const applyTheme = () => {
-        if (isDarkMode.value) document.body.classList.add('dark-mode');
-        else document.body.classList.remove('dark-mode');
+        if (isDarkMode.value) {
+            document.documentElement.classList.add('dark', 'dark-mode');
+            document.body.classList.add('dark', 'dark-mode');
+        } else {
+            document.documentElement.classList.remove('dark', 'dark-mode');
+            document.body.classList.remove('dark', 'dark-mode');
+        }
     };
 
     const toggleTheme = () => {
