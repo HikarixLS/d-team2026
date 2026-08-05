@@ -69,6 +69,7 @@
                                 @create-activity="createActivity"
                                 @delete-activity="deleteActivity"
                                 @add-semester="addSemester"
+                                @delete-semester="deleteSemester"
                                 @toggle-training-points="toggleTrainingPointsSubmitted"
                                 @open-detail="openActivityDetailModal" />
 
@@ -293,7 +294,7 @@ const {
 
 const activitiesModule = useActivities(members, loggedInMemberId, currentUserRole);
 const {
-  activities, activityCheckIns, semesters, activityRegistrations, addSemester, toggleTrainingPointsSubmitted,
+  activities, activityCheckIns, semesters, activityRegistrations, addSemester, deleteSemester, toggleTrainingPointsSubmitted,
   createActivity, deleteActivity, registerActivityShift, deleteActivityRegistration, getActivityDates,
   checkInActivity, requestLeaveActivity, getUserCheckInRecord, getActivityStats
 } = activitiesModule;

@@ -225,40 +225,54 @@
       </div>
     </div>
 
-    <!-- Modal Tự Thêm Học Kỳ Thủ Công -->
+    <!-- Modal Quản Lý & Thêm Học Kỳ Thủ Công -->
     <div v-if="showAddSemesterModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
       <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 max-w-md w-full shadow-2xl space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <h3 class="font-extrabold text-slate-800 dark:text-white text-base flex items-center gap-2">
-            <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Thêm Học Kỳ Mới Thủ Công
+            <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Quản Lý & Thêm Học Kỳ Thủ Công
           </h3>
           <button @click="showAddSemesterModal = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
             <i class="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
 
-        <p class="text-xs text-slate-500">
-          Nhập tên học kỳ mới (VD: Học kỳ 1 (2027-2028), Học kỳ Hè (2027-2028)...). Học kỳ mới sẽ tự động được lưu và đồng bộ vào hệ thống.
-        </p>
-
-        <form @submit.prevent="handleAddNewSemester" class="space-y-4 text-xs">
-          <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Tên học kỳ mới <span class="text-rose-500">*</span>
-            </label>
+        <!-- Add New Semester Form -->
+        <form @submit.prevent="handleAddNewSemester" class="space-y-3 text-xs bg-indigo-50/50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-indigo-100 dark:border-slate-700">
+          <label class="block font-black text-indigo-900 dark:text-indigo-200">
+            ➕ Thêm học kỳ mới
+          </label>
+          <div class="flex items-center gap-2">
             <input type="text" v-model="newSemesterName" required placeholder="VD: Học kỳ 1 (2027-2028)"
-                   class="w-full px-3.5 py-2.5 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-slate-800 text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-          </div>
-
-          <div class="flex items-center justify-end gap-2 pt-2">
-            <button type="button" @click="showAddSemesterModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl cursor-pointer">
-              Hủy bỏ
-            </button>
-            <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl shadow-md cursor-pointer">
-              <i class="fa-solid fa-plus"></i> Xác Nhận Thêm
+                   class="flex-grow px-3 py-2 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl shadow-xs cursor-pointer shrink-0">
+              Thêm
             </button>
           </div>
         </form>
+
+        <!-- Current Semesters List with Delete Buttons -->
+        <div class="space-y-2 text-xs">
+          <label class="block font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+            📋 Danh sách các học kỳ hiện tại ({{ semesters.length }}):
+          </label>
+          <div class="max-h-48 overflow-y-auto pr-1 divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl">
+            <div v-for="s in semesters" :key="s" class="p-2.5 flex items-center justify-between bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <span class="font-bold text-slate-800 dark:text-slate-200">🎓 {{ s }}</span>
+              <button @click="handleDeleteSemester(s)"
+                      class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 font-bold rounded-lg transition cursor-pointer text-[11px] flex items-center gap-1"
+                      title="Xóa học kỳ này">
+                <i class="fa-solid fa-trash-can"></i> Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 text-right">
+          <button type="button" @click="showAddSemesterModal = false" class="px-5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer">
+            Đóng lại
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -277,7 +291,7 @@ const props = defineProps({
   formatDate: Function
 });
 
-const emit = defineEmits(['create-activity', 'delete-activity', 'open-detail', 'add-semester', 'toggle-training-points']);
+const emit = defineEmits(['create-activity', 'delete-activity', 'open-detail', 'add-semester', 'delete-semester', 'toggle-training-points']);
 
 const getTodayStr = () => {
   const d = new Date();
@@ -307,7 +321,19 @@ const handleAddNewSemester = () => {
     form.value.semester = semName;
     selectedSemester.value = semName;
     newSemesterName.value = '';
-    showAddSemesterModal.value = false;
+  }
+};
+
+const handleDeleteSemester = (semName) => {
+  if (confirm(`Bạn có chắc chắn muốn xóa học kỳ "${semName}" khỏi hệ thống?`)) {
+    emit('delete-semester', semName);
+    if (form.value.semester === semName && props.semesters.length > 1) {
+      const remaining = props.semesters.filter(s => s !== semName);
+      form.value.semester = remaining[0] || '';
+    }
+    if (selectedSemester.value === semName) {
+      selectedSemester.value = 'all';
+    }
   }
 };
 

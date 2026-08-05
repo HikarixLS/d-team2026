@@ -79,6 +79,16 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         showToast(`Đã thêm học kỳ "${name}" thành công! 🎉`);
     };
 
+    const deleteSemester = (semName) => {
+        if (!semName) return;
+        if (semesters.value.length <= 1) {
+            return showToast('Không thể xóa! Hệ thống phải giữ lại ít nhất 1 học kỳ.', 'warning');
+        }
+        semesters.value = semesters.value.filter(s => s !== semName);
+        persistLocal();
+        showToast(`Đã xóa học kỳ "${semName}" thành công!`);
+    };
+
     const syncActivityToCloud = async (actObj) => {
         if (window.FirebaseSDK && window.firebaseDb) {
             try {
@@ -412,6 +422,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         semesters,
         activityRegistrations,
         addSemester,
+        deleteSemester,
         toggleTrainingPointsSubmitted,
         createActivity,
         deleteActivity,
