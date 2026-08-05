@@ -3,12 +3,10 @@
     <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
       <!-- Title & Branding -->
       <div class="flex items-center gap-3 cursor-pointer">
-        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md border border-indigo-400/30 shrink-0">
-          <i class="fa-solid fa-book-bookmark text-xl text-amber-300"></i>
-        </div>
+        <img src="/logo.jpg" alt="Logo" class="w-10 h-10 rounded-xl object-cover shadow-md border border-indigo-400/30 shrink-0">
         <div>
-          <h1 class="font-black text-sm sm:text-base tracking-tight leading-none text-white">SỔ CA TRỰC ĐIỆN TỬ</h1>
-          <p class="text-[10px] text-indigo-300 mt-1 font-medium hidden sm:block">Đồng Bộ Realtime • Chuẩn Hóa Phân Ban</p>
+          <h1 class="font-black text-xs sm:text-sm tracking-tight leading-tight text-white uppercase">HỆ THỐNG QUẢN LÝ ĐIỆN TỬ ĐỘI VĂN PHÒNG ĐOÀN - HỘI TDTU</h1>
+          <p class="text-[10px] text-indigo-300 font-medium hidden sm:block">Đồng Bộ Realtime • Chuẩn Hóa Phân Ban</p>
         </div>
       </div>
 

@@ -63,10 +63,13 @@
           <!-- Admin View: Quản lý & Tạo hoạt động & Xem tổng lượt điểm danh -->
           <AdminActivityManager v-if="currentUserRole === 'admin'"
                                 :activities="activities"
+                                :semesters="semesters"
                                 :getActivityStats="getActivityStats"
                                 :formatDate="formatDate"
                                 @create-activity="createActivity"
                                 @delete-activity="deleteActivity"
+                                @add-semester="addSemester"
+                                @toggle-training-points="toggleTrainingPointsSubmitted"
                                 @open-detail="openActivityDetailModal" />
 
           <!-- User View: Trang riêng tổng hợp hoạt động tháng, điểm danh, xin nghỉ -->
@@ -75,10 +78,14 @@
                               v-model:selectedMonth="selectedMonth"
                               :loggedInMemberId="loggedInMemberId"
                               :activeMemberName="getMemberName(loggedInMemberId)"
+                              :activityRegistrations="activityRegistrations"
                               :getUserCheckInRecord="getUserCheckInRecord"
+                              :getActivityDates="getActivityDates"
                               :formatDate="formatDate"
                               @check-in="checkInActivity"
-                              @open-leave-modal="openLeaveActivityModal" />
+                              @open-leave-modal="openLeaveActivityModal"
+                              @register-activity-shift="registerActivityShift"
+                              @delete-activity-reg="deleteActivityRegistration" />
         </div>
 
         <!-- Tab 1: Ghi ca -->
@@ -101,10 +108,13 @@
                           :currentUserRole="currentUserRole"
                           :loggedInMemberId="loggedInMemberId"
                           :filteredRegistrations="registrations"
+                          :todayDate="todayDate"
                           :getMemberName="getMemberName"
                           :getMemberDept="getMemberDept"
                           :formatDate="formatDate"
                           :getWeekNameFromDate="getWeekNameFromDate"
+                          :getShiftRegisteredCount="getShiftRegisteredCount"
+                          :isShiftFullOnDate="isShiftFullOnDate"
                           :isShiftTakenOnDate="isShiftTakenOnDate"
                           :getTakenShiftsCountForDate="getTakenShiftsCountForDate"
                           :isRegDateFull="isRegDateFull"
@@ -162,6 +172,7 @@
         <TabMembersList v-show="currentTab === 'members'"
                         :currentUserRole="currentUserRole"
                         :members="members"
+                        :departments="departments"
                         v-model:memberFilterSearch="memberFilterSearch"
                         v-model:memberFilterDept="memberFilterDept"
                         v-model:memberFilterTarget="memberFilterTarget"
@@ -188,8 +199,10 @@
     <MemberModal :show="showMemberModal"
                  :editingMember="editingMember"
                  :memberForm="memberForm"
+                 :departments="departments"
                  @close="showMemberModal = false"
-                 @save="saveMember" />
+                 @save="saveMember"
+                 @add-department="addDepartment" />
 
     <BatchImportModal :show="showBatchModal"
                       v-model:batchText="batchText"
@@ -261,7 +274,7 @@ const { isLoggedIn, loginRole, loginForm, currentUserRole, loggedInMemberId, adm
 
 const membersModule = useMembers(currentUserRole, loggedInMemberId, null, null, null);
 const {
-  members, memberFilterSearch, memberFilterDept, memberFilterTarget, resetMemberFilters,
+  members, departments, addDepartment, memberFilterSearch, memberFilterDept, memberFilterTarget, resetMemberFilters,
   getDeptColorClass, filteredMembersList, showMemberModal, editingMember, memberForm,
   openMemberModal, saveMember, confirmDeleteMember, showBatchModal, batchText,
   openBatchModal, saveBatchMembers, pushAllMembersToCloud, deleteModal
@@ -272,7 +285,7 @@ const {
   shifts, registrations, leaveRequests, selectedMonth, selectedWeek, todayDate,
   activeMember, getMemberName, getMemberDept, formatDate, getInitials,
   getWeekNumFromDate, getWeekNameFromDate, shiftForm, resetShiftForm, saveShift,
-  regForm, saveRegistration, isShiftTakenOnDate, getTakenShiftsCountForDate, isRegDateFull,
+  regForm, saveRegistration, getShiftRegisteredCount, isShiftFullOnDate, isShiftTakenOnDate, getTakenShiftsCountForDate, isRegDateFull,
   leaveForm, availableRegisteredShifts, onLeaveMemberChange, onLeaveRegSelect,
   saveLeaveRequest, leaveStatusFilter, filteredLeaveRequests, pendingLeaveCount,
   updateLeaveStatus, historyFilter, searchedShifts, confirmDeleteRegistration
@@ -280,7 +293,8 @@ const {
 
 const activitiesModule = useActivities(members, loggedInMemberId, currentUserRole);
 const {
-  activities, activityCheckIns, createActivity, deleteActivity,
+  activities, activityCheckIns, semesters, activityRegistrations, addSemester, toggleTrainingPointsSubmitted,
+  createActivity, deleteActivity, registerActivityShift, deleteActivityRegistration, getActivityDates,
   checkInActivity, requestLeaveActivity, getUserCheckInRecord, getActivityStats
 } = activitiesModule;
 

@@ -130,6 +130,37 @@
             </div>
           </div>
         </div>
+
+        <!-- Registered Shifts List -->
+        <div>
+          <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-clipboard-check text-sky-500"></i> Danh sách thành viên đăng ký theo Ngày/Ca ({{ stats?.regsList?.length || 0 }})
+          </h4>
+
+          <div v-if="!stats?.regsList?.length" class="text-center py-6 text-xs text-slate-400 font-medium italic bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+            Chưa có lượt đăng ký ca nào cho hoạt động này.
+          </div>
+
+          <div v-else class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+            <div v-for="item in stats.regsList" :key="item.id" class="p-3 flex items-center justify-between bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-sky-100 text-sky-700 font-black text-xs flex items-center justify-center">
+                  {{ item.memberName ? item.memberName.charAt(0).toUpperCase() : 'U' }}
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-slate-800 dark:text-white">{{ item.memberName }}</div>
+                  <div class="text-[11px] text-slate-400 font-medium">MSSV: {{ item.memberId }}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
+                  🗓️ {{ formatDate(item.date) }} • {{ item.shiftType }}
+                </span>
+                <div v-if="item.notes" class="text-[10px] text-slate-400 mt-0.5 italic">"{{ item.notes }}"</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Footer -->

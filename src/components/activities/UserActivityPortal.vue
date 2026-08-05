@@ -170,59 +170,187 @@
               "{{ act.description }}"
             </p>
 
-            <div v-if="getUserCheckInRecord(act.id)?.leaveReason"
-                 class="mt-3 p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-200">
-              <span class="font-bold">Lý do xin nghỉ:</span> {{ getUserCheckInRecord(act.id)?.leaveReason }}
+            <!-- Registered Activity Shifts Badges -->
+            <div v-if="getUserActivityRegs(act.id).length > 0" class="mt-3 space-y-1.5 border-t border-slate-200/60 dark:border-slate-700/60 pt-2">
+              <div class="text-[11px] font-bold text-sky-700 dark:text-sky-300 flex items-center gap-1">
+                <i class="fa-solid fa-clipboard-check"></i> Ca hoạt động đã đăng ký:
+              </div>
+              <div class="flex flex-wrap gap-1">
+                <span v-for="r in getUserActivityRegs(act.id)" :key="r.id"
+                      class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-300 flex items-center gap-1">
+                  <span>{{ formatDate(r.date) }} ({{ r.shiftType }})</span>
+                  <button @click.stop="$emit('delete-activity-reg', r.id)" class="text-rose-500 hover:text-rose-700 ml-0.5 cursor-pointer" title="Hủy đăng ký ca này">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </span>
+              </div>
             </div>
           </div>
 
-          <!-- Bottom Action Buttons (Check-in & Request Leave with Tightened Permissions) -->
-          <div class="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 grid grid-cols-2 gap-2 text-xs">
-            <!-- Điểm danh Button -->
-            <button @click="$emit('check-in', act.id)"
-                    :disabled="getUserCheckInRecord(act.id)?.status !== 'present' && act.date !== todayDate"
-                    class="py-2.5 px-3 rounded-2xl font-extrabold transition flex items-center justify-center gap-1.5 shadow-xs"
-                    :class="[
-                      getUserCheckInRecord(act.id)?.status === 'present'
-                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer'
-                        : (act.date === todayDate
-                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer active:scale-95 shadow-md'
-                            : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300/60')
-                    ]"
-                    :title="getCheckInButtonTitle(act)">
-              <i class="fa-solid" :class="getUserCheckInRecord(act.id)?.status === 'present' ? 'fa-user-check' : (act.date === todayDate ? 'fa-bolt' : 'fa-lock')"></i>
-              <span>{{ getCheckInButtonText(act) }}</span>
+          <!-- Bottom Action Buttons (Check-in, Request Leave, Register Shift) -->
+          <div class="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2 text-xs">
+            <button @click="openRegModal(act)"
+                    class="w-full py-2 px-3 rounded-2xl font-bold bg-sky-600 hover:bg-sky-700 text-white transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+              <i class="fa-solid fa-calendar-plus"></i> Đăng Ký Ca Tham Gia (Theo Ngày/Ca)
             </button>
 
-            <!-- Xin nghỉ Button -->
-            <button @click="$emit('open-leave-modal', act)"
-                    class="py-2.5 px-3 rounded-2xl font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
-                    :class="getUserCheckInRecord(act.id)?.status === 'leave' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200'">
-              <i class="fa-solid fa-file-pen"></i>
-              <span>Xin Nghỉ</span>
-            </button>
+            <div class="grid grid-cols-2 gap-2">
+              <!-- Điểm danh Button -->
+              <button @click="$emit('check-in', act.id)"
+                      :disabled="getUserCheckInRecord(act.id)?.status !== 'present' && act.date !== todayDate"
+                      class="py-2 px-3 rounded-2xl font-extrabold transition flex items-center justify-center gap-1.5 shadow-xs"
+                      :class="[
+                        getUserCheckInRecord(act.id)?.status === 'present'
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer'
+                          : (act.date === todayDate
+                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer active:scale-95 shadow-md'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300/60')
+                      ]"
+                      :title="getCheckInButtonTitle(act)">
+                <i class="fa-solid" :class="getUserCheckInRecord(act.id)?.status === 'present' ? 'fa-user-check' : (act.date === todayDate ? 'fa-bolt' : 'fa-lock')"></i>
+                <span>{{ getCheckInButtonText(act) }}</span>
+              </button>
+
+              <!-- Xin nghỉ Button -->
+              <button @click="$emit('open-leave-modal', act)"
+                      class="py-2 px-3 rounded-2xl font-bold transition cursor-pointer flex items-center justify-center gap-1.5"
+                      :class="getUserCheckInRecord(act.id)?.status === 'leave' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200'">
+                <i class="fa-solid fa-file-pen"></i>
+                <span>Xin Nghỉ</span>
+              </button>
+            </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Registration Modal for Activity Shift -->
+    <div v-if="selectedActForReg" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="font-extrabold text-slate-800 dark:text-white text-base flex items-center gap-2">
+            <i class="fa-solid fa-calendar-plus text-sky-600"></i> Đăng Ký Ca Hoạt Động
+          </h3>
+          <button @click="selectedActForReg = null" class="text-slate-400 hover:text-slate-600 p-1.5 cursor-pointer">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <div class="text-xs space-y-1">
+          <p class="font-bold text-slate-800 dark:text-white text-sm">{{ selectedActForReg.name }}</p>
+          <p class="text-slate-500">📍 {{ selectedActForReg.location || 'Trường ĐH' }}</p>
+        </div>
+
+        <form @submit.prevent="submitShiftReg" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Chọn Ngày Tham Gia <span class="text-rose-500">*</span>
+            </label>
+            <select v-model="regModalForm.date" required class="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl p-2.5 font-bold focus:outline-none">
+              <option v-for="d in getAvailableDates(selectedActForReg)" :key="d" :value="d">
+                🗓️ Ngày {{ formatDate(d) }} {{ d === todayDate ? '(Hôm nay)' : '' }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Chọn Ca Tham Gia <span class="text-rose-500">*</span>
+            </label>
+            <select v-model="regModalForm.shiftType" required class="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl p-2.5 font-bold focus:outline-none">
+              <option value="Ca 1">Ca 1 (7h30 - 9h20)</option>
+              <option value="Ca 2">Ca 2 (9h20 - 11h30)</option>
+              <option value="Ca 3">Ca 3 (13h00 - 15h20)</option>
+              <option value="Ca 4">Ca 4 (15h20 - 17h00)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ghi chú (Tùy chọn)</label>
+            <input type="text" v-model="regModalForm.notes" placeholder="VD: Tham gia ca sáng hỗ trợ khâu trang trí..."
+                   class="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl p-2 font-medium focus:outline-none">
+          </div>
+
+          <div class="pt-2 flex items-center justify-end gap-2">
+            <button type="button" @click="selectedActForReg = null" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold cursor-pointer">
+              Hủy bỏ
+            </button>
+            <button type="submit" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold cursor-pointer">
+              Xác Nhận Đăng Ký
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
   activities: Array,
   selectedMonth: String,
   loggedInMemberId: String,
   activeMemberName: String,
+  activityRegistrations: {
+    type: Array,
+    default: () => []
+  },
   getUserCheckInRecord: Function,
+  getActivityDates: Function,
   formatDate: Function
 });
 
-defineEmits(['update:selectedMonth', 'check-in', 'open-leave-modal']);
+const emit = defineEmits(['update:selectedMonth', 'check-in', 'open-leave-modal', 'register-activity-shift', 'delete-activity-reg']);
 
-const todayDate = computed(() => new Date().toISOString().split('T')[0]);
+const selectedActForReg = ref(null);
+const regModalForm = ref({ date: '', shiftType: 'Ca 1', notes: '' });
+
+const openRegModal = (act) => {
+  selectedActForReg.value = act;
+  const dates = getAvailableDates(act);
+  regModalForm.value = {
+    date: dates.length > 0 ? dates[0] : act.date,
+    shiftType: 'Ca 1',
+    notes: ''
+  };
+};
+
+const getAvailableDates = (act) => {
+  if (!act) return [];
+  if (props.getActivityDates) {
+    const dates = props.getActivityDates(act);
+    return dates.filter(d => d >= todayDate.value);
+  }
+  return [act.date];
+};
+
+const submitShiftReg = () => {
+  if (!selectedActForReg.value) return;
+  emit('register-activity-shift', {
+    activityId: selectedActForReg.value.id,
+    date: regModalForm.value.date,
+    shiftType: regModalForm.value.shiftType,
+    notes: regModalForm.value.notes
+  });
+  selectedActForReg.value = null;
+};
+
+const getUserActivityRegs = (actId) => {
+  if (!props.activityRegistrations || !props.loggedInMemberId) return [];
+  return props.activityRegistrations.filter(
+    r => r.activityId === actId && r.memberId?.toLowerCase() === props.loggedInMemberId?.toLowerCase()
+  );
+};
+
+const todayDate = computed(() => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+});
 
 const selectedMonthText = computed(() => {
   if (!props.selectedMonth) return '';

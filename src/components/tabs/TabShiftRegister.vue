@@ -45,20 +45,23 @@
             <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">
               Ngày Đăng Ký Trực <span class="text-red-500">*</span>
             </label>
-            <input type="date" v-model="regForm.date" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            <input type="date" v-model="regForm.date" :min="todayDate" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
             <div class="flex items-center justify-between mt-1 text-[11px]" v-if="regForm.date">
               <span class="text-sky-600 font-medium">📅 {{ getWeekNameFromDate(regForm.date) }}</span>
               <span class="font-bold" :class="isRegDateFull ? 'text-rose-600' : 'text-emerald-600'">
-                {{ isRegDateFull ? '🔴 Đã kín ca (Full 4/4 ca)' : `🟢 Đã có ${getTakenShiftsCountForDate(regForm.date)}/4 ca được đăng ký` }}
+                {{ isRegDateFull ? '🔴 Đã kín ca (Full 4/4 ca)' : `🟢 Đã kín ${getTakenShiftsCountForDate(regForm.date)}/4 ca` }}
               </span>
             </div>
+            <p v-if="regForm.date && regForm.date < todayDate" class="text-[11px] text-rose-600 font-bold mt-1">
+              ⚠️ Không thể chọn ngày trong quá khứ!
+            </p>
           </div>
 
           <div v-if="isRegDateFull" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-bold flex items-center gap-2">
             <i class="fa-solid fa-ban text-lg text-rose-600 shrink-0"></i>
             <div>
               <p class="font-black text-rose-800">🔴 NGÀY ĐÃ KÍN CA (FULL 4/4 CA)</p>
-              <p class="text-[11px] font-normal text-rose-600">Tất cả 4 ca trực ngày {{ formatDate(regForm.date) }} đều đã kín. Vui lòng chọn ngày khác!</p>
+              <p class="text-[11px] font-normal text-rose-600">Tất cả 4 ca trực ngày {{ formatDate(regForm.date) }} đều đã đạt tối đa 3/3 người. Vui lòng chọn ngày khác!</p>
             </div>
           </div>
 
@@ -66,19 +69,19 @@
             <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">
               Ca Trực Muốn Đăng Ký <span class="text-red-500">*</span>
             </label>
-            <select v-model="regForm.shiftType" required :disabled="isRegDateFull"
+            <select v-model="regForm.shiftType" required :disabled="isRegDateFull || (regForm.date && regForm.date < todayDate)"
                     class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white font-medium">
-              <option value="Ca 1" :disabled="isShiftTakenOnDate('Ca 1', regForm.date)">
-                Ca 1 (7h30 - 9h20) {{ isShiftTakenOnDate('Ca 1', regForm.date) ? '🔴 [FULL - Đã có người]' : '🟢 [Còn trống]' }}
+              <option value="Ca 1" :disabled="isShiftFullOnDate('Ca 1', regForm.date)">
+                Ca 1 (7h30 - 9h20) — [{{ getShiftRegisteredCount('Ca 1', regForm.date) }}/3 người] {{ isShiftFullOnDate('Ca 1', regForm.date) ? '🔴 [FULL]' : '🟢 [Còn chỗ]' }}
               </option>
-              <option value="Ca 2" :disabled="isShiftTakenOnDate('Ca 2', regForm.date)">
-                Ca 2 (9h20 - 11h30) {{ isShiftTakenOnDate('Ca 2', regForm.date) ? '🔴 [FULL - Đã có người]' : '🟢 [Còn trống]' }}
+              <option value="Ca 2" :disabled="isShiftFullOnDate('Ca 2', regForm.date)">
+                Ca 2 (9h20 - 11h30) — [{{ getShiftRegisteredCount('Ca 2', regForm.date) }}/3 người] {{ isShiftFullOnDate('Ca 2', regForm.date) ? '🔴 [FULL]' : '🟢 [Còn chỗ]' }}
               </option>
-              <option value="Ca 3" :disabled="isShiftTakenOnDate('Ca 3', regForm.date)">
-                Ca 3 (13h00 - 15h20) {{ isShiftTakenOnDate('Ca 3', regForm.date) ? '🔴 [FULL - Đã có người]' : '🟢 [Còn trống]' }}
+              <option value="Ca 3" :disabled="isShiftFullOnDate('Ca 3', regForm.date)">
+                Ca 3 (13h00 - 15h20) — [{{ getShiftRegisteredCount('Ca 3', regForm.date) }}/3 người] {{ isShiftFullOnDate('Ca 3', regForm.date) ? '🔴 [FULL]' : '🟢 [Còn chỗ]' }}
               </option>
-              <option value="Ca 4" :disabled="isShiftTakenOnDate('Ca 4', regForm.date)">
-                Ca 4 (15h20 - 17h00) {{ isShiftTakenOnDate('Ca 4', regForm.date) ? '🔴 [FULL - Đã có người]' : '🟢 [Còn trống]' }}
+              <option value="Ca 4" :disabled="isShiftFullOnDate('Ca 4', regForm.date)">
+                Ca 4 (15h20 - 17h00) — [{{ getShiftRegisteredCount('Ca 4', regForm.date) }}/3 người] {{ isShiftFullOnDate('Ca 4', regForm.date) ? '🔴 [FULL]' : '🟢 [Còn chỗ]' }}
               </option>
             </select>
           </div>
@@ -87,13 +90,13 @@
             <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Ghi Chú (Tùy chọn)</label>
             <input type="text" v-model="regForm.notes" placeholder="VD: Đăng ký cố định hàng tuần..." class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
             <p class="text-[11px] text-amber-600 mt-1.5 font-semibold flex items-center gap-1">
-              <i class="fa-solid fa-circle-info"></i> Quy định: Mỗi thành viên được đăng ký tối đa 3 ca trực trong 1 ngày làm việc.
+              <i class="fa-solid fa-circle-info"></i> Quy định: Tối đa 3 người/ca và mỗi thành viên đăng ký tối đa 3 ca/ngày.
             </p>
           </div>
 
-          <button type="submit" :disabled="isRegDateFull"
+          <button type="submit" :disabled="isRegDateFull || (regForm.date && regForm.date < todayDate)"
                   class="w-full py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2"
-                  :class="isRegDateFull ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700 text-white cursor-pointer'">
+                  :class="(isRegDateFull || (regForm.date && regForm.date < todayDate)) ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700 text-white cursor-pointer'">
             <i class="fa-solid" :class="isRegDateFull ? 'fa-ban' : 'fa-paper-plane'"></i>
             {{ isRegDateFull ? 'Ngày Đã Kín Ca (Full)' : 'Đăng Ký Lịch Trực' }}
           </button>
@@ -154,10 +157,13 @@ defineProps([
   'currentUserRole',
   'loggedInMemberId',
   'filteredRegistrations',
+  'todayDate',
   'getMemberName',
   'getMemberDept',
   'formatDate',
   'getWeekNameFromDate',
+  'getShiftRegisteredCount',
+  'isShiftFullOnDate',
   'isShiftTakenOnDate',
   'getTakenShiftsCountForDate',
   'isRegDateFull'

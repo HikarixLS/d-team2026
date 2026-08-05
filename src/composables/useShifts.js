@@ -20,9 +20,24 @@ const leaveRequests = ref(localLeavesSaved ? JSON.parse(localLeavesSaved) : []);
 export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, deleteModalRef) {
     const { showToast } = useToast();
 
-    const selectedMonth = ref(new Date().toISOString().substring(0, 7));
+    const getTodayStr = () => {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const getMonthStr = () => {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        return `${yyyy}-${mm}`;
+    };
+
+    const selectedMonth = ref(getMonthStr());
     const selectedWeek = ref('all');
-    const todayDate = computed(() => new Date().toISOString().split('T')[0]);
+    const todayDate = computed(() => getTodayStr());
 
     const toPlainObject = (obj) => JSON.parse(JSON.stringify(obj));
 
@@ -80,7 +95,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     // Form Entry
     const shiftForm = ref({
         memberId: '',
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayStr(),
         shiftType: 'Ca 1',
         pageNo: '',
         sttNo: '',
@@ -91,7 +106,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     const resetShiftForm = () => {
         shiftForm.value = {
             memberId: activeMember.value ? activeMember.value.id : '',
-            date: new Date().toISOString().split('T')[0],
+            date: getTodayStr(),
             shiftType: 'Ca 1',
             pageNo: '',
             sttNo: '',
@@ -141,7 +156,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     // Registration Form
     const regForm = ref({
         memberId: loggedInMemberIdRef ? loggedInMemberIdRef.value : '',
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayStr(),
         shiftType: 'Ca 1',
         notes: ''
     });
@@ -165,15 +180,23 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         { immediate: true }
     );
 
+    const getShiftRegisteredCount = (shiftType, dateStr) => {
+        if (!dateStr || !shiftType) return 0;
+        return registrations.value.filter(r => r.date === dateStr && r.shiftType === shiftType).length;
+    };
+
+    const isShiftFullOnDate = (shiftType, dateStr) => {
+        return getShiftRegisteredCount(shiftType, dateStr) >= 3;
+    };
+
     const isShiftTakenOnDate = (shiftType, dateStr) => {
-        if (!dateStr) return false;
-        return registrations.value.some(r => r.date === dateStr && r.shiftType === shiftType);
+        return isShiftFullOnDate(shiftType, dateStr);
     };
 
     const getTakenShiftsCountForDate = (dateStr) => {
         if (!dateStr) return 0;
-        const dateRegs = registrations.value.filter(r => r.date === dateStr);
-        return new Set(dateRegs.map(r => r.shiftType)).size;
+        const allTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
+        return allTypes.filter(st => isShiftFullOnDate(st, dateStr)).length;
     };
 
     const isRegDateFull = computed(() => {
@@ -194,11 +217,16 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         const rDate = regForm.value.date;
         const rShift = regForm.value.shiftType;
 
+        // Block registration for past dates
+        if (rDate < todayDate.value) {
+            return showToast('⚠️ Không thể đăng ký ca trực cho ngày trong quá khứ! Vui lòng chọn từ hôm nay trở đi.', 'error');
+        }
+
         const isDuplicate = registrations.value.some(r => r.memberId === mId && r.date === rDate && r.shiftType === rShift);
         if (isDuplicate) return showToast(`⚠️ Thành viên đã đăng ký ${rShift} cho ngày ${formatDate(rDate)} rồi!`, 'error');
 
-        if (isShiftTakenOnDate(rShift, rDate)) {
-            return showToast(`⚠️ Ca trực ${rShift} ngày ${formatDate(rDate)} đã kín (Full)! Vui lòng chọn ca khác.`, 'error');
+        if (isShiftFullOnDate(rShift, rDate)) {
+            return showToast(`⚠️ Ca trực ${rShift} ngày ${formatDate(rDate)} đã kín (Đã đủ 3/3 người)! Vui lòng chọn ca khác.`, 'error');
         }
 
         const countForDay = registrations.value.filter(r => r.memberId === mId && r.date === rDate).length;
@@ -417,6 +445,8 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         saveShift,
         regForm,
         saveRegistration,
+        getShiftRegisteredCount,
+        isShiftFullOnDate,
         isShiftTakenOnDate,
         getTakenShiftsCountForDate,
         isRegDateFull,

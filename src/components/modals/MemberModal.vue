@@ -23,13 +23,26 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Ban Hoạt Động <span class="text-red-500">*</span></label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-semibold text-slate-700 uppercase">Ban Hoạt Động <span class="text-red-500">*</span></label>
+            <button type="button" @click="showAddDeptInput = !showAddDeptInput" class="text-[11px] text-indigo-600 font-bold hover:underline cursor-pointer">
+              {{ showAddDeptInput ? '▲ Ẩn thêm' : '➕ Thêm Ban mới' }}
+            </button>
+          </div>
+
+          <div v-if="showAddDeptInput" class="mb-2 flex items-center gap-1">
+            <input type="text" v-model="newDeptName" placeholder="Nhập tên Ban mới..."
+                   class="flex-grow px-2.5 py-1.5 rounded-lg border border-indigo-300 bg-indigo-50 text-slate-800 text-xs font-semibold focus:outline-none">
+            <button type="button" @click="handleAddNewDept" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs cursor-pointer">
+              Lưu
+            </button>
+          </div>
+
           <select v-model="memberForm.department" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-medium">
             <option value="" disabled>-- Chọn Ban --</option>
-            <option value="Ban Điều hành">Ban Điều hành</option>
-            <option value="Ban Hành chính">Ban Hành chính</option>
-            <option value="Ban Nhân sự">Ban Nhân sự</option>
-            <option value="Ban Truyền thông">Ban Truyền thông</option>
+            <option v-for="d in (departments || ['Ban Điều hành', 'Ban Hành chính', 'Ban Nhân sự', 'Ban Truyền thông'])" :key="d" :value="d">
+              {{ d }}
+            </option>
           </select>
         </div>
 
@@ -57,6 +70,20 @@
 </template>
 
 <script setup>
-defineProps(['show', 'editingMember', 'memberForm']);
-defineEmits(['close', 'save']);
+import { ref } from 'vue';
+
+const props = defineProps(['show', 'editingMember', 'memberForm', 'departments']);
+const emit = defineEmits(['close', 'save', 'add-department']);
+
+const showAddDeptInput = ref(false);
+const newDeptName = ref('');
+
+const handleAddNewDept = () => {
+  if (newDeptName.value.trim()) {
+    emit('add-department', newDeptName.value.trim());
+    props.memberForm.department = newDeptName.value.trim();
+    newDeptName.value = '';
+    showAddDeptInput.value = false;
+  }
+};
 </script>

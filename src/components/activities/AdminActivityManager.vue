@@ -26,11 +26,13 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Create Activity Form -->
       <div class="lg:col-span-1 bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
-        <div class="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm font-bold">
-            <i class="fa-solid fa-plus"></i>
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm font-bold">
+              <i class="fa-solid fa-plus"></i>
+            </div>
+            <h3 class="font-extrabold text-slate-800 dark:text-white text-base">Tạo Hoạt Động Mới</h3>
           </div>
-          <h3 class="font-extrabold text-slate-800 dark:text-white text-base">Tạo Hoạt Động Mới</h3>
         </div>
 
         <form @submit.prevent="handleCreate" class="space-y-3 text-xs">
@@ -44,11 +46,11 @@
                    class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
           </div>
 
-          <!-- Date & Semester Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
+          <!-- Date Range (From Date -> To Date) -->
+          <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Ngày diễn ra <span class="text-rose-500">*</span>
+                Từ ngày <span class="text-rose-500">*</span>
               </label>
               <input type="date" v-model="form.date" required
                      class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
@@ -56,16 +58,28 @@
 
             <div>
               <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Đến ngày <span class="text-slate-400 font-normal">(Nhiều ngày)</span>
+              </label>
+              <input type="date" v-model="form.endDate" :min="form.date"
+                     class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+            </div>
+          </div>
+
+          <!-- Synced Semester Field -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="font-bold text-slate-700 dark:text-slate-300">
                 Học kỳ <span class="text-rose-500">*</span>
               </label>
-              <select v-model="form.semester" required
-                      class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold">
-                <option value="Học kỳ 1 (2026-2027)">Học kỳ 1 (2026-2027)</option>
-                <option value="Học kỳ 2 (2026-2027)">Học kỳ 2 (2026-2027)</option>
-                <option value="Học kỳ 3 (2026-2027)">Học kỳ 3 (2026-2027)</option>
-                <option value="Học kỳ Hè (2026-2027)">Học kỳ Hè (2026-2027)</option>
-              </select>
+              <button type="button" @click="showAddSemesterModal = true" class="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer">
+                ➕ Thêm học kỳ thủ công
+              </button>
             </div>
+
+            <select v-model="form.semester" required
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold">
+              <option v-for="s in semesters" :key="s" :value="s">🎓 {{ s }}</option>
+            </select>
           </div>
 
           <!-- Location -->
@@ -76,6 +90,14 @@
             <input type="text" v-model="form.location"
                    placeholder="VD: Hội trường A / Sân trung tâm"
                    class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+          </div>
+
+          <!-- Training Points Checkbox -->
+          <div class="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/80 dark:border-amber-900/50 flex items-center gap-2">
+            <input type="checkbox" id="trainingPointsCheck" v-model="form.submittedTrainingPoints" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
+            <label for="trainingPointsCheck" class="text-xs font-bold text-amber-900 dark:text-amber-200 cursor-pointer">
+              Đã gửi điểm rèn luyện (ĐRL)
+            </label>
           </div>
 
           <!-- Description -->
@@ -98,23 +120,26 @@
 
       <!-- Activity List & Stats (Right) -->
       <div class="lg:col-span-2 space-y-4">
-        <!-- Filter Controls -->
-        <div class="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex items-center gap-2 flex-grow max-w-xs">
+        <!-- Unified Central Semester & Search Filter Header -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-xs">
+          <div class="flex items-center gap-2 w-full sm:w-auto flex-grow max-w-sm">
             <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
             <input type="text" v-model="searchQuery" placeholder="Tìm theo tên hoạt động..."
-                   class="w-full bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white focus:outline-none">
+                   class="w-full bg-slate-50 dark:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
           </div>
 
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-slate-500">Học kỳ:</span>
-            <select v-model="selectedSemester"
-                    class="bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 focus:outline-none">
-              <option value="all">Tất cả học kỳ</option>
-              <option value="Học kỳ 1 (2026-2027)">Học kỳ 1 (2026-2027)</option>
-              <option value="Học kỳ 2 (2026-2027)">Học kỳ 2 (2026-2027)</option>
-              <option value="Học kỳ 3 (2026-2027)">Học kỳ 3 (2026-2027)</option>
+          <div class="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end flex-wrap">
+            <span class="font-extrabold text-slate-700 dark:text-slate-300 shrink-0">Học kỳ:</span>
+            <select v-model="selectedSemester" @change="syncFormSemester"
+                    class="bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-extrabold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="all">🌐 Tất cả học kỳ ({{ activities.length }})</option>
+              <option v-for="s in semesters" :key="s" :value="s">🎓 {{ s }}</option>
             </select>
+
+            <button type="button" @click="showAddSemesterModal = true"
+                    class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5 shrink-0">
+              <i class="fa-solid fa-plus-circle"></i> Thêm Học Kỳ
+            </button>
           </div>
         </div>
 
@@ -131,12 +156,13 @@
                class="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition flex flex-col justify-between space-y-4">
             <!-- Card Header -->
             <div>
-              <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center justify-between mb-2 flex-wrap gap-1">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200/50">
                   {{ act.semester }}
                 </span>
                 <span class="text-[11px] font-bold text-slate-400">
-                  <i class="fa-solid fa-calendar-day text-indigo-500"></i> {{ formatDate(act.date) }}
+                  <i class="fa-solid fa-calendar-day text-indigo-500"></i>
+                  {{ formatDate(act.date) }} {{ act.endDate && act.endDate !== act.date ? '➜ ' + formatDate(act.endDate) : '' }}
                 </span>
               </div>
 
@@ -145,6 +171,17 @@
               <p v-if="act.location" class="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-medium">
                 <i class="fa-solid fa-location-dot text-rose-500"></i> {{ act.location }}
               </p>
+
+              <!-- Training Score Checkbox / Status Badge -->
+              <div class="mt-2.5 flex items-center justify-between p-2 rounded-xl text-xs font-bold border transition cursor-pointer"
+                   :class="act.submittedTrainingPoints ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900' : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'"
+                   @click="$emit('toggle-training-points', act.id)">
+                <div class="flex items-center gap-1.5">
+                  <i class="fa-solid" :class="act.submittedTrainingPoints ? 'fa-circle-check text-emerald-600' : 'fa-circle-notch text-slate-400'"></i>
+                  <span>{{ act.submittedTrainingPoints ? '🟢 Đã gửi điểm rèn luyện' : '⚪ Chưa gửi điểm rèn luyện' }}</span>
+                </div>
+                <span class="text-[10px] underline hover:text-indigo-600">[Đổi]</span>
+              </div>
 
               <p v-if="act.description" class="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 italic">
                 "{{ act.description }}"
@@ -187,6 +224,43 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Tự Thêm Học Kỳ Thủ Công -->
+    <div v-if="showAddSemesterModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="font-extrabold text-slate-800 dark:text-white text-base flex items-center gap-2">
+            <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Thêm Học Kỳ Mới Thủ Công
+          </h3>
+          <button @click="showAddSemesterModal = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-500">
+          Nhập tên học kỳ mới (VD: Học kỳ 1 (2027-2028), Học kỳ Hè (2027-2028)...). Học kỳ mới sẽ tự động được lưu và đồng bộ vào hệ thống.
+        </p>
+
+        <form @submit.prevent="handleAddNewSemester" class="space-y-4 text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Tên học kỳ mới <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" v-model="newSemesterName" required placeholder="VD: Học kỳ 1 (2027-2028)"
+                   class="w-full px-3.5 py-2.5 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-slate-800 text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button type="button" @click="showAddSemesterModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl cursor-pointer">
+              Hủy bỏ
+            </button>
+            <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl shadow-md cursor-pointer">
+              <i class="fa-solid fa-plus"></i> Xác Nhận Thêm
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -195,27 +269,63 @@ import { ref, computed } from 'vue';
 
 const props = defineProps({
   activities: Array,
+  semesters: {
+    type: Array,
+    default: () => ['Học kỳ 1 (2026-2027)', 'Học kỳ 2 (2026-2027)', 'Học kỳ 3 (2026-2027)', 'Học kỳ Hè (2026-2027)']
+  },
   getActivityStats: Function,
   formatDate: Function
 });
 
-const emit = defineEmits(['create-activity', 'delete-activity', 'open-detail']);
+const emit = defineEmits(['create-activity', 'delete-activity', 'open-detail', 'add-semester', 'toggle-training-points']);
+
+const getTodayStr = () => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 const form = ref({
   name: '',
-  date: new Date().toISOString().split('T')[0],
+  date: getTodayStr(),
+  endDate: '',
   semester: 'Học kỳ 1 (2026-2027)',
   location: '',
+  submittedTrainingPoints: false,
   description: ''
 });
+
+const showAddSemesterModal = ref(false);
+const newSemesterName = ref('');
+
+const handleAddNewSemester = () => {
+  if (newSemesterName.value.trim()) {
+    const semName = newSemesterName.value.trim();
+    emit('add-semester', semName);
+    form.value.semester = semName;
+    selectedSemester.value = semName;
+    newSemesterName.value = '';
+    showAddSemesterModal.value = false;
+  }
+};
 
 const searchQuery = ref('');
 const selectedSemester = ref('all');
 
+const syncFormSemester = () => {
+  if (selectedSemester.value !== 'all') {
+    form.value.semester = selectedSemester.value;
+  }
+};
+
 const handleCreate = () => {
   emit('create-activity', { ...form.value });
   form.value.name = '';
+  form.value.endDate = '';
   form.value.location = '';
+  form.value.submittedTrainingPoints = false;
   form.value.description = '';
 };
 
