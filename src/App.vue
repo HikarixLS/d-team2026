@@ -133,6 +133,7 @@
 
         <!-- Tab 4: Thống kê Dashboard & Biểu đồ -->
         <TabDashboard v-show="currentTab === 'dashboard'"
+                      :currentTab="currentTab"
                       :currentUserRole="currentUserRole"
                       :filteredShifts="shifts"
                       :personalShiftsCount="shifts.filter(s => s.memberId === loggedInMemberId).length"

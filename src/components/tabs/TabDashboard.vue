@@ -50,8 +50,8 @@
         <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
           <i class="fa-solid fa-chart-pie text-indigo-600 dark:text-indigo-400"></i> {{ pieChartTitle }}
         </h3>
-        <div class="relative h-64 flex items-center justify-center">
-          <canvas id="targetPieChart"></canvas>
+        <div class="relative h-64 flex items-center justify-center min-h-[256px]">
+          <canvas id="targetPieChart" class="w-full h-full"></canvas>
         </div>
       </div>
 
@@ -60,8 +60,8 @@
           <i class="fa-solid fa-chart-pie text-sky-600 dark:text-sky-400"></i> Biểu Đồ Tròn: Phân Bổ Các Ca Trực Trong Tháng (Ca 1 - 4)
         </h3>
         <p class="text-xs text-slate-500 dark:text-slate-400">Ca 1 (7h30-9h20), Ca 2 (9h20-11h30), Ca 3 (13h00-15h20), Ca 4 (15h20-17h00)</p>
-        <div class="relative h-64 flex items-center justify-center">
-          <canvas id="shiftTypeChart"></canvas>
+        <div class="relative h-64 flex items-center justify-center min-h-[256px]">
+          <canvas id="shiftTypeChart" class="w-full h-full"></canvas>
         </div>
       </div>
     </div>
@@ -73,6 +73,7 @@ import { onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
 import Chart from 'chart.js/auto';
 
 const props = defineProps([
+  'currentTab',
   'currentUserRole',
   'filteredShifts',
   'personalShiftsCount',
@@ -96,7 +97,7 @@ const renderCharts = () => {
     const canvas1 = document.getElementById('targetPieChart');
     if (canvas1) {
       if (targetChartInstance) {
-        targetChartInstance.destroy();
+        try { targetChartInstance.destroy(); } catch (e) {}
       }
 
       const isAdmin = props.currentUserRole === 'admin';
@@ -114,7 +115,7 @@ const renderCharts = () => {
             data: [passCount, pendingCount],
             backgroundColor: ['#10B981', '#6366F1'],
             borderWidth: 2,
-            borderColor: '#1E293B'
+            borderColor: '#ffffff'
           }]
         },
         options: {
@@ -125,7 +126,7 @@ const renderCharts = () => {
               position: 'bottom',
               labels: {
                 font: { weight: 'bold', size: 11 },
-                color: '#94A3B8'
+                color: '#64748B'
               }
             }
           }
@@ -137,7 +138,7 @@ const renderCharts = () => {
     const canvas2 = document.getElementById('shiftTypeChart');
     if (canvas2) {
       if (shiftTypeChartInstance) {
-        shiftTypeChartInstance.destroy();
+        try { shiftTypeChartInstance.destroy(); } catch (e) {}
       }
 
       const shiftList = props.filteredShifts || [];
@@ -159,7 +160,7 @@ const renderCharts = () => {
             data: [ca1, ca2, ca3, ca4],
             backgroundColor: ['#6366F1', '#0284C7', '#F59E0B', '#F43F5E'],
             borderWidth: 2,
-            borderColor: '#1E293B'
+            borderColor: '#ffffff'
           }]
         },
         options: {
@@ -170,7 +171,7 @@ const renderCharts = () => {
               position: 'bottom',
               labels: {
                 font: { weight: 'bold', size: 11 },
-                color: '#94A3B8'
+                color: '#64748B'
               }
             }
           }
@@ -185,12 +186,13 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  if (targetChartInstance) targetChartInstance.destroy();
-  if (shiftTypeChartInstance) shiftTypeChartInstance.destroy();
+  if (targetChartInstance) try { targetChartInstance.destroy(); } catch (e) {}
+  if (shiftTypeChartInstance) try { shiftTypeChartInstance.destroy(); } catch (e) {}
 });
 
 watch(
   () => [
+    props.currentTab,
     props.currentUserRole,
     props.filteredShifts,
     props.members,
@@ -198,8 +200,12 @@ watch(
     props.personalShiftsCount
   ],
   () => {
-    renderCharts();
+    if (props.currentTab === 'dashboard') {
+      nextTick(() => {
+        setTimeout(renderCharts, 50);
+      });
+    }
   },
-  { deep: true }
+  { deep: true, immediate: true }
 );
 </script>

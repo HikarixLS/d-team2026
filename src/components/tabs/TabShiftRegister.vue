@@ -115,7 +115,7 @@
             </div>
 
             <button v-if="currentUserRole === 'admin' || r.memberId === loggedInMemberId"
-                    @click="$emit('delete-registration', r)"
+                    @click.stop.prevent="$emit('delete-registration', r)"
                     class="p-2 text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Hủy lịch đăng ký">
               <i class="fa-solid fa-trash-can text-sm"></i>
             </button>

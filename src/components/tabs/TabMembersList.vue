@@ -14,7 +14,7 @@
         <button @click="$emit('open-batch')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
           <i class="fa-solid fa-file-import"></i> Dán Hàng Loạt
         </button>
-        <button @click="$emit('open-member-modal')" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+        <button @click="$emit('open-member-modal', null)" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
           <i class="fa-solid fa-user-plus"></i> Thêm Thành Viên
         </button>
       </div>
