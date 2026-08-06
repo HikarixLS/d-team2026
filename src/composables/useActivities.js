@@ -136,10 +136,93 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         }
     };
 
+    const addDaysToStr = (dateStr, numDays) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return dateStr;
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        d.setDate(d.getDate() + numDays);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const getTodayStr = () => {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const getNextCodeId = () => {
+        if (!activities.value.length) return 1;
+        const maxCode = activities.value.reduce((max, a) => {
+            const c = Number(a.codeId || a.code || 0);
+            return c > max ? c : max;
+        }, 0);
+        return maxCode + 1;
+    };
+
+    const computeActivityDerivedFields = (act) => {
+        if (!act) return {};
+        const codeId = act.codeId || act.code || 1;
+        const endDate = act.endDate || act.date || getTodayStr();
+        const deadlineDate = act.deadlineDate || addDaysToStr(endDate, 3);
+        const location = act.location || 'Trường ĐH';
+
+        const contentVN = `Tham gia ${act.name} tại ${location}, ngày ${formatDate(endDate)}`;
+        const contentEN = `Participating in ${act.name} at ${location}, on ${formatDate(endDate)}`;
+
+        const submitDate = act.submitDate || '';
+        const todayStr = getTodayStr();
+
+        let progressStatus = 'Chưa gửi';
+        let conclusionStatus = 'Chưa gửi';
+
+        if (submitDate) {
+            progressStatus = 'Đã xử lý';
+            if (submitDate < deadlineDate) {
+                conclusionStatus = 'Gửi sớm hạn';
+            } else if (submitDate === deadlineDate) {
+                conclusionStatus = 'Gửi đúng hạn';
+            } else {
+                conclusionStatus = 'Gửi trễ hạn';
+            }
+        } else {
+            if (todayStr > deadlineDate) {
+                progressStatus = 'Đã quá hạn';
+            } else {
+                progressStatus = 'Chưa gửi';
+            }
+            conclusionStatus = 'Chưa có';
+        }
+
+        const cleanEndDateStr = endDate.replace(/-/g, '');
+        const excelFileName = `${codeId}-${cleanEndDateStr} DSSV ${act.name}.xlsx`;
+
+        return {
+            codeId,
+            endDate,
+            deadlineDate,
+            location,
+            contentVN,
+            contentEN,
+            submitDate,
+            progressStatus,
+            conclusionStatus,
+            excelFileName
+        };
+    };
+
     const toggleTrainingPointsSubmitted = async (actId) => {
         const act = activities.value.find(a => a.id === actId);
         if (!act) return;
         act.submittedTrainingPoints = !act.submittedTrainingPoints;
+        if (act.submittedTrainingPoints && !act.submitDate) {
+            act.submitDate = getTodayStr();
+        }
         persistLocal();
         await syncActivityToCloud(act);
         showToast(act.submittedTrainingPoints
@@ -148,29 +231,47 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         );
     };
 
+    const updateActivitySubmitDate = async (actId, newSubmitDate) => {
+        const act = activities.value.find(a => a.id === actId);
+        if (!act) return;
+        act.submitDate = newSubmitDate || '';
+        if (newSubmitDate) act.submittedTrainingPoints = true;
+        persistLocal();
+        await syncActivityToCloud(act);
+        showToast(`Đã cập nhật ngày gửi hồ sơ cho "${act.name}"! 📅`);
+    };
+
     const createActivity = async (formData) => {
         if (!formData.name || !formData.name.trim()) {
             return showToast('Vui lòng nhập tên hoạt động!', 'error');
         }
-        if (!formData.date) {
-            return showToast('Vui lòng chọn ngày diễn ra hoạt động!', 'error');
+        const endDate = formData.endDate || formData.date;
+        if (!endDate) {
+            return showToast('Vui lòng chọn thời gian kết thúc hoạt động!', 'error');
         }
         if (!formData.semester || !formData.semester.trim()) {
             return showToast('Vui lòng nhập/chọn học kỳ diễn ra!', 'error');
         }
 
-        const startDate = formData.date;
-        const endDate = formData.endDate && formData.endDate >= startDate ? formData.endDate : startDate;
+        const startDate = formData.date || endDate;
+        const codeId = getNextCodeId();
+        const deadlineDate = addDaysToStr(endDate, 3);
+        const location = formData.location ? formData.location.trim() : 'Trường ĐH';
+        const submitDate = formData.submitDate ? formData.submitDate.trim() : '';
 
         const newAct = {
             id: 'act_' + Date.now(),
+            codeId: codeId,
+            code: codeId,
             name: formData.name.trim(),
             date: startDate,
             endDate: endDate,
+            deadlineDate: deadlineDate,
+            submitDate: submitDate,
             semester: formData.semester.trim(),
-            location: formData.location ? formData.location.trim() : 'Trường ĐH',
+            location: location,
             description: formData.description ? formData.description.trim() : '',
-            submittedTrainingPoints: Boolean(formData.submittedTrainingPoints),
+            submittedTrainingPoints: Boolean(formData.submittedTrainingPoints) || Boolean(submitDate),
             createdAt: new Date().toISOString()
         };
 
@@ -178,9 +279,144 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         persistLocal();
         await syncActivityToCloud(newAct);
 
-        showToast(`Tạo thành công hoạt động "${newAct.name}"! 🎉`);
+        showToast(`Tạo thành công hoạt động Mã #${newAct.codeId} "${newAct.name}"! 🎉`);
         return true;
     };
+
+    const exportActivityExcel = (act, stats, membersList = []) => {
+        if (!window.XLSX) {
+            return showToast('Thư viện Excel (XLSX) chưa sẵn sàng!', 'error');
+        }
+        if (!act) return;
+
+        const derived = computeActivityDerivedFields(act);
+        const fileName = derived.excelFileName;
+
+        const presentList = stats?.presentList || [];
+        const regsList = stats?.regsList || [];
+
+        const memberMap = new Map();
+
+        presentList.forEach(p => {
+            const mObj = membersList.find(m => m.id === p.memberId);
+            memberMap.set(p.memberId, {
+                mssv: String(p.memberId).trim(),
+                name: p.memberName || mObj?.name || p.memberId,
+                department: mObj?.department || 'Thành viên',
+                status: p.adminCheckedIn ? 'Admin Điểm danh hộ' : 'Đã điểm danh'
+            });
+        });
+
+        regsList.forEach(r => {
+            if (!memberMap.has(r.memberId)) {
+                const mObj = membersList.find(m => m.id === r.memberId);
+                memberMap.set(r.memberId, {
+                    mssv: String(r.memberId).trim(),
+                    name: r.memberName || mObj?.name || r.memberId,
+                    department: mObj?.department || 'Thành viên',
+                    status: 'Đã đăng ký ca'
+                });
+            }
+        });
+
+        const rowsData = [];
+        const headers = [
+            "STT",
+            "MSSV",
+            "Họ và Tên",
+            "Ban Hoạt Động",
+            "Tên Hoạt Động",
+            "Nội dung",
+            "Content",
+            "Địa Điểm Tổ Chức",
+            "Thời Gian Kết Thúc",
+            "Hạn Gửi Hồ Sơ",
+            "Ngày Gửi",
+            "Tiến Độ",
+            "Kết Luận",
+            "Trạng Thái Ghi Nhận"
+        ];
+        rowsData.push(headers);
+
+        let stt = 1;
+        memberMap.forEach(item => {
+            rowsData.push([
+                stt++,
+                item.mssv,
+                item.name,
+                item.department,
+                act.name,
+                derived.contentVN,
+                derived.contentEN,
+                derived.location,
+                formatDate(derived.endDate),
+                formatDate(derived.deadlineDate),
+                derived.submitDate ? formatDate(derived.submitDate) : '—',
+                derived.progressStatus,
+                derived.conclusionStatus,
+                item.status
+            ]);
+        });
+
+        if (memberMap.size === 0) {
+            rowsData.push([
+                1,
+                "—",
+                "Chưa có sinh viên tham gia",
+                "—",
+                act.name,
+                derived.contentVN,
+                derived.contentEN,
+                derived.location,
+                formatDate(derived.endDate),
+                formatDate(derived.deadlineDate),
+                derived.submitDate ? formatDate(derived.submitDate) : '—',
+                derived.progressStatus,
+                derived.conclusionStatus,
+                "—"
+            ]);
+        }
+
+        const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
+
+        // Format column MSSV (Col B, index 1) as Text
+        const range = window.XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+            const cellAddress = window.XLSX.utils.encode_cell({ r: R, c: 1 });
+            if (ws[cellAddress]) {
+                ws[cellAddress].t = 's';
+                ws[cellAddress].z = '@';
+                ws[cellAddress].v = String(ws[cellAddress].v);
+            }
+        }
+
+        const wb = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(wb, ws, "DSSV");
+        window.XLSX.writeFile(wb, fileName);
+        showToast(`Xuất file Excel "${fileName}" thành công! 📊`);
+    };
+
+    const adminActivitySummaryStats = computed(() => {
+        const todayStr = getTodayStr();
+        let totalExecuted = activities.value.length;
+        let submittedOnTimeCount = 0;
+        let overdueCount = 0;
+
+        activities.value.forEach(act => {
+            const derived = computeActivityDerivedFields(act);
+            if (act.submittedTrainingPoints || (derived.submitDate && derived.submitDate <= derived.deadlineDate)) {
+                submittedOnTimeCount++;
+            } else if ((derived.submitDate && derived.submitDate > derived.deadlineDate) || (!derived.submitDate && todayStr > derived.deadlineDate)) {
+                overdueCount++;
+            }
+        });
+
+        return {
+            totalExecuted,
+            submittedOnTimeCount,
+            overdueCount
+        };
+    });
 
     const deleteActivity = async (actId) => {
         const act = activities.value.find(a => a.id === actId);
@@ -194,14 +430,6 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         await deleteActivityFromCloud(actId);
 
         showToast(`Đã xóa hoạt động "${actName}"!`);
-    };
-
-    const getTodayStr = () => {
-        const d = new Date();
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
     };
 
     const registerActivityShift = async ({ activityId, date, shiftType, notes }) => {
@@ -424,6 +652,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         addSemester,
         deleteSemester,
         toggleTrainingPointsSubmitted,
+        updateActivitySubmitDate,
         createActivity,
         deleteActivity,
         registerActivityShift,
@@ -433,6 +662,10 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         requestLeaveActivity,
         getUserCheckInRecord,
         getActivityStats,
+        computeActivityDerivedFields,
+        addDaysToStr,
+        exportActivityExcel,
+        adminActivitySummaryStats,
         persistLocal
     };
 }

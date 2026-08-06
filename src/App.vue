@@ -64,6 +64,8 @@
           <AdminActivityManager v-if="currentUserRole === 'admin'"
                                 :activities="activities"
                                 :semesters="semesters"
+                                :adminActivitySummaryStats="adminActivitySummaryStats"
+                                :computeActivityDerivedFields="computeActivityDerivedFields"
                                 :getActivityStats="getActivityStats"
                                 :formatDate="formatDate"
                                 @create-activity="createActivity"
@@ -71,6 +73,8 @@
                                 @add-semester="addSemester"
                                 @delete-semester="deleteSemester"
                                 @toggle-training-points="toggleTrainingPointsSubmitted"
+                                @update-submit-date="updateActivitySubmitDate"
+                                @export-excel="exportActivityExcel($event, getActivityStats($event.id), members)"
                                 @open-detail="openActivityDetailModal" />
 
           <!-- User View: Trang riêng tổng hợp hoạt động tháng, điểm danh, xin nghỉ -->
@@ -219,7 +223,8 @@
                          :members="members"
                          :formatDate="formatDate"
                          @close="showActivityDetailModal = false"
-                         @admin-checkin="handleAdminCheckInActivity" />
+                         @admin-checkin="handleAdminCheckInActivity"
+                         @export-excel="exportActivityExcel($event, getActivityStats($event.id), members)" />
 
     <LeaveActivityModal :show="showLeaveActivityModal"
                         :activity="selectedActivityForLeave"
@@ -295,8 +300,9 @@ const {
 const activitiesModule = useActivities(members, loggedInMemberId, currentUserRole);
 const {
   activities, activityCheckIns, semesters, activityRegistrations, addSemester, deleteSemester, toggleTrainingPointsSubmitted,
-  createActivity, deleteActivity, registerActivityShift, deleteActivityRegistration, getActivityDates,
-  checkInActivity, requestLeaveActivity, getUserCheckInRecord, getActivityStats
+  updateActivitySubmitDate, createActivity, deleteActivity, registerActivityShift, deleteActivityRegistration, getActivityDates,
+  checkInActivity, requestLeaveActivity, getUserCheckInRecord, getActivityStats,
+  computeActivityDerivedFields, exportActivityExcel, adminActivitySummaryStats
 } = activitiesModule;
 
 const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts, activities, activityCheckIns);
