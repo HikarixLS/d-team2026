@@ -85,6 +85,16 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         };
 
         try {
+            // Clean up leftover documents in old 'admins' collection if present
+            if (window.FirebaseSDK.getDocs && window.FirebaseSDK.deleteDoc) {
+                const { getDocs, deleteDoc } = window.FirebaseSDK;
+                getDocs(collection(db, 'admins')).then(snap => {
+                    snap.forEach(docSnap => deleteDoc(docSnap.ref).catch(() => {}));
+                }).catch(() => {});
+            }
+        } catch (e) {}
+
+        try {
             const membersRefCol = collection(db, 'members');
             unsubMembers = onSnapshot(membersRefCol, (snapshot) => {
                 const list = [];
