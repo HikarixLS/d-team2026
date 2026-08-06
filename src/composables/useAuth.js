@@ -66,6 +66,17 @@ export function useAuth(membersRef) {
                 }
             }
 
+            // Verify Admin Password: check custom password, formula (DVP + 4 last digits + BDH), or master pass 123
+            const last4 = cleanId.length >= 4 ? cleanId.slice(-4).toUpperCase() : cleanId.padStart(4, '0').toUpperCase();
+            const formulaPassword = `DVP${last4}BDH`;
+            const cloudPassword = adminAcc?.password;
+
+            const isPasswordCorrect = isSuperAdmin || pwd === '123' || pwd === formulaPassword || (cloudPassword && pwd === cloudPassword);
+
+            if (!isPasswordCorrect) {
+                return showToast(`Mật khẩu Admin không đúng! (Định dạng mật khẩu: ${formulaPassword})`, 'error');
+            }
+
             // Successfully authenticated Admin!
             isLoggedIn.value = true;
             currentUserRole.value = 'admin';

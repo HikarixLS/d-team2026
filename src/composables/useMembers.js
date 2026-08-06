@@ -140,17 +140,24 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
                 const refDoc = doc(collection(window.firebaseDb, 'members'), mId);
                 await setDoc(refDoc, mData, { merge: true });
 
-                // Sync with admin_accounts collection on Cloud
                 const adminRefDoc = doc(collection(window.firebaseDb, 'admin_accounts'), mId);
                 if (mData.role === 'admin') {
-                    await setDoc(adminRefDoc, { id: mId, name: mData.name, password: '123' }, { merge: true });
+                    const adminPwd = getAdminPassword(mId);
+                    await setDoc(adminRefDoc, {
+                        id: mId,
+                        name: mData.name,
+                        department: mData.department || 'Ban Điều hành',
+                        role: 'admin',
+                        targetShifts: 10,
+                        password: adminPwd
+                    }, { merge: true });
+                    showToast(`Đã cấp quyền Quản Trị Viên (Mật khẩu: ${adminPwd}) & Đồng bộ Cloud! 🎉`);
                 } else {
                     try {
                         await deleteDoc(adminRefDoc);
                     } catch (e) { }
+                    showToast(`Đã lưu thông tin thành viên & Đồng bộ Cloud! 🎉`);
                 }
-
-                showToast(`Đã lưu thành viên [${mData.role === 'admin' ? '👑 Admin' : '👤 User'}] & Đồng bộ Cloud (admin_accounts)! 🎉`);
             } catch (err) {
                 console.error("Lỗi đồng bộ Cloud:", err);
                 showToast('Đã lưu thông tin thành viên!');
@@ -232,12 +239,20 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
                 await setDoc(doc(collection(window.firebaseDb, 'members'), m.id), toPlainObject(m), { merge: true });
                 const adminRefDoc = doc(collection(window.firebaseDb, 'admin_accounts'), m.id);
                 if (m.role === 'admin') {
-                    await setDoc(adminRefDoc, { id: m.id, name: m.name, password: '123' }, { merge: true });
+                    const adminPwd = getAdminPassword(m.id);
+                    await setDoc(adminRefDoc, {
+                        id: m.id,
+                        name: m.name,
+                        department: m.department || 'Ban Điều hành',
+                        role: 'admin',
+                        targetShifts: 10,
+                        password: adminPwd
+                    }, { merge: true });
                 } else {
                     try { await deleteDoc(adminRefDoc); } catch (e) {}
                 }
             }
-            showToast(`Đã đồng bộ toàn bộ ${members.value.length} thành viên (kèm admin_accounts) lên Cloud!`);
+            showToast(`Đã đồng bộ toàn bộ ${members.value.length} thành viên (kèm mật khẩu DVP...BDH cho Admin) lên Cloud!`);
         } catch (e) {
             showToast('Lỗi đồng bộ danh sách lên Cloud: ' + e.message, 'error');
         }
