@@ -165,6 +165,16 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 if (activityCheckInsRef) activityCheckInsRef.value = list;
                 isCloudConnected.value = true;
             }, handleSnapshotError);
+
+            const semRefDoc = doc(db, 'app_config', 'semesters');
+            unsubSemesters = onSnapshot(semRefDoc, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && Array.isArray(data.list) && data.list.length > 0 && semestersRef) {
+                        semestersRef.value = data.list;
+                    }
+                }
+            }, (err) => {});
         } catch (e) {
             console.warn("Lỗi kết nối Cloud:", e);
             isCloudConnected.value = false;

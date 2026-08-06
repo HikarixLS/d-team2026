@@ -43,12 +43,11 @@ const defaultSemesters = [
 
 const savedActivities = localStorage.getItem('local_activities');
 const savedCheckIns = localStorage.getItem('local_activity_checkins');
-const savedSemesters = localStorage.getItem('local_semesters');
 const savedActRegs = localStorage.getItem('local_activity_registrations');
 
 const activities = ref(savedActivities ? JSON.parse(savedActivities) : defaultActivities);
 const activityCheckIns = ref(savedCheckIns ? JSON.parse(savedCheckIns) : defaultCheckIns);
-const semesters = ref(savedSemesters ? JSON.parse(savedSemesters) : defaultSemesters);
+const semesters = ref(defaultSemesters);
 const activityRegistrations = ref(savedActRegs ? JSON.parse(savedActRegs) : []);
 
 export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRef) {
@@ -66,7 +65,6 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
     const persistLocal = () => {
         localStorage.setItem('local_activities', JSON.stringify(activities.value));
         localStorage.setItem('local_activity_checkins', JSON.stringify(activityCheckIns.value));
-        localStorage.setItem('local_semesters', JSON.stringify(semesters.value));
         localStorage.setItem('local_activity_registrations', JSON.stringify(activityRegistrations.value));
     };
 
@@ -87,9 +85,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         const name = semName.trim();
         if (semesters.value.includes(name)) return showToast('Học kỳ này đã tồn tại!', 'warning');
         semesters.value.push(name);
-        persistLocal();
         await syncSemestersToCloud();
-        showToast(`Đã thêm học kỳ "${name}" thành công & Đồng bộ Cloud! 🎉`);
+        showToast(`Đã thêm học kỳ "${name}" lên Cloud thành công! 🎉`);
     };
 
     const deleteSemester = async (semName) => {
@@ -98,9 +95,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             return showToast('Không thể xóa! Hệ thống phải giữ lại ít nhất 1 học kỳ.', 'warning');
         }
         semesters.value = semesters.value.filter(s => s !== semName);
-        persistLocal();
         await syncSemestersToCloud();
-        showToast(`Đã xóa học kỳ "${semName}" thành công & Đồng bộ Cloud!`);
+        showToast(`Đã xóa học kỳ "${semName}" trên Cloud thành công!`);
     };
 
     const syncActivityToCloud = async (actObj) => {
