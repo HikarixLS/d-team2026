@@ -107,15 +107,6 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             }
         } catch (e) {}
 
-        let isInitialMembers = true;
-        let isInitialShifts = true;
-        let isInitialRegs = true;
-        let isInitialLeave = true;
-        let isInitialActivities = true;
-        let isInitialCheckIns = true;
-        let isInitialSemesters = true;
-        let isInitialDepartments = true;
-
         try {
             const membersRefCol = collection(db, 'members');
             unsubMembers = onSnapshot(membersRefCol, (snapshot) => {
@@ -123,12 +114,6 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 snapshot.forEach((docSnap) => list.push(docSnap.data()));
                 if (list.length > 0 && membersRef) membersRef.value = list;
                 isCloudConnected.value = true;
-
-                if (isInitialMembers) {
-                    isInitialMembers = false;
-                } else {
-                    showToast('🔔 Cloud vừa cập nhật: Thông tin Thành viên đã được thay đổi!', 'info');
-                }
             }, handleSnapshotError);
 
             const shiftsRefCol = collection(db, 'shifts');
@@ -138,12 +123,6 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 list.sort((a, b) => new Date(b.date) - new Date(a.date));
                 if (shiftsRef) shiftsRef.value = list;
                 isCloudConnected.value = true;
-
-                if (isInitialShifts) {
-                    isInitialShifts = false;
-                } else {
-                    showToast('🔔 Cloud vừa cập nhật: Danh sách Ca trực có thay đổi mới!', 'info');
-                }
             }, handleSnapshotError);
 
             const regsRefCol = collection(db, 'registrations');
@@ -153,12 +132,6 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 list.sort((a, b) => new Date(b.date) - new Date(a.date));
                 if (registrationsRef) registrationsRef.value = list;
                 isCloudConnected.value = true;
-
-                if (isInitialRegs) {
-                    isInitialRegs = false;
-                } else {
-                    showToast('🔔 Cloud vừa cập nhật: Đăng ký ca trực vừa có sự thay đổi!', 'info');
-                }
             }, handleSnapshotError);
 
             const leaveRefCol = collection(db, 'leave_requests');
@@ -168,12 +141,6 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 if (leaveRequestsRef) leaveRequestsRef.value = list;
                 isCloudConnected.value = true;
-
-                if (isInitialLeave) {
-                    isInitialLeave = false;
-                } else {
-                    showToast('🔔 Cloud vừa cập nhật: Đơn xin nghỉ phép vừa được gửi/cập nhật!', 'info');
-                }
             }, handleSnapshotError);
 
             const adminsRefCol = collection(db, 'admin_accounts');
@@ -190,12 +157,6 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 list.sort((a, b) => new Date(b.date) - new Date(a.date));
                 if (activitiesRef) activitiesRef.value = list;
                 isCloudConnected.value = true;
-
-                if (isInitialActivities) {
-                    isInitialActivities = false;
-                } else {
-                    showToast('🔔 Cloud vừa cập nhật: Danh sách Hoạt động vừa có sự thay đổi!', 'info');
-                }
             }, handleSnapshotError);
 
             const chkRefCol = collection(db, 'activity_checkins');
@@ -205,12 +166,6 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 list.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 if (activityCheckInsRef) activityCheckInsRef.value = list;
                 isCloudConnected.value = true;
-
-                if (isInitialCheckIns) {
-                    isInitialCheckIns = false;
-                } else {
-                    showToast('🔔 Cloud vừa cập nhật: Có lượt Điểm danh hoạt động mới vừa ghi nhận!', 'info');
-                }
             }, handleSnapshotError);
 
             const semRefDoc = doc(db, 'app_config', 'semesters');
@@ -225,12 +180,6 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                         setDoc(semRefDoc, { list: semestersRef.value }).catch(() => {});
                     }
                 }
-
-                if (isInitialSemesters) {
-                    isInitialSemesters = false;
-                } else {
-                    showToast('🔔 Cloud vừa cập nhật: Danh sách Học kỳ vừa được thay đổi!', 'info');
-                }
             }, (err) => {});
 
             const deptRefDoc = doc(db, 'app_config', 'departments');
@@ -244,12 +193,6 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     if (departmentsRef && departmentsRef.value && departmentsRef.value.length > 0) {
                         setDoc(deptRefDoc, { list: departmentsRef.value }).catch(() => {});
                     }
-                }
-
-                if (isInitialDepartments) {
-                    isInitialDepartments = false;
-                } else {
-                    showToast('🔔 Cloud vừa cập nhật: Danh sách Ban/Phòng ban vừa được thay đổi!', 'info');
                 }
             }, (err) => {});
         } catch (e) {
