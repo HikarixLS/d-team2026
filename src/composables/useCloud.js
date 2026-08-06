@@ -23,8 +23,9 @@ let unsubAdmins = null;
 let unsubActivities = null;
 let unsubCheckIns = null;
 let unsubSemesters = null;
+let unsubDepartments = null;
 
-export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef, semestersRef) {
+export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef, semestersRef, departmentsRef) {
     const { showToast } = useToast();
 
     const cloudStatusText = computed(() => isCloudConnected.value ? '🟢 Cloud' : (hasFirebaseConfig.value ? '🟡 Đang kết nối...' : '🔴 Local Mode'));
@@ -79,6 +80,8 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         if (unsubAdmins) unsubAdmins();
         if (unsubActivities) unsubActivities();
         if (unsubCheckIns) unsubCheckIns();
+        if (unsubSemesters) unsubSemesters();
+        if (unsubDepartments) unsubDepartments();
 
         if (!db) return;
 
@@ -172,6 +175,16 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     const data = snapshot.data();
                     if (data && Array.isArray(data.list) && data.list.length > 0 && semestersRef) {
                         semestersRef.value = data.list;
+                    }
+                }
+            }, (err) => {});
+
+            const deptRefDoc = doc(db, 'app_config', 'departments');
+            unsubDepartments = onSnapshot(deptRefDoc, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && Array.isArray(data.list) && data.list.length > 0 && departmentsRef) {
+                        departmentsRef.value = data.list;
                     }
                 }
             }, (err) => {});

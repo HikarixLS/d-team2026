@@ -15,7 +15,7 @@ const localMembersSaved = localStorage.getItem('local_members');
 const localDeptsSaved = localStorage.getItem('local_departments');
 
 const members = ref(localMembersSaved ? JSON.parse(localMembersSaved) : initialMembers);
-const departments = ref(localDeptsSaved ? JSON.parse(localDeptsSaved) : defaultDepartments);
+const departments = ref(defaultDepartments);
 
 const memberFilterSearch = ref('');
 const memberFilterDept = ref('all');
@@ -31,13 +31,25 @@ const deleteModal = ref({ show: false, title: '', message: '', action: null });
 export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, registrationsRef, selectedMonthRef) {
     const { showToast } = useToast();
 
-    const addDepartment = (deptName) => {
+    const syncDepartmentsToCloud = async () => {
+        if (window.FirebaseSDK && window.firebaseDb) {
+            try {
+                const { doc, setDoc } = window.FirebaseSDK;
+                const docRef = doc(window.firebaseDb, 'app_config', 'departments');
+                await setDoc(docRef, { list: departments.value });
+            } catch (err) {
+                console.warn('Không thể đồng bộ Ban lên Cloud:', err);
+            }
+        }
+    };
+
+    const addDepartment = async (deptName) => {
         if (!deptName || !deptName.trim()) return showToast('Vui lòng nhập tên Ban mới!', 'error');
         const name = deptName.trim();
         if (departments.value.includes(name)) return showToast('Ban này đã tồn tại!', 'warning');
         departments.value.push(name);
-        localStorage.setItem('local_departments', JSON.stringify(departments.value));
-        showToast(`Đã thêm Ban "${name}" thành công! 🎉`);
+        await syncDepartmentsToCloud();
+        showToast(`Đã thêm Ban "${name}" lên Cloud thành công! 🎉`);
     };
 
     const getAdminPassword = (mId) => {
