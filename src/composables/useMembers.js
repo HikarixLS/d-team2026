@@ -40,6 +40,13 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
         showToast(`Đã thêm Ban "${name}" thành công! 🎉`);
     };
 
+    const getAdminPassword = (mId) => {
+        if (!mId) return 'DVP1234BDH';
+        const cleanId = mId.toString().trim();
+        const last4 = cleanId.length >= 4 ? cleanId.slice(-4) : cleanId.padStart(4, '0');
+        return `DVP${last4}BDH`;
+    };
+
     const toPlainObject = (obj) => JSON.parse(JSON.stringify(obj));
 
     const getRole = () => {
