@@ -13,8 +13,24 @@ const localShiftsSaved = localStorage.getItem('local_shifts');
 const localRegsSaved = localStorage.getItem('local_registrations');
 const localLeavesSaved = localStorage.getItem('local_leave_requests');
 
-const shifts = ref(localShiftsSaved ? JSON.parse(localShiftsSaved) : initialShifts);
-const registrations = ref(localRegsSaved ? JSON.parse(localRegsSaved) : initialRegs);
+let initialShiftsList = [];
+if (localShiftsSaved) {
+    try {
+        const parsed = JSON.parse(localShiftsSaved);
+        initialShiftsList = parsed.filter(s => s.id !== 's_1' && s.id !== 's_2');
+    } catch (e) {}
+}
+
+let initialRegsList = [];
+if (localRegsSaved) {
+    try {
+        const parsed = JSON.parse(localRegsSaved);
+        initialRegsList = parsed.filter(r => r.id !== 'r_1');
+    } catch (e) {}
+}
+
+const shifts = ref(initialShiftsList);
+const registrations = ref(initialRegsList);
 const leaveRequests = ref(localLeavesSaved ? JSON.parse(localLeavesSaved) : []);
 
 export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, deleteModalRef) {

@@ -45,8 +45,24 @@ const savedActivities = localStorage.getItem('local_activities');
 const savedCheckIns = localStorage.getItem('local_activity_checkins');
 const savedActRegs = localStorage.getItem('local_activity_registrations');
 
-const activities = ref(savedActivities ? JSON.parse(savedActivities) : defaultActivities);
-const activityCheckIns = ref(savedCheckIns ? JSON.parse(savedCheckIns) : defaultCheckIns);
+let initialActList = [];
+if (savedActivities) {
+    try {
+        const parsed = JSON.parse(savedActivities);
+        initialActList = parsed.filter(a => a.id !== 'act_1' && a.id !== 'act_2');
+    } catch (e) {}
+}
+
+let initialChkList = [];
+if (savedCheckIns) {
+    try {
+        const parsed = JSON.parse(savedCheckIns);
+        initialChkList = parsed.filter(c => c.id !== 'chk_1');
+    } catch (e) {}
+}
+
+const activities = ref(initialActList);
+const activityCheckIns = ref(initialChkList);
 const semesters = ref(defaultSemesters);
 const activityRegistrations = ref(savedActRegs ? JSON.parse(savedActRegs) : []);
 
