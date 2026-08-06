@@ -134,11 +134,16 @@
               </div>
             </div>
 
-            <button v-if="currentUserRole === 'admin' || r.memberId === loggedInMemberId"
-                    @click.stop.prevent="$emit('delete-registration', r)"
-                    class="p-2 text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Hủy lịch đăng ký">
-              <i class="fa-solid fa-trash-can text-sm"></i>
-            </button>
+            <div class="flex items-center gap-1.5">
+              <button v-if="currentUserRole === 'admin'"
+                      @click.stop.prevent="$emit('delete-registration', r)"
+                      class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer" title="Quản trị viên xóa ca này">
+                <i class="fa-solid fa-trash-can text-sm"></i>
+              </button>
+              <span v-else-if="r.memberId === loggedInMemberId" class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200" title="Muốn hủy ca đã đăng ký? Vui lòng gửi Đơn xin nghỉ phép để Admin duyệt">
+                🔒 Nộp Đơn Nghỉ Để Hủy
+              </span>
+            </div>
           </div>
 
           <div v-if="filteredRegistrations.length === 0" class="p-8 text-center text-slate-400 text-xs">

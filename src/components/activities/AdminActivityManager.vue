@@ -88,17 +88,27 @@
                    class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
           </div>
 
-          <!-- 3. End Date (Thời gian kết thúc) -->
-          <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Thời gian kết thúc hoạt động <span class="text-rose-500">*</span>
-            </label>
-            <input type="date" v-model="form.endDate" required
-                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-extrabold text-indigo-700 dark:text-indigo-400">
-            <p v-if="form.endDate" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-              💡 Hạn gửi hồ sơ (+3 ngày): {{ formatDate(computedDeadline) }}
-            </p>
+          <!-- 3. Start Date & End Date Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Ngày bắt đầu <span class="text-rose-500">*</span>
+              </label>
+              <input type="date" v-model="form.date" required
+                     class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold">
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Thời gian kết thúc <span class="text-rose-500">*</span>
+              </label>
+              <input type="date" v-model="form.endDate" :min="form.date" required
+                     class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-extrabold text-indigo-700 dark:text-indigo-400">
+            </div>
           </div>
+          <p v-if="form.endDate" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+            💡 Hạn gửi hồ sơ (+3 ngày): {{ formatDate(computedDeadline) }}
+          </p>
 
           <!-- 4. Submit Date (Ngày gửi - optional) -->
           <div>
@@ -227,7 +237,12 @@
             </div>
 
             <!-- Timeline & Submit Date Info -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-indigo-50/50 dark:bg-indigo-950/30 p-2.5 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 bg-indigo-50/50 dark:bg-indigo-950/30 p-2.5 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 text-xs">
+              <div>
+                <span class="block text-[10px] font-bold uppercase text-slate-500">Ngày bắt đầu:</span>
+                <span class="font-extrabold text-slate-800 dark:text-slate-200">🚩 {{ formatDate(getDerived(act).startDate) }}</span>
+              </div>
+
               <div>
                 <span class="block text-[10px] font-bold uppercase text-slate-500">Thời gian kết thúc:</span>
                 <span class="font-extrabold text-indigo-900 dark:text-indigo-200">🗓️ {{ formatDate(getDerived(act).endDate) }}</span>

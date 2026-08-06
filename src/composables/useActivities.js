@@ -176,7 +176,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
     const computeActivityDerivedFields = (act) => {
         if (!act) return {};
         const codeId = act.codeId || act.code || 1;
-        const endDate = act.endDate || act.date || getTodayStr();
+        const startDate = act.date || act.startDate || getTodayStr();
+        const endDate = act.endDate || startDate || getTodayStr();
         const deadlineDate = act.deadlineDate || addDaysToStr(endDate, 3);
         const location = act.location || 'Trường ĐH';
 
@@ -212,6 +213,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
 
         return {
             codeId,
+            startDate,
             endDate,
             deadlineDate,
             location,
@@ -329,13 +331,9 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
 
         const rowsData = [];
         const headers = [
-            "STT",
-            "MSSV",
             "Họ và Tên",
             "Ban Hoạt Động",
             "Tên Hoạt Động",
-            "Nội dung",
-            "Content",
             "Địa Điểm Tổ Chức",
             "Thời Gian Kết Thúc",
             "Hạn Gửi Hồ Sơ",
@@ -346,16 +344,11 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         ];
         rowsData.push(headers);
 
-        let stt = 1;
         memberMap.forEach(item => {
             rowsData.push([
-                stt++,
-                item.mssv,
                 item.name,
                 item.department,
                 act.name,
-                derived.contentVN,
-                derived.contentEN,
                 derived.location,
                 formatDate(derived.endDate),
                 formatDate(derived.deadlineDate),
@@ -368,13 +361,9 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
 
         if (memberMap.size === 0) {
             rowsData.push([
-                1,
-                "—",
                 "Chưa có sinh viên tham gia",
                 "—",
                 act.name,
-                derived.contentVN,
-                derived.contentEN,
                 derived.location,
                 formatDate(derived.endDate),
                 formatDate(derived.deadlineDate),
@@ -386,18 +375,6 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         }
 
         const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
-
-        // Format column MSSV (Col B, index 1) as Text
-        const range = window.XLSX.utils.decode_range(ws['!ref']);
-        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-            const cellAddress = window.XLSX.utils.encode_cell({ r: R, c: 1 });
-            if (ws[cellAddress]) {
-                ws[cellAddress].t = 's';
-                ws[cellAddress].z = '@';
-                ws[cellAddress].v = String(ws[cellAddress].v);
-            }
-        }
-
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "DSSV");
         window.XLSX.writeFile(wb, fileName);

@@ -354,12 +354,13 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         if (currentUserRoleRef.value !== 'admin') return showToast('Chỉ Admin mới có quyền duyệt đơn!', 'error');
         l.status = newStatus;
 
-        if (newStatus === 'Đã duyệt' && l.regId) {
-            registrations.value = registrations.value.filter(r => r.id !== l.regId);
+        const targetRegId = l.regId || l.selectedRegId;
+        if ((newStatus === 'Đã duyệt' || newStatus === 'Đồng ý') && targetRegId) {
+            registrations.value = registrations.value.filter(r => r.id !== targetRegId);
             if (window.firebaseDb && window.FirebaseSDK) {
                 try {
                     const { collection, doc, deleteDoc: delDoc } = window.FirebaseSDK;
-                    await delDoc(doc(collection(window.firebaseDb, 'registrations'), l.regId));
+                    await delDoc(doc(collection(window.firebaseDb, 'registrations'), targetRegId));
                 } catch (e) { }
             }
         }
@@ -413,8 +414,10 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     });
 
     const deleteRegistration = async (regId) => {
+        if (currentUserRoleRef && (currentUserRoleRef.value === 'member' || currentUserRoleRef === 'member')) {
+            return showToast('Thành viên không được xóa ca trực đã đăng ký! Quản trị viên sẽ xóa sau khi duyệt đơn xin nghỉ.', 'error');
+        }
         registrations.value = registrations.value.filter(r => r.id !== regId);
-        localStorage.setItem('local_registrations', JSON.stringify(registrations.value));
 
         if (window.firebaseDb && window.FirebaseSDK) {
             try {
@@ -424,11 +427,14 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
                 console.warn('Lỗi xóa đăng ký ca trên Cloud:', e);
             }
         }
-        showToast('Đã hủy lịch đăng ký ca thành công!');
+        showToast('Đã xóa lịch đăng ký ca thành công!');
     };
 
     const confirmDeleteRegistration = (regObj) => {
         if (!regObj) return;
+        if (currentUserRoleRef && (currentUserRoleRef.value === 'member' || currentUserRoleRef === 'member')) {
+            return showToast('Thành viên không được tự xóa ca trực đã đăng ký! Hãy gửi Đơn xin nghỉ phép để Quản trị viên duyệt.', 'error');
+        }
         const regName = getMemberName(regObj.memberId);
         const shiftInfo = `${regObj.shiftType} ngày ${formatDate(regObj.date)}`;
 
