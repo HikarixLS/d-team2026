@@ -305,7 +305,7 @@ const {
   computeActivityDerivedFields, exportActivityExcel, adminActivitySummaryStats
 } = activitiesModule;
 
-const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts, activities, activityCheckIns);
+const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts, activities, activityCheckIns, semesters);
 const {
   isCloudConnected, hasFirebaseConfig, showConfigModal, configInput, cloudStatusText,
   openConfigModal, resetConfigToDefault, saveFirebaseConfig, initCloudRealtime

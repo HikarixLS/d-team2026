@@ -22,8 +22,9 @@ let unsubLeaveRequests = null;
 let unsubAdmins = null;
 let unsubActivities = null;
 let unsubCheckIns = null;
+let unsubSemesters = null;
 
-export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef) {
+export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef, semestersRef) {
     const { showToast } = useToast();
 
     const cloudStatusText = computed(() => isCloudConnected.value ? '🟢 Cloud' : (hasFirebaseConfig.value ? '🟡 Đang kết nối...' : '🔴 Local Mode'));
@@ -48,17 +49,27 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             const cfg = JSON.parse(text);
             if (!cfg.apiKey || !cfg.projectId) throw new Error("Cấu hình thiếu apiKey hoặc projectId");
             localStorage.setItem('firebase_config', JSON.stringify(cfg));
-            showToast("Đã lưu cấu hình Firebase Cloud!");
+            hasFirebaseConfig.value = true;
+            showToast('Đã lưu cấu hình Firebase Cloud thành công! 🚀');
             showConfigModal.value = false;
             await initCloudRealtime();
         } catch (err) {
-            showToast("Mã cấu hình không hợp lệ! " + err.message, "error");
+            showToast('Lỗi cú pháp JSON cấu hình: ' + err.message, 'error');
         }
     };
 
     const initCloudRealtime = async () => {
+        const saved = localStorage.getItem('firebase_config');
+        const config = saved ? JSON.parse(saved) : DEFAULT_FIREBASE_CONFIG;
+        if (!config || !config.apiKey) {
+            hasFirebaseConfig.value = false;
+            isCloudConnected.value = false;
+            return;
+        }
+
+        const app = window.initFirebaseApp ? window.initFirebaseApp(config) : null;
         if (!window.FirebaseSDK) return;
-        const { collection, onSnapshot, signInAnonymously } = window.FirebaseSDK;
+        const { collection, onSnapshot, signInAnonymously, doc } = window.FirebaseSDK;
         const db = window.firebaseDb;
 
         if (unsubMembers) unsubMembers();

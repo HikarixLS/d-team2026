@@ -70,23 +70,37 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         localStorage.setItem('local_activity_registrations', JSON.stringify(activityRegistrations.value));
     };
 
-    const addSemester = (semName) => {
+    const syncSemestersToCloud = async () => {
+        if (window.FirebaseSDK && window.firebaseDb) {
+            try {
+                const { doc, setDoc } = window.FirebaseSDK;
+                const docRef = doc(window.firebaseDb, 'app_config', 'semesters');
+                await setDoc(docRef, { list: semesters.value });
+            } catch (err) {
+                console.warn('Không thể đồng bộ Học kỳ lên Cloud:', err);
+            }
+        }
+    };
+
+    const addSemester = async (semName) => {
         if (!semName || !semName.trim()) return showToast('Vui lòng nhập tên học kỳ!', 'error');
         const name = semName.trim();
         if (semesters.value.includes(name)) return showToast('Học kỳ này đã tồn tại!', 'warning');
         semesters.value.push(name);
         persistLocal();
-        showToast(`Đã thêm học kỳ "${name}" thành công! 🎉`);
+        await syncSemestersToCloud();
+        showToast(`Đã thêm học kỳ "${name}" thành công & Đồng bộ Cloud! 🎉`);
     };
 
-    const deleteSemester = (semName) => {
+    const deleteSemester = async (semName) => {
         if (!semName) return;
         if (semesters.value.length <= 1) {
             return showToast('Không thể xóa! Hệ thống phải giữ lại ít nhất 1 học kỳ.', 'warning');
         }
         semesters.value = semesters.value.filter(s => s !== semName);
         persistLocal();
-        showToast(`Đã xóa học kỳ "${semName}" thành công!`);
+        await syncSemestersToCloud();
+        showToast(`Đã xóa học kỳ "${semName}" thành công & Đồng bộ Cloud!`);
     };
 
     const syncActivityToCloud = async (actObj) => {
