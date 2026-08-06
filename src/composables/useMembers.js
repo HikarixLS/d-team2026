@@ -156,11 +156,11 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
                     try {
                         await deleteDoc(adminRefDoc);
                     } catch (e) { }
-                    showToast(`Đã lưu thông tin thành viên & Đồng bộ Cloud! 🎉`);
+                    showToast(`Đã chuyển thành User thường & Đồng bộ Cloud! 🎉`);
                 }
             } catch (err) {
                 console.error("Lỗi đồng bộ Cloud:", err);
-                showToast('Đã lưu thông tin thành viên!');
+                showToast(`Lỗi đồng bộ: ${err.message || 'Không xác định'}`, 'error');
             }
         } else {
             showToast('Đã lưu thông tin thành viên!');
