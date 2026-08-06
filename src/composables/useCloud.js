@@ -120,12 +120,12 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
-            const adminsRefCol = collection(db, 'admins');
+            const adminsRefCol = collection(db, 'admin_accounts');
             unsubAdmins = onSnapshot(adminsRefCol, (snapshot) => {
                 const list = [];
                 snapshot.forEach((docSnap) => list.push(docSnap.data()));
                 if (list.length > 0 && adminAccounts) adminAccounts.value = list;
-            }, (err) => { /* ignore if admins collection absent */ });
+            }, (err) => { /* ignore if admin_accounts collection absent */ });
 
             const actRefCol = collection(db, 'activities');
             unsubActivities = onSnapshot(actRefCol, (snapshot) => {

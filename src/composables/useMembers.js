@@ -140,8 +140,8 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
                 const refDoc = doc(collection(window.firebaseDb, 'members'), mId);
                 await setDoc(refDoc, mData, { merge: true });
 
-                // Sync with admins collection on Cloud
-                const adminRefDoc = doc(collection(window.firebaseDb, 'admins'), mId);
+                // Sync with admin_accounts collection on Cloud
+                const adminRefDoc = doc(collection(window.firebaseDb, 'admin_accounts'), mId);
                 if (mData.role === 'admin') {
                     await setDoc(adminRefDoc, { id: mId, name: mData.name, password: '123' }, { merge: true });
                 } else {
@@ -150,7 +150,7 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
                     } catch (e) { }
                 }
 
-                showToast(`Đã lưu thành viên [${mData.role === 'admin' ? '👑 Admin' : '👤 User'}] & Đồng bộ Cloud! 🎉`);
+                showToast(`Đã lưu thành viên [${mData.role === 'admin' ? '👑 Admin' : '👤 User'}] & Đồng bộ Cloud (admin_accounts)! 🎉`);
             } catch (err) {
                 console.error("Lỗi đồng bộ Cloud:", err);
                 showToast('Đã lưu thông tin thành viên!');
@@ -174,7 +174,7 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
                         const { collection, doc, deleteDoc: delDoc } = window.FirebaseSDK;
                         await delDoc(doc(collection(window.firebaseDb, 'members'), m.id));
                         try {
-                            await delDoc(doc(collection(window.firebaseDb, 'admins'), m.id));
+                            await delDoc(doc(collection(window.firebaseDb, 'admin_accounts'), m.id));
                         } catch (e) { }
                     } catch (e) { console.error("Lỗi xóa Cloud:", e); }
                 }
@@ -230,14 +230,14 @@ export function useMembers(currentUserRoleRef, loggedInMemberIdRef, shiftsRef, r
             const { collection, doc, setDoc, deleteDoc } = window.FirebaseSDK;
             for (const m of members.value) {
                 await setDoc(doc(collection(window.firebaseDb, 'members'), m.id), toPlainObject(m), { merge: true });
-                const adminRefDoc = doc(collection(window.firebaseDb, 'admins'), m.id);
+                const adminRefDoc = doc(collection(window.firebaseDb, 'admin_accounts'), m.id);
                 if (m.role === 'admin') {
                     await setDoc(adminRefDoc, { id: m.id, name: m.name, password: '123' }, { merge: true });
                 } else {
                     try { await deleteDoc(adminRefDoc); } catch (e) {}
                 }
             }
-            showToast(`Đã đồng bộ toàn bộ ${members.value.length} thành viên (kèm vai trò Admin) lên Cloud!`);
+            showToast(`Đã đồng bộ toàn bộ ${members.value.length} thành viên (kèm admin_accounts) lên Cloud!`);
         } catch (e) {
             showToast('Lỗi đồng bộ danh sách lên Cloud: ' + e.message, 'error');
         }
