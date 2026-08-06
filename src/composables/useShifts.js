@@ -116,12 +116,32 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     };
 
     const saveShift = async () => {
-        if (!shiftForm.value.memberId) return showToast('Vui lòng chọn Thành Viên Trực!', 'error');
-        if (!shiftForm.value.date) return showToast('Vui lòng chọn Ngày Trực!', 'error');
-        if (shiftForm.value.date > todayDate.value) {
-            return showToast('⚠️ Không thể điểm danh / ghi nhận ca trực cho ngày tương lai! Chỉ được ghi nhận ca trực từ hôm nay trở về trước.', 'error');
+        const { memberId, date, shiftType, pageNo, sttNo, status, notes } = shiftForm.value;
+        if (!memberId) return showToast('Vui lòng chọn Thành Viên Trực!', 'error');
+        if (!date) return showToast('Vui lòng chọn Ngày Trực!', 'error');
+
+        // Rule 1: Must be TODAY DATE ONLY (cannot check-in early for tomorrow or late for past dates)
+        if (date !== todayDate.value) {
+            if (date < todayDate.value) {
+                return showToast(`⚠️ Đã quá hạn điểm danh! Không được điểm danh trễ cho ngày đã qua (${formatDate(date)}).`, 'error');
+            } else {
+                return showToast(`⚠️ Chưa đến ngày trực! Không được điểm danh trước cho ngày tương lai (${formatDate(date)}).`, 'error');
+            }
         }
-        if (!shiftForm.value.pageNo || !shiftForm.value.sttNo) return showToast('Vui lòng nhập Trang số và STT sổ gốc!', 'error');
+
+        // Rule 2: Must be a shift that was REGISTERED IN ADVANCE by this member!
+        const isRegistered = registrations.value.some(r =>
+            r.memberId && r.memberId.toString().toLowerCase() === memberId.toString().toLowerCase() &&
+            r.date === date &&
+            r.shiftType === shiftType
+        );
+
+        if (!isRegistered) {
+            const mName = getMemberName(memberId);
+            return showToast(`⚠️ Thành viên ${mName} chưa đăng ký ${shiftType} ngày ${formatDate(date)}! Chỉ được điểm danh cho các ca đã đăng ký trước.`, 'error');
+        }
+
+        if (!pageNo || !sttNo) return showToast('Vui lòng nhập Trang số và STT sổ gốc!', 'error');
 
         const newId = 's_' + Date.now();
         const shiftData = toPlainObject({

@@ -32,10 +32,10 @@
             <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">
               Ngày Trực (Điểm Danh) <span class="text-red-500">*</span>
             </label>
-            <input type="date" v-model="shiftForm.date" :max="todayDate" required
-                   class="w-full border border-slate-300 rounded-lg p-2.5 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px]">
-            <p class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 mt-1.5 font-bold flex items-center gap-1.5">
-              <i class="fa-solid fa-shield-halved text-amber-600 shrink-0"></i> Điểm danh sau khi trực xong: Chỉ được ghi nhận trong ngày (hoặc ca quá khứ). Không cho phép điểm danh trước cho ngày mai.
+            <input type="date" v-model="shiftForm.date" :min="todayDate" :max="todayDate" required
+                   class="w-full border border-slate-300 rounded-lg p-2.5 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px] font-bold text-slate-800 bg-amber-50/50">
+            <p class="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-300 mt-1.5 font-bold flex items-center gap-1.5 leading-snug">
+              <i class="fa-solid fa-lock text-amber-600 shrink-0"></i> Quy định điểm danh: Chỉ được điểm danh trong ngày hôm nay ({{ formatDate(todayDate) }}), chỉ điểm danh cho ca ĐÃ ĐĂNG KÝ TRƯỚC. Không cho phép điểm danh trước hoặc điểm danh trễ.
             </p>
           </div>
 

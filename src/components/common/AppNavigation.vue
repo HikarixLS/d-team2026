@@ -11,14 +11,14 @@
   </nav>
 
   <!-- Sticky Bottom Navigation for Mobile -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-2xl px-2 py-1.5 no-print">
-    <div class="grid grid-cols-6 gap-1 text-center">
+  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-2xl px-1.5 py-1 no-print overflow-x-auto">
+    <div class="flex items-center justify-between min-w-max gap-1 px-1">
       <button v-for="tab in tabs" :key="tab.id" @click="$emit('select-tab', tab.id)"
-              class="flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition cursor-pointer relative"
-              :class="currentTab === tab.id ? 'bg-indigo-600 text-white font-extrabold shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'">
-        <i :class="[tab.icon, 'text-sm mb-0.5']"></i>
-        <span class="text-[10px] truncate max-w-full">{{ tab.shortLabel }}</span>
-        <span v-if="tab.badge" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">{{ tab.badge }}</span>
+              class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition cursor-pointer relative shrink-0"
+              :class="currentTab === tab.id ? 'bg-indigo-600 text-white font-extrabold shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'">
+        <i :class="[tab.icon, 'text-xs mb-0.5']"></i>
+        <span class="text-[10px] whitespace-nowrap font-bold">{{ tab.shortLabel }}</span>
+        <span v-if="tab.badge" class="absolute -top-1 -right-0.5 px-1 min-w-[16px] h-4 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">{{ tab.badge }}</span>
       </button>
     </div>
   </div>
