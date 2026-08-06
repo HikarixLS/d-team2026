@@ -3,7 +3,10 @@
     <div class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 sm:p-8 max-w-md w-full text-white shadow-2xl space-y-6">
       <div class="text-center space-y-2">
         <img src="/logo.jpg" alt="Logo" class="w-16 h-16 rounded-2xl mx-auto object-cover shadow-lg border border-indigo-400/40">
-        <h1 class="text-base sm:text-lg font-black tracking-tight text-white uppercase leading-snug">HỆ THỐNG QUẢN LÝ ĐIỆN TỬ ĐỘI VĂN PHÒNG ĐOÀN - HỘI TDTU</h1>
+        <h1 class="text-base sm:text-lg font-black tracking-tight text-white uppercase leading-snug">
+          HỆ THỐNG QUẢN LÝ ĐIỆN TỬ<br>
+          ĐỘI VĂN PHÒNG ĐOÀN - HỘI TDTU
+        </h1>
         <p class="text-xs text-indigo-200">Quản lý Ca trực, Hoạt động & Đồng bộ Cloud</p>
         <div class="mt-2 inline-flex flex-wrap items-center justify-center gap-1.5 px-3 py-1 bg-amber-500/20 border border-amber-400/40 rounded-full text-[11px] font-semibold text-amber-300">
           <i class="fa-solid fa-shield-halved"></i>

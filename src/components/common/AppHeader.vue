@@ -5,7 +5,10 @@
       <div class="flex items-center gap-2.5 cursor-pointer">
         <img src="/logo.jpg" alt="Logo" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover shadow-md border border-indigo-400/30 shrink-0">
         <div>
-          <h1 class="font-black text-[11px] sm:text-sm tracking-tight leading-tight text-white uppercase">HỆ THỐNG QUẢN LÝ ĐIỆN TỬ ĐỘI VĂN PHÒNG ĐOÀN - HỘI TDTU</h1>
+          <h1 class="font-black text-[11px] sm:text-sm tracking-tight leading-tight text-white uppercase">
+            HỆ THỐNG QUẢN LÝ ĐIỆN TỬ<br>
+            ĐỘI VĂN PHÒNG ĐOÀN - HỘI TDTU
+          </h1>
           <p class="text-[10px] text-indigo-300 font-medium hidden sm:block">Đồng Bộ Realtime • Chuẩn Hóa Phân Ban</p>
         </div>
       </div>
