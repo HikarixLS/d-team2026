@@ -173,7 +173,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             unsubSemesters = onSnapshot(semRefDoc, (snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.data();
-                    if (data && Array.isArray(data.list) && data.list.length > 0 && semestersRef) {
+                    if (data && Array.isArray(data.list) && semestersRef) {
                         semestersRef.value = data.list;
                     }
                 }
@@ -183,7 +183,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             unsubDepartments = onSnapshot(deptRefDoc, (snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.data();
-                    if (data && Array.isArray(data.list) && data.list.length > 0 && departmentsRef) {
+                    if (data && Array.isArray(data.list) && departmentsRef) {
                         departmentsRef.value = data.list;
                     }
                 }

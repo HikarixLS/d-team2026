@@ -91,9 +91,6 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
 
     const deleteSemester = async (semName) => {
         if (!semName) return;
-        if (semesters.value.length <= 1) {
-            return showToast('Không thể xóa! Hệ thống phải giữ lại ít nhất 1 học kỳ.', 'warning');
-        }
         semesters.value = semesters.value.filter(s => s !== semName);
         await syncSemestersToCloud();
         showToast(`Đã xóa học kỳ "${semName}" trên Cloud thành công!`);
