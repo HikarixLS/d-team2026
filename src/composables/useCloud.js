@@ -69,8 +69,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         }
 
         const app = window.initFirebaseApp ? window.initFirebaseApp(config) : null;
-        if (!window.FirebaseSDK) return;
-        const { collection, onSnapshot, signInAnonymously, doc } = window.FirebaseSDK;
+        const { collection, onSnapshot, signInAnonymously, doc, setDoc } = window.FirebaseSDK;
         const db = window.firebaseDb;
 
         if (unsubMembers) unsubMembers();
@@ -176,6 +175,10 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     if (data && Array.isArray(data.list) && semestersRef) {
                         semestersRef.value = data.list;
                     }
+                } else {
+                    if (semestersRef && semestersRef.value && semestersRef.value.length > 0) {
+                        setDoc(semRefDoc, { list: semestersRef.value }).catch(() => {});
+                    }
                 }
             }, (err) => {});
 
@@ -185,6 +188,10 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     const data = snapshot.data();
                     if (data && Array.isArray(data.list) && departmentsRef) {
                         departmentsRef.value = data.list;
+                    }
+                } else {
+                    if (departmentsRef && departmentsRef.value && departmentsRef.value.length > 0) {
+                        setDoc(deptRefDoc, { list: departmentsRef.value }).catch(() => {});
                     }
                 }
             }, (err) => {});
