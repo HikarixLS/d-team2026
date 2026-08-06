@@ -41,30 +41,17 @@ const defaultSemesters = [
     'Học kỳ Hè (2026-2027)'
 ];
 
-const savedActivities = localStorage.getItem('local_activities');
-const savedCheckIns = localStorage.getItem('local_activity_checkins');
-const savedActRegs = localStorage.getItem('local_activity_registrations');
+// Clean up legacy local storage cache so ghost entries never persist
+try {
+    localStorage.removeItem('local_activities');
+    localStorage.removeItem('local_activity_checkins');
+    localStorage.removeItem('local_activity_registrations');
+} catch (e) {}
 
-let initialActList = [];
-if (savedActivities) {
-    try {
-        const parsed = JSON.parse(savedActivities);
-        initialActList = parsed.filter(a => a.id !== 'act_1' && a.id !== 'act_2');
-    } catch (e) {}
-}
-
-let initialChkList = [];
-if (savedCheckIns) {
-    try {
-        const parsed = JSON.parse(savedCheckIns);
-        initialChkList = parsed.filter(c => c.id !== 'chk_1');
-    } catch (e) {}
-}
-
-const activities = ref(initialActList);
-const activityCheckIns = ref(initialChkList);
+const activities = ref([]);
+const activityCheckIns = ref([]);
 const semesters = ref(defaultSemesters);
-const activityRegistrations = ref(savedActRegs ? JSON.parse(savedActRegs) : []);
+const activityRegistrations = ref([]);
 
 export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRef) {
     const { showToast } = useToast();
@@ -79,9 +66,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
     };
 
     const persistLocal = () => {
-        localStorage.setItem('local_activities', JSON.stringify(activities.value));
-        localStorage.setItem('local_activity_checkins', JSON.stringify(activityCheckIns.value));
-        localStorage.setItem('local_activity_registrations', JSON.stringify(activityRegistrations.value));
+        // Data is 100% Cloud-managed
     };
 
     const syncSemestersToCloud = async () => {

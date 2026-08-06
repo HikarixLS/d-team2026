@@ -9,29 +9,15 @@ const initialRegs = [
     { id: 'r_1', memberId: 'C2300023', date: '2026-08-10', shiftType: 'Ca 1', notes: 'Trực sáng' }
 ];
 
-const localShiftsSaved = localStorage.getItem('local_shifts');
-const localRegsSaved = localStorage.getItem('local_registrations');
-const localLeavesSaved = localStorage.getItem('local_leave_requests');
+try {
+    localStorage.removeItem('local_shifts');
+    localStorage.removeItem('local_registrations');
+    localStorage.removeItem('local_leave_requests');
+} catch (e) {}
 
-let initialShiftsList = [];
-if (localShiftsSaved) {
-    try {
-        const parsed = JSON.parse(localShiftsSaved);
-        initialShiftsList = parsed.filter(s => s.id !== 's_1' && s.id !== 's_2');
-    } catch (e) {}
-}
-
-let initialRegsList = [];
-if (localRegsSaved) {
-    try {
-        const parsed = JSON.parse(localRegsSaved);
-        initialRegsList = parsed.filter(r => r.id !== 'r_1');
-    } catch (e) {}
-}
-
-const shifts = ref(initialShiftsList);
-const registrations = ref(initialRegsList);
-const leaveRequests = ref(localLeavesSaved ? JSON.parse(localLeavesSaved) : []);
+const shifts = ref([]);
+const registrations = ref([]);
+const leaveRequests = ref([]);
 
 export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, deleteModalRef) {
     const { showToast } = useToast();
