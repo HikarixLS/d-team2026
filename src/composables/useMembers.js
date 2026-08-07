@@ -1,21 +1,12 @@
 import { ref, computed } from 'vue';
 import { useToast } from './useToast.js';
 
-const initialMembers = [
-    { id: 'C2300023', name: 'Lý Gia Huy', department: 'Ban Điều hành', dob: '2003-05-15', role: 'admin', targetShifts: 10 },
-    { id: '42300016', name: 'Đỗ Khánh Duy', department: 'Ban Điều hành', dob: '2003-08-20', role: 'admin', targetShifts: 10 },
-    { id: 'D2400032', name: 'Huỳnh Thị Mộng Ngân', department: 'Ban Điều hành', dob: '2004-02-10', role: 'admin', targetShifts: 10 },
-    { id: '20210001', name: 'Nguyễn Văn An', department: 'Ban Hành chính', dob: '2001-01-01', role: 'member', targetShifts: 10 },
-    { id: '20210002', name: 'Trần Thị Bình', department: 'Ban Nhân sự', dob: '2001-02-02', role: 'member', targetShifts: 10 },
-    { id: '20210003', name: 'Lê Hoàng Cường', department: 'Ban Truyền thông', dob: '2001-03-03', role: 'member', targetShifts: 10 }
-];
-
 const defaultDepartments = ['Ban Điều hành', 'Ban Hành chính', 'Ban Nhân sự', 'Ban Truyền thông'];
 const localMembersSaved = localStorage.getItem('local_members');
 const localDeptsSaved = localStorage.getItem('local_departments');
 
-const members = ref(localMembersSaved ? JSON.parse(localMembersSaved) : initialMembers);
-const departments = ref(defaultDepartments);
+const members = ref(localMembersSaved ? JSON.parse(localMembersSaved) : []);
+const departments = ref(localDeptsSaved ? JSON.parse(localDeptsSaved) : defaultDepartments);
 
 const memberFilterSearch = ref('');
 const memberFilterDept = ref('all');
