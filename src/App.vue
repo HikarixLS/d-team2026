@@ -151,16 +151,18 @@
         <TabDashboard v-show="currentTab === 'dashboard'"
                       :currentTab="currentTab"
                       :currentUserRole="currentUserRole"
-                      :filteredShifts="shifts"
-                      :personalShiftsCount="shifts.filter(s => s.memberId === loggedInMemberId).length"
-                      :registrations="registrations"
-                      :personalRegistrationsCount="registrations.filter(r => r.memberId === loggedInMemberId).length"
-                      :targetPassRate="Math.round((members.filter(m => shifts.filter(s => s.memberId === m.id).length >= 10).length / Math.max(1, members.length)) * 100)"
-                      :personalProgressPercent="Math.min(100, Math.round((shifts.filter(s => s.memberId === loggedInMemberId).length / 10) * 100))"
-                      :membersPassingTargetCount="members.filter(m => shifts.filter(s => s.memberId === m.id).length >= 10).length"
+                      :filteredShifts="searchedShifts"
+                      :personalShiftsCount="searchedShifts.filter(s => String(s.memberId).toUpperCase() === String(loggedInMemberId).toUpperCase()).length"
+                      :registrations="filteredRegistrations"
+                      :personalRegistrationsCount="filteredRegistrations.filter(r => String(r.memberId).toUpperCase() === String(loggedInMemberId).toUpperCase()).length"
+                      :targetPassRate="targetPassRate"
+                      :personalProgressPercent="personalProgressPercent"
+                      :membersPassingTargetCount="membersPassingTargetCount"
+                      :membersInProgressCount="membersInProgressCount"
+                      :membersZeroCount="membersZeroCount"
                       :members="members"
-                      :leaveRequests="leaveRequests"
-                      :personalLeaveRequests="leaveRequests.filter(l => l.memberId === loggedInMemberId)"
+                      :leaveRequests="filteredLeaveRequests"
+                      :personalLeaveRequests="filteredLeaveRequests.filter(l => String(l.memberId).toUpperCase() === String(loggedInMemberId).toUpperCase())"
                       :pieChartTitle="pieChartTitle" />
 
         <!-- Tab 5: Tra cứu Lịch sử ca trực -->
@@ -369,6 +371,60 @@ const handleLoginWithTabReset = () => {
   }
 };
 
+// Target & Stats Computed Properties
+const memberShiftCountMap = computed(() => {
+  const map = {};
+  members.value.forEach(m => {
+    map[String(m.id).toUpperCase()] = 0;
+  });
+  searchedShifts.value.forEach(s => {
+    const id = String(s.memberId || '').toUpperCase();
+    map[id] = (map[id] || 0) + 1;
+  });
+  return map;
+});
+
+const membersPassingTargetCount = computed(() => {
+  if (members.value.length === 0) return 0;
+  return members.value.filter(m => {
+    const count = memberShiftCountMap.value[String(m.id).toUpperCase()] || 0;
+    const target = m.targetShifts || 10;
+    return count >= target;
+  }).length;
+});
+
+const membersInProgressCount = computed(() => {
+  if (members.value.length === 0) return 0;
+  return members.value.filter(m => {
+    const count = memberShiftCountMap.value[String(m.id).toUpperCase()] || 0;
+    const target = m.targetShifts || 10;
+    return count > 0 && count < target;
+  }).length;
+});
+
+const membersZeroCount = computed(() => {
+  if (members.value.length === 0) return 0;
+  return members.value.filter(m => {
+    const count = memberShiftCountMap.value[String(m.id).toUpperCase()] || 0;
+    return count === 0;
+  }).length;
+});
+
+const targetPassRate = computed(() => {
+  if (members.value.length === 0) return 0;
+  const totalCompleted = searchedShifts.value.length;
+  const totalTarget = members.value.reduce((acc, m) => acc + (m.targetShifts || 10), 0);
+  if (totalTarget === 0) return 0;
+  return Math.min(100, Math.round((totalCompleted / totalTarget) * 100));
+});
+
+const personalProgressPercent = computed(() => {
+  const currentId = String(loggedInMemberId.value || '').toUpperCase();
+  const count = memberShiftCountMap.value[currentId] || 0;
+  const target = activeMember.value?.targetShifts || 10;
+  return Math.min(100, Math.round((count / target) * 100));
+});
+
 // Computed UI Helpers
 const userRoleBadgeText = computed(() => {
   const name = getMemberName(loggedInMemberId.value);
@@ -380,7 +436,7 @@ const userRoleBadgeText = computed(() => {
 const leaveListTitle = computed(() => currentUserRole.value === 'admin' ? 'Quản Lý & Duyệt Đơn Xin Nghỉ Phép' : 'Danh Sách Đơn Xin Nghỉ Phép Của Tôi');
 const getLeaveStatusBadgeText = (status) => status === 'Chờ duyệt' ? '⏳ Chờ xét duyệt' : (status === 'Đã duyệt' ? '✅ Đã duyệt' : '✕ Đã từ chối');
 const formatCreatedAt = (dt) => dt ? new Date(dt).toLocaleString('vi-VN') : 'vừa xong';
-const pieChartTitle = computed(() => currentUserRole.value === 'admin' ? 'Biểu Đồ Tròn: Tỷ Lệ Thành Viên Đạt Chỉ Tiêu (10 Ca/Tháng)' : 'Biểu Đồ Tròn: Tiến Độ Ca Trực Cá Nhân (10 Ca/Tháng)');
+const pieChartTitle = computed(() => currentUserRole.value === 'admin' ? 'Biểu Đồ Tròn: Phân Bổ Thành Viên Theo Chỉ Tiêu (10 Ca/Tháng)' : 'Biểu Đồ Tròn: Tiến Độ Ca Trực Cá Nhân (10 Ca/Tháng)');
 const historySubtitle = computed(() => currentUserRole.value === 'admin' ? 'Danh sách toàn bộ ca trực ghi nhận từ sổ gốc' : 'Nhật ký các ca trực cá nhân của tôi');
 
 // Navigation Tabs Config (Roles Separation)

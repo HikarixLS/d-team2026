@@ -314,7 +314,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         const derived = computeActivityDerivedFields(act);
         const fileName = `${derived.codeId}-${(derived.endDate || '').replace(/-/g, '')} DS DIEM DANH ${act.name}.xlsx`;
 
-        const presentList = stats?.presentList || [];
+        const checkIns = activityCheckIns.value.filter(c => c.activityId === act.id);
+        const actRegs = activityRegistrations.value.filter(r => r.activityId === act.id);
 
         const rowsData = [];
         const headers = [
@@ -330,39 +331,76 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         ];
         rowsData.push(headers);
 
-        if (presentList.length > 0) {
-            presentList.forEach((p, idx) => {
-                const mObj = membersList.find(m => String(m.id).toUpperCase() === String(p.memberId).toUpperCase());
-                const memberName = p.memberName || mObj?.name || p.memberId;
+        const seenMembers = new Set();
+        let stt = 1;
+
+        // 1. Add all check-in & leave records
+        checkIns.forEach(p => {
+            const mssvStr = String(p.memberId).trim().toUpperCase();
+            seenMembers.add(mssvStr);
+            const mObj = (membersList || []).find(m => String(m.id).toUpperCase() === mssvStr);
+            const memberName = p.memberName || mObj?.name || p.memberId;
+            const memberDept = mObj?.department || '—';
+
+            let timeStr = p.formattedTime || '';
+            if (!timeStr && p.timestamp) {
+                timeStr = formatCheckInTime(p.timestamp);
+            }
+            if (!timeStr) timeStr = '—';
+
+            let statusStr = 'Đã điểm danh (Có mặt)';
+            if (p.status === 'leave') {
+                statusStr = 'Vắng có lý do (Xin nghỉ)';
+            } else if (p.adminCheckedIn) {
+                statusStr = 'Admin điểm danh hộ';
+            }
+
+            let proofStatus = p.leaveReason || '';
+            if (!proofStatus) {
+                proofStatus = p.proofImage ? (p.proofImage.startsWith('data:image') ? 'Đã đính kèm ảnh thẻ SV' : p.proofImage) : '—';
+            }
+
+            rowsData.push([
+                stt++,
+                mssvStr,
+                memberName,
+                memberDept,
+                act.name || derived.contentVN,
+                formatDate(act.date),
+                timeStr,
+                statusStr,
+                proofStatus
+            ]);
+        });
+
+        // 2. Add registered members who haven't checked in yet
+        actRegs.forEach(r => {
+            const mssvStr = String(r.memberId).trim().toUpperCase();
+            if (!seenMembers.has(mssvStr)) {
+                seenMembers.add(mssvStr);
+                const mObj = (membersList || []).find(m => String(m.id).toUpperCase() === mssvStr);
+                const memberName = r.memberName || mObj?.name || r.memberId;
                 const memberDept = mObj?.department || '—';
-                const mssvStr = String(p.memberId).trim().toUpperCase();
-
-                let timeStr = p.formattedTime || '';
-                if (!timeStr && p.timestamp) {
-                    timeStr = formatCheckInTime(p.timestamp);
-                }
-                if (!timeStr) timeStr = '—';
-
-                const proofStatus = p.proofImage ? (p.proofImage.startsWith('data:image') ? 'Đã đính kèm ảnh thẻ SV' : p.proofImage) : 'Chưa đính kèm ảnh';
-                const statusStr = p.adminCheckedIn ? 'Admin điểm danh hộ' : 'Đã điểm danh';
 
                 rowsData.push([
-                    idx + 1,
+                    stt++,
                     mssvStr,
                     memberName,
                     memberDept,
                     act.name || derived.contentVN,
-                    formatDate(act.date),
-                    timeStr,
-                    statusStr,
-                    proofStatus
+                    formatDate(r.date || act.date),
+                    '—',
+                    'Đã đăng ký ca (Chờ điểm danh)',
+                    r.notes || '—'
                 ]);
-            });
-        } else {
+            }
+        });
+
+        if (rowsData.length === 1) {
             rowsData.push([
                 1,
                 "—",
-                "Chưa có sinh viên điểm danh",
+                "Chưa có sinh viên điểm danh hoặc đăng ký",
                 "—",
                 act.name || derived.contentVN,
                 formatDate(act.date),
@@ -381,7 +419,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             { wch: 35 }, // Hoạt Động
             { wch: 15 }, // Ngày Diễn Ra
             { wch: 22 }, // Thời Gian Điểm Danh
-            { wch: 22 }, // Trạng Thái Điểm Danh
+            { wch: 24 }, // Trạng Thái Điểm Danh
             { wch: 25 }  // Minh Chứng / Ghi Chú
         ];
 

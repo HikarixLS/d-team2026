@@ -82,6 +82,8 @@ const props = defineProps([
   'targetPassRate',
   'personalProgressPercent',
   'membersPassingTargetCount',
+  'membersInProgressCount',
+  'membersZeroCount',
   'members',
   'leaveRequests',
   'personalLeaveRequests',
@@ -101,19 +103,41 @@ const renderCharts = () => {
       }
 
       const isAdmin = props.currentUserRole === 'admin';
-      const passCount = isAdmin ? (props.membersPassingTargetCount || 0) : Math.min(10, props.personalShiftsCount || 0);
-      const totalCount = isAdmin ? Math.max(1, (props.members?.length || 0)) : 10;
-      const pendingCount = Math.max(0, totalCount - passCount);
+      let chartLabels = [];
+      let chartData = [];
+      let chartColors = [];
+
+      if (isAdmin) {
+        const pass = props.membersPassingTargetCount || 0;
+        const inProgress = props.membersInProgressCount || 0;
+        const zero = props.membersZeroCount !== undefined ? props.membersZeroCount : Math.max(0, (props.members?.length || 0) - pass - inProgress);
+
+        chartLabels = [
+          `Đạt chỉ tiêu (≥10 ca): ${pass}`,
+          `Đang trực (1 - 9 ca): ${inProgress}`,
+          `Chưa trực ca nào (0 ca): ${zero}`
+        ];
+        chartData = [pass, inProgress, zero];
+        chartColors = ['#10B981', '#6366F1', '#94A3B8'];
+      } else {
+        const done = Math.min(10, props.personalShiftsCount || 0);
+        const remaining = Math.max(0, 10 - done);
+
+        chartLabels = [
+          `Đã hoàn thành: ${done} ca`,
+          `Còn thiếu: ${remaining} ca`
+        ];
+        chartData = [done, remaining];
+        chartColors = ['#10B981', '#6366F1'];
+      }
 
       targetChartInstance = new Chart(canvas1, {
         type: 'pie',
         data: {
-          labels: isAdmin
-            ? ['Đạt chỉ tiêu (≥10 ca)', 'Chưa đạt chỉ tiêu (<10 ca)']
-            : ['Đã hoàn thành', 'Còn thiếu (Chỉ tiêu 10 ca)'],
+          labels: chartLabels,
           datasets: [{
-            data: [passCount, pendingCount],
-            backgroundColor: ['#10B981', '#6366F1'],
+            data: chartData,
+            backgroundColor: chartColors,
             borderWidth: 2,
             borderColor: '#ffffff'
           }]
@@ -151,10 +175,10 @@ const renderCharts = () => {
         type: 'doughnut',
         data: {
           labels: [
-            'Ca 1 (7h30-9h20)',
-            'Ca 2 (9h20-11h30)',
-            'Ca 3 (13h00-15h20)',
-            'Ca 4 (15h20-17h00)'
+            `Ca 1 (7h30-9h20): ${ca1}`,
+            `Ca 2 (9h20-11h30): ${ca2}`,
+            `Ca 3 (13h00-15h20): ${ca3}`,
+            `Ca 4 (15h20-17h00): ${ca4}`
           ],
           datasets: [{
             data: [ca1, ca2, ca3, ca4],
