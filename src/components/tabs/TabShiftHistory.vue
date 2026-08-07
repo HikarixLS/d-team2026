@@ -204,8 +204,10 @@ const props = defineProps([
   'members',
   'searchedShifts',
   'registrations',
+  'filteredRegistrations',
   'shifts',
   'selectedMonth',
+  'selectedWeek',
   'getMemberName',
   'getMemberDept',
   'formatDate'
@@ -217,11 +219,27 @@ const viewMode = ref('matrix'); // 'matrix' (default) or 'list'
 const dataSource = ref('registrations'); // 'registrations' or 'shifts'
 const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
 
+const isDateInSelectedWeek = (dateStr) => {
+  if (!dateStr) return false;
+  if (!props.selectedWeek || props.selectedWeek === 'all') return true;
+  const parts = dateStr.split('-');
+  if (parts.length < 3) return true;
+  const day = parseInt(parts[2], 10);
+  if (props.selectedWeek === '1') return day >= 1 && day <= 8;
+  if (props.selectedWeek === '2') return day >= 9 && day <= 18;
+  if (props.selectedWeek === '3') return day >= 19 && day <= 25;
+  if (props.selectedWeek === '4') return day >= 26;
+  return true;
+};
+
 const activeDataList = computed(() => {
+  let list = [];
   if (dataSource.value === 'registrations') {
-    return props.registrations && props.registrations.length > 0 ? props.registrations : (props.searchedShifts || []);
+    list = props.filteredRegistrations && props.filteredRegistrations.length > 0 ? props.filteredRegistrations : (props.registrations || []);
+  } else {
+    list = props.searchedShifts && props.searchedShifts.length > 0 ? props.searchedShifts : (props.shifts || []);
   }
-  return props.searchedShifts && props.searchedShifts.length > 0 ? props.searchedShifts : (props.registrations || []);
+  return list.filter(r => isDateInSelectedWeek(r.date));
 });
 
 const formatDayMonth = (dateStr) => {
@@ -231,16 +249,19 @@ const formatDayMonth = (dateStr) => {
   return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
 };
 
-// Unique sorted dates
+// Unique sorted dates filtered by selected week
 const matrixDates = computed(() => {
   const list = activeDataList.value;
   const set = new Set();
   list.forEach(r => {
-    if (r.date) set.add(r.date);
+    if (r.date && isDateInSelectedWeek(r.date)) {
+      set.add(r.date);
+    }
   });
   const dates = Array.from(set).sort();
   if (dates.length > 0) return dates;
-  return ['2026-08-15', '2026-08-17', '2026-08-18', '2026-08-19', '2026-08-20', '2026-08-21', '2026-08-22'];
+  const defaultDates = ['2026-08-15', '2026-08-17', '2026-08-18', '2026-08-19', '2026-08-20', '2026-08-21', '2026-08-22'];
+  return defaultDates.filter(d => isDateInSelectedWeek(d));
 });
 
 // Map of shift -> date -> array of students

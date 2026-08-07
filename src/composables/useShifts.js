@@ -647,6 +647,36 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         return leaveRequests.value.filter(l => l.status === 'Chờ duyệt').length;
     });
 
+    const isDateInSelectedWeek = (dateStr) => {
+        if (!dateStr) return false;
+        if (!selectedWeek.value || selectedWeek.value === 'all') return true;
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return true;
+        const day = parseInt(parts[2], 10);
+        if (selectedWeek.value === '1') return day >= 1 && day <= 8;
+        if (selectedWeek.value === '2') return day >= 9 && day <= 18;
+        if (selectedWeek.value === '3') return day >= 19 && day <= 25;
+        if (selectedWeek.value === '4') return day >= 26;
+        return true;
+    };
+
+    const isDateInSelectedMonth = (dateStr) => {
+        if (!dateStr || !selectedMonth.value) return true;
+        return dateStr.substring(0, 7) === selectedMonth.value;
+    };
+
+    // Filtered Registrations by Month and Week
+    const filteredRegistrations = computed(() => {
+        let list = registrations.value;
+        if (selectedMonth.value) {
+            list = list.filter(r => isDateInSelectedMonth(r.date));
+        }
+        if (selectedWeek.value && selectedWeek.value !== 'all') {
+            list = list.filter(r => isDateInSelectedWeek(r.date));
+        }
+        return list;
+    });
+
     // History & Filters
     const historyFilter = ref({ keyword: '', memberId: '', shiftType: '' });
     const searchedShifts = computed(() => {
@@ -654,15 +684,21 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         if (currentUserRoleRef.value === 'member') {
             list = list.filter(s => s.memberId === loggedInMemberIdRef.value);
         }
+        if (selectedMonth.value) {
+            list = list.filter(s => isDateInSelectedMonth(s.date));
+        }
+        if (selectedWeek.value && selectedWeek.value !== 'all') {
+            list = list.filter(s => isDateInSelectedWeek(s.date));
+        }
         return list.filter(s => {
             if (historyFilter.value.memberId && s.memberId !== historyFilter.value.memberId) return false;
             if (historyFilter.value.shiftType && s.shiftType !== historyFilter.value.shiftType) return false;
             if (historyFilter.value.keyword) {
                 const kw = historyFilter.value.keyword.toLowerCase();
                 const mName = getMemberName(s.memberId).toLowerCase();
-                const mId = s.memberId.toLowerCase();
-                const page = String(s.pageNo);
-                const stt = String(s.sttNo);
+                const mId = String(s.memberId).toLowerCase();
+                const page = String(s.pageNo || '');
+                const stt = String(s.sttNo || '');
                 if (!mName.includes(kw) && !mId.includes(kw) && !page.includes(kw) && !stt.includes(kw)) return false;
             }
             return true;
@@ -722,13 +758,17 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         }
 
         const monthStr = targetMonth || selectedMonth.value || getMonthStr();
-        const regList = customRegs || registrations.value;
+        const baseList = customRegs || registrations.value;
         const currentMembers = membersRef ? (typeof membersRef === 'function' ? membersRef() : (membersRef.value || membersRef)) : [];
 
-        // Filter registrations for selected month if available, else fallback
-        let monthRegs = regList.filter(r => r.date && r.date.substring(0, 7) === monthStr);
-        if (monthRegs.length === 0 && regList.length > 0) {
-            monthRegs = [...regList];
+        // Filter registrations for selected month and week if applicable
+        let monthRegs = baseList.filter(r => r.date && r.date.substring(0, 7) === monthStr);
+        if (selectedWeek.value && selectedWeek.value !== 'all') {
+            const weekRegs = monthRegs.filter(r => isDateInSelectedWeek(r.date));
+            if (weekRegs.length > 0) monthRegs = weekRegs;
+        }
+        if (monthRegs.length === 0 && baseList.length > 0) {
+            monthRegs = [...baseList];
         }
 
         if (monthRegs.length === 0) {
@@ -882,6 +922,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         updateLeaveStatus,
         historyFilter,
         searchedShifts,
+        filteredRegistrations,
         deleteRegistration,
         confirmDeleteRegistration,
         exportShiftScheduleMatrixExcel
