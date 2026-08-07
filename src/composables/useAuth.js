@@ -31,10 +31,12 @@ export function useAuth(membersRef) {
         const cleanId = rawId.toLowerCase();
         const isSuperAdmin = cleanId === 'admin';
 
-        // Find member in Cloud members list (Case-Insensitive & space trimmed)
-        const cloudMember = membersRef?.value?.find(
-            m => m.id && m.id.toString().trim().toUpperCase() === upperId
-        );
+        // Find member in Cloud members list (Case-Insensitive & space trimmed across id, mssv, code, memberId)
+        const cloudMember = membersRef?.value?.find(m => {
+            if (!m) return false;
+            const mId = (m.id || m.mssv || m.code || m.memberId || '').toString().trim().toUpperCase();
+            return mId === upperId;
+        });
 
         // Canonical Member ID (e.g. 42300016 / C2300023)
         const canonicalId = cloudMember ? cloudMember.id : upperId;

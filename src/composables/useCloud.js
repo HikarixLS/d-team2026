@@ -111,7 +111,14 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             const membersRefCol = collection(db, 'members');
             unsubMembers = onSnapshot(membersRefCol, (snapshot) => {
                 const list = [];
-                snapshot.forEach((docSnap) => list.push(docSnap.data()));
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const rawId = data.id || data.mssv || data.code || data.memberId || docSnap.id;
+                    list.push({
+                        ...data,
+                        id: String(rawId).trim()
+                    });
+                });
                 if (list.length > 0 && membersRef) membersRef.value = list;
                 isCloudConnected.value = true;
             }, handleSnapshotError);
