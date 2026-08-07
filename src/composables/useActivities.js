@@ -708,6 +708,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             timestamp: new Date().toISOString(),
             status: 'present',
             leaveReason: '',
+            proofImage: proofImage || '',
             adminCheckedIn: isAdminOperation
         };
 

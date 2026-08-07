@@ -286,81 +286,146 @@
       </div>
     </div>
 
-    <!-- Modal Điểm Danh Yêu Cầu Ảnh Minh Chứng (Thẻ SV) -->
-    <div v-if="showCheckInProofModal && selectedActForCheckIn" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-      <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 max-w-lg w-full shadow-2xl space-y-4">
+    <!-- Modal Chụp Hình / Tải Ảnh Minh Chứng Thẻ SV & Google Drive Sync -->
+    <div v-if="showCheckInProofModal && selectedActForCheckIn" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 max-w-lg w-full shadow-2xl space-y-4 my-auto">
+        <!-- Header -->
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div class="flex items-center gap-2">
-            <div class="w-9 h-9 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-base font-bold shadow-md">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg font-bold shadow-md">
               <i class="fa-solid fa-camera"></i>
             </div>
             <div>
-              <h3 class="font-extrabold text-slate-900 dark:text-white text-base">Minh Chứng Điểm Danh Thẻ SV</h3>
+              <h3 class="font-extrabold text-slate-900 dark:text-white text-base">Chụp Ảnh &amp; Điểm Danh Thẻ SV</h3>
               <p class="text-xs text-slate-500 truncate max-w-xs">{{ selectedActForCheckIn.name }}</p>
             </div>
           </div>
-          <button @click="showCheckInProofModal = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+          <button @click="closeCheckInModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer">
             <i class="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
 
-        <!-- Warning Note Requirement Box -->
-        <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 space-y-1.5 text-xs text-amber-900 dark:text-amber-200">
-          <div class="font-black text-amber-700 dark:text-amber-400 flex items-center gap-1.5 text-sm">
-            <i class="fa-solid fa-triangle-exclamation"></i> Quy Định Bắt Buộc:
+        <!-- Google Drive Cloud Target Info Banner -->
+        <div class="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 rounded-2xl p-3.5 space-y-2 text-xs">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 text-xs uppercase tracking-wide">
+              <i class="fa-brands fa-google-drive text-amber-500 text-sm"></i> Thư Mục Google Drive Lưu Trữ:
+            </div>
+            <a :href="googleDriveFolderUrl" target="_blank"
+               class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-[11px] shadow-xs transition flex items-center gap-1 cursor-pointer">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Drive
+            </a>
           </div>
-          <p class="font-bold leading-relaxed">
-            📌 Chụp thẻ sinh viên tại địa điểm hoạt động.
-          </p>
-          <p class="text-amber-800 dark:text-amber-300/90 text-[11px]">
-            Thành viên cần tải lên hình ảnh chụp thẻ sinh viên tại nơi tổ chức trước khi nút điểm danh được mở.
-          </p>
+
+          <div class="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 space-y-1 font-mono text-[11px]">
+            <div class="text-slate-700 dark:text-slate-300">
+              📁 <span class="font-bold text-slate-900 dark:text-white">Folder Ngày:</span>
+              <span class="text-indigo-600 dark:text-indigo-400 font-bold ml-1">{{ currentProofFolderDate }}</span>
+            </div>
+            <div class="text-slate-700 dark:text-slate-300 break-all">
+              🏷️ <span class="font-bold text-slate-900 dark:text-white">Quy ước tên file:</span>
+              <span class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">{{ currentStandardFileName }}</span>
+            </div>
+          </div>
         </div>
 
-        <!-- File Upload / Camera Trigger Area -->
-        <div>
-          <input type="file" accept="image/*" capture="environment" ref="fileInputRef" @change="handleProofImageUpload" class="hidden" />
+        <!-- Capture / Upload Modes Switcher -->
+        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+          <button type="button" @click="setCaptureMode('camera')"
+                  :class="captureMode === 'camera' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-extrabold' : 'text-slate-600 dark:text-slate-400 font-medium'"
+                  class="py-2 text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-camera"></i> Chụp Camera Trực Tiếp
+          </button>
+          <button type="button" @click="setCaptureMode('upload')"
+                  :class="captureMode === 'upload' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-extrabold' : 'text-slate-600 dark:text-slate-400 font-medium'"
+                  class="py-2 text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-upload"></i> Tải Ảnh Từ Thiết Bị
+          </button>
+        </div>
 
-          <div v-if="!proofImageBase64">
-            <button type="button" @click="$refs.fileInputRef.click()"
-                    class="w-full border-2 border-dashed border-indigo-300 dark:border-indigo-700 hover:border-indigo-500 bg-indigo-50/50 dark:bg-slate-800/60 rounded-2xl p-6 text-center space-y-2 cursor-pointer transition group">
-              <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 mx-auto flex items-center justify-center text-2xl group-hover:scale-110 transition">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-              </div>
-              <div class="font-extrabold text-slate-800 dark:text-white text-xs">Bấm để chụp / Tải hình minh chứng thẻ SV</div>
-              <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Hỗ trợ ảnh chụp camera hoặc định dạng JPG, PNG, WEBP</div>
+        <!-- Mode 1: Live Camera Stream Capture Area -->
+        <div v-if="captureMode === 'camera' && !proofImageBase64" class="space-y-3">
+          <div class="relative rounded-2xl overflow-hidden bg-black aspect-video flex items-center justify-center border border-slate-200 dark:border-slate-800">
+            <video ref="videoElementRef" autoplay playsinline muted class="w-full h-full object-cover"></video>
+            
+            <!-- Camera Flip Button -->
+            <button type="button" @click="flipCamera" title="Đổi camera trước / sau"
+                    class="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 text-white hover:bg-black/80 flex items-center justify-center text-xs backdrop-blur-sm cursor-pointer transition">
+              <i class="fa-solid fa-camera-rotate"></i>
             </button>
+
+            <!-- Guide overlay -->
+            <div class="absolute inset-x-8 inset-y-6 border-2 border-dashed border-white/60 rounded-2xl pointer-events-none flex items-center justify-center">
+              <span class="bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">Đặt thẻ SV vào khung</span>
+            </div>
           </div>
 
-          <div v-else class="relative group rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 p-2 flex flex-col items-center">
-            <img :src="proofImageBase64" class="max-h-52 object-contain rounded-xl shadow-md">
-            <div class="mt-2 flex items-center justify-between w-full px-2">
-              <span class="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
-                <i class="fa-solid fa-circle-check"></i> Đã tải ảnh minh chứng!
-              </span>
-              <button type="button" @click="proofImageBase64 = ''"
-                      class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
-                ✕ Đổi ảnh khác
+          <button type="button" @click="capturePhotoFromCamera"
+                  class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-extrabold rounded-2xl shadow-md transition cursor-pointer flex items-center justify-center gap-2 text-xs">
+            <i class="fa-solid fa-circle-dot text-rose-400 animate-pulse text-sm"></i> 📸 BẤM CHỤP ẢNH THẺ SV NGAY
+          </button>
+        </div>
+
+        <!-- Mode 2: File Upload Area -->
+        <div v-else-if="captureMode === 'upload' && !proofImageBase64">
+          <input type="file" accept="image/*" ref="fileInputRef" @change="handleProofImageUpload" class="hidden" />
+
+          <button type="button" @click="$refs.fileInputRef.click()"
+                  class="w-full border-2 border-dashed border-indigo-300 dark:border-indigo-700 hover:border-indigo-500 bg-indigo-50/50 dark:bg-slate-800/60 rounded-2xl p-6 text-center space-y-2 cursor-pointer transition group">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 mx-auto flex items-center justify-center text-2xl group-hover:scale-110 transition">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <div class="font-extrabold text-slate-800 dark:text-white text-xs">Bấm để chọn file ảnh thẻ SV từ máy</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Hỗ trợ định dạng JPG, PNG, WEBP</div>
+          </button>
+        </div>
+
+        <!-- Captured / Uploaded Image Preview Box -->
+        <div v-if="proofImageBase64" class="relative group rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 p-2.5 flex flex-col items-center space-y-2">
+          <img :src="proofImageBase64" class="max-h-56 object-contain rounded-xl shadow-md border border-slate-800">
+          
+          <div class="flex items-center justify-between w-full px-1">
+            <span class="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+              <i class="fa-solid fa-circle-check"></i> Ảnh đã sẵn sàng!
+            </span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" @click="downloadCapturedPhoto" title="Tải ảnh về máy"
+                      class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1">
+                <i class="fa-solid fa-download"></i> Tải ảnh
+              </button>
+              <button type="button" @click="retakePhoto"
+                      class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
+                ✕ Đổi ảnh
               </button>
             </div>
           </div>
         </div>
 
-        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
-          <button type="button" @click="showCheckInProofModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer">
-            Hủy bỏ
-          </button>
-          <button type="button" @click="confirmCheckInWithProof"
-                  :disabled="!proofImageBase64"
-                  :class="[
-                    proofImageBase64
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 shadow-md'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300/60'
-                  ]"
-                  class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition flex items-center gap-1.5 shadow-sm"
-                  :title="!proofImageBase64 ? 'Vui lòng add hình minh chứng thẻ sinh viên trước r mới bấm nút điểm danh được!' : 'Bấm để hoàn tất điểm danh'">
-            <i class="fa-solid fa-bolt"></i> ⚡ Xác Nhận Điểm Danh
-          </button>
+        <!-- Hidden canvas for capturing -->
+        <canvas ref="canvasElementRef" class="hidden"></canvas>
+
+        <!-- Footer Actions -->
+        <div class="pt-2 flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800">
+          <a :href="googleDriveFolderUrl" target="_blank"
+             class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1">
+            <i class="fa-brands fa-google-drive"></i> Link Google Drive
+          </a>
+
+          <div class="flex items-center gap-2">
+            <button type="button" @click="closeCheckInModal" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer">
+              Hủy bỏ
+            </button>
+            <button type="button" @click="confirmCheckInWithProof"
+                    :disabled="!proofImageBase64"
+                    :class="[
+                      proofImageBase64
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 shadow-md'
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300/60'
+                    ]"
+                    class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-bolt"></i> ⚡ Xác Nhận Điểm Danh
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -368,7 +433,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
   activities: Array,
@@ -392,6 +457,123 @@ const regModalForm = ref({ date: '', shiftType: 'Ca 1', notes: '' });
 const showCheckInProofModal = ref(false);
 const selectedActForCheckIn = ref(null);
 const proofImageBase64 = ref('');
+const captureMode = ref('camera'); // 'camera' | 'upload'
+const facingMode = ref('environment'); // 'user' | 'environment'
+
+const videoElementRef = ref(null);
+const canvasElementRef = ref(null);
+let mediaStream = null;
+
+const googleDriveFolderUrl = 'https://drive.google.com/drive/folders/1zbUHwDzxXVfYK_kTIdQvVZXYJ2sVMBsd';
+
+const currentProofFolderDate = computed(() => {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}_${mm}_${yyyy}`;
+});
+
+const currentStandardFileName = computed(() => {
+  const name = props.activeMemberName || 'Thành viên';
+  const mssv = props.loggedInMemberId || 'MSSV';
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${name} - ${mssv} - ${dd}_${mm}_${yyyy}.jpg`;
+});
+
+const startCamera = async () => {
+  stopCamera();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    captureMode.value = 'upload';
+    return;
+  }
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: facingMode.value,
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    });
+    if (videoElementRef.value) {
+      videoElementRef.value.srcObject = mediaStream;
+      videoElementRef.value.play().catch(() => {});
+    }
+  } catch (err) {
+    console.warn('Camera access denied or unavailable, switching to file upload:', err);
+    captureMode.value = 'upload';
+  }
+};
+
+const stopCamera = () => {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+};
+
+const flipCamera = () => {
+  facingMode.value = facingMode.value === 'user' ? 'environment' : 'user';
+  startCamera();
+};
+
+const setCaptureMode = (mode) => {
+  captureMode.value = mode;
+  if (mode === 'camera' && !proofImageBase64.value) {
+    setTimeout(startCamera, 100);
+  } else {
+    stopCamera();
+  }
+};
+
+const capturePhotoFromCamera = () => {
+  const video = videoElementRef.value;
+  const canvas = canvasElementRef.value;
+  if (!video || !canvas) return;
+
+  const w = video.videoWidth || 640;
+  const h = video.videoHeight || 480;
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, w, h);
+
+  proofImageBase64.value = canvas.toDataURL('image/jpeg', 0.85);
+  stopCamera();
+};
+
+const retakePhoto = () => {
+  proofImageBase64.value = '';
+  if (captureMode.value === 'camera') {
+    setTimeout(startCamera, 100);
+  }
+};
+
+const downloadCapturedPhoto = () => {
+  if (!proofImageBase64.value) return;
+  const link = document.createElement('a');
+  link.href = proofImageBase64.value;
+  link.download = currentStandardFileName.value;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const closeCheckInModal = () => {
+  stopCamera();
+  showCheckInProofModal.value = false;
+  selectedActForCheckIn.value = null;
+  proofImageBase64.value = '';
+};
+
+onBeforeUnmount(() => {
+  stopCamera();
+});
 
 const openRegModal = (act) => {
   selectedActForReg.value = act;
@@ -456,6 +638,8 @@ const handleCheckInClick = (act) => {
   selectedActForCheckIn.value = act;
   proofImageBase64.value = '';
   showCheckInProofModal.value = true;
+  captureMode.value = 'camera';
+  setTimeout(startCamera, 150);
 };
 
 const handleProofImageUpload = (e) => {
@@ -474,13 +658,18 @@ const handleProofImageUpload = (e) => {
 
 const confirmCheckInWithProof = () => {
   if (!selectedActForCheckIn.value || !proofImageBase64.value) return;
+
+  // Auto-download standardized image for Google Drive folder
+  downloadCapturedPhoto();
+
   emit('check-in', {
     activityId: selectedActForCheckIn.value.id,
-    proofImage: proofImageBase64.value
+    proofImage: proofImageBase64.value,
+    proofFileName: currentStandardFileName.value,
+    proofFolderDate: currentProofFolderDate.value
   });
-  showCheckInProofModal.value = false;
-  selectedActForCheckIn.value = null;
-  proofImageBase64.value = '';
+
+  closeCheckInModal();
 };
 
 const selectedMonthText = computed(() => {
