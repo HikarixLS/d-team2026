@@ -1,39 +1,6 @@
 import { ref, computed } from 'vue';
 import { useToast } from './useToast.js';
 
-const defaultActivities = [
-    {
-        id: 'act_1',
-        name: 'Tập huấn Kỹ năng Quản trò & Sinh hoạt tập thể',
-        date: '2026-08-10',
-        semester: 'Học kỳ 1 (2026-2027)',
-        location: 'Hội trường A',
-        description: 'Buổi tập huấn sinh hoạt tập thể dành cho toàn thể thành viên câu lạc bộ.',
-        createdAt: '2026-08-01T08:00:00.000Z'
-    },
-    {
-        id: 'act_2',
-        name: 'Lễ Ra Quân Chiến Dịch Mùa Hè Xanh 2026',
-        date: '2026-08-20',
-        semester: 'Học kỳ 1 (2026-2027)',
-        location: 'Sân trường Trung Tâm',
-        description: 'Lễ ra quân cấp trường phát động tinh thần tình nguyện hè.',
-        createdAt: '2026-08-02T09:30:00.000Z'
-    }
-];
-
-const defaultCheckIns = [
-    {
-        id: 'chk_1',
-        activityId: 'act_1',
-        memberId: 'C2300023',
-        memberName: 'Thành viên Mẫu',
-        timestamp: '2026-08-05T08:15:00.000Z',
-        status: 'present',
-        leaveReason: ''
-    }
-];
-
 const defaultSemesters = [
     'Học kỳ 1 (2026-2027)',
     'Học kỳ 2 (2026-2027)',
@@ -50,7 +17,7 @@ try {
 
 const activities = ref([]);
 const activityCheckIns = ref([]);
-const semesters = ref(defaultSemesters);
+const semesters = ref([...defaultSemesters]);
 const activityRegistrations = ref([]);
 
 export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRef) {
