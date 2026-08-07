@@ -99,7 +99,7 @@
                        :members="members"
                        :currentUserRole="currentUserRole"
                        :todayDate="todayDate"
-                       :shifts="shifts"
+                       :shifts="searchedShifts"
                        :getMemberName="getMemberName"
                        :formatDate="formatDate"
                        @save-shift="saveShift"

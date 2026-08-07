@@ -625,7 +625,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
             });
         }
 
-        // Sections per Shift (CA 1, CA 2, CA 3, CA 4) matching Hỗ trợ nhập học.xlsx template
+        // Sections per Shift (CA 1, CA 2, CA 3, CA 4) dynamically adapted to actual participants
         shiftTypes.forEach(st => {
             let maxCount = 0;
             dateList.forEach(d => {
@@ -634,12 +634,12 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
                 }
             });
 
-            // Template standard: at least 15 rows per shift block (matching Hỗ trợ nhập học.xlsx)
-            if (maxCount < 15) maxCount = 15;
+            // Dynamically fit row count to actual participants (only 1 row if empty)
+            const rowCount = Math.max(1, maxCount);
 
             const startRowIndex = rowsData.length;
 
-            for (let idx = 0; idx < maxCount; idx++) {
+            for (let idx = 0; idx < rowCount; idx++) {
                 const row = [st.toUpperCase(), idx + 1];
                 dateList.forEach(d => {
                     const student = shiftDateMap[st][d][idx];
@@ -655,7 +655,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
             // Vertical merge for BUỔI column (Col A) for this shift block
             merges.push({
                 s: { r: startRowIndex, c: 0 },
-                e: { r: startRowIndex + maxCount - 1, c: 0 }
+                e: { r: startRowIndex + rowCount - 1, c: 0 }
             });
         });
 

@@ -321,18 +321,20 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             "STT",
             "MSSV",
             "Họ và Tên",
-            "Nội dung",
-            "Content",
-            "Thời gian điểm danh",
-            "Hình ảnh minh chứng",
-            "Trạng thái điểm danh"
+            "Ban Hoạt Động",
+            "Hoạt Động / Nội Dung",
+            "Ngày Diễn Ra",
+            "Thời Gian Điểm Danh",
+            "Trạng Thái Điểm Danh",
+            "Minh Chứng / Ghi Chú"
         ];
         rowsData.push(headers);
 
         if (presentList.length > 0) {
             presentList.forEach((p, idx) => {
-                const mObj = membersList.find(m => m.id === p.memberId);
+                const mObj = membersList.find(m => String(m.id).toUpperCase() === String(p.memberId).toUpperCase());
                 const memberName = p.memberName || mObj?.name || p.memberId;
+                const memberDept = mObj?.department || '—';
                 const mssvStr = String(p.memberId).trim().toUpperCase();
 
                 let timeStr = p.formattedTime || '';
@@ -348,11 +350,12 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
                     idx + 1,
                     mssvStr,
                     memberName,
-                    derived.contentVN,
-                    derived.contentEN,
+                    memberDept,
+                    act.name || derived.contentVN,
+                    formatDate(act.date),
                     timeStr,
-                    proofStatus,
-                    statusStr
+                    statusStr,
+                    proofStatus
                 ]);
             });
         } else {
@@ -360,8 +363,9 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
                 1,
                 "—",
                 "Chưa có sinh viên điểm danh",
-                derived.contentVN,
-                derived.contentEN,
+                "—",
+                act.name || derived.contentVN,
+                formatDate(act.date),
                 "—",
                 "—",
                 "—"
@@ -369,6 +373,18 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         }
 
         const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
+        ws['!cols'] = [
+            { wch: 6 },  // STT
+            { wch: 14 }, // MSSV
+            { wch: 25 }, // Họ và Tên
+            { wch: 20 }, // Ban Hoạt Động
+            { wch: 35 }, // Hoạt Động
+            { wch: 15 }, // Ngày Diễn Ra
+            { wch: 22 }, // Thời Gian Điểm Danh
+            { wch: 22 }, // Trạng Thái Điểm Danh
+            { wch: 25 }  // Minh Chứng / Ghi Chú
+        ];
+
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "DS Điểm Danh");
         window.XLSX.writeFile(wb, fileName);
@@ -424,7 +440,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         // 3. Shift Types (Ca 1, Ca 2, Ca 3, Ca 4)
         const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
 
-        // 4. Build Matrix Rows Data matching Hỗ trợ nhập học.xlsx template
+        // 4. Build Matrix Rows Data
         const rowsData = [];
 
         // Row 1: Headers (Col A: BUỔI, Col B: STT, Date Headers merged across Col C&D, E&F...)
@@ -474,7 +490,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             });
         }
 
-        // Generate Section Rows per Shift (Ca 1, Ca 2, Ca 3, Ca 4)
+        // Generate Section Rows per Shift (Ca 1, Ca 2, Ca 3, Ca 4) dynamically adapted to actual participants
         shiftTypes.forEach(st => {
             let maxCount = 0;
             dateList.forEach(d => {
@@ -483,12 +499,12 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
                 }
             });
 
-            // Standard template: at least 15 rows per shift block
-            if (maxCount < 15) maxCount = 15;
+            // Dynamically fit row count to actual participants (only 1 row if empty)
+            const rowCount = Math.max(1, maxCount);
 
             const startRowIndex = rowsData.length;
 
-            for (let idx = 0; idx < maxCount; idx++) {
+            for (let idx = 0; idx < rowCount; idx++) {
                 const row = [st.toUpperCase(), idx + 1];
                 dateList.forEach(d => {
                     const student = shiftDateMap[st][d][idx];
@@ -504,7 +520,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             // Vertical merge for BUỔI column (Col A) for this shift block
             merges.push({
                 s: { r: startRowIndex, c: 0 },
-                e: { r: startRowIndex + maxCount - 1, c: 0 }
+                e: { r: startRowIndex + rowCount - 1, c: 0 }
             });
         });
 

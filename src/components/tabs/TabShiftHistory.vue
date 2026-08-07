@@ -258,10 +258,7 @@ const matrixDates = computed(() => {
       set.add(r.date);
     }
   });
-  const dates = Array.from(set).sort();
-  if (dates.length > 0) return dates;
-  const defaultDates = ['2026-08-15', '2026-08-17', '2026-08-18', '2026-08-19', '2026-08-20', '2026-08-21', '2026-08-22'];
-  return defaultDates.filter(d => isDateInSelectedWeek(d));
+  return Array.from(set).sort();
 });
 
 // Map of shift -> date -> array of students
@@ -304,6 +301,6 @@ const getBlockRowCount = (st) => {
     const len = matrixMap.value[st]?.[d]?.length || 0;
     if (len > maxCount) maxCount = len;
   });
-  return Math.max(15, maxCount); // At least 15 rows per template
+  return Math.max(1, maxCount); // Dynamically adapt to actual number of attendees per shift
 };
 </script>
