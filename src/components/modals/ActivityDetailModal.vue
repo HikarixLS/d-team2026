@@ -62,29 +62,6 @@
         </div>
       </div>
 
-      <!-- Google Drive Cloud Target Info Banner -->
-      <div class="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 rounded-2xl p-3.5 space-y-2 text-xs mb-4 sm:mb-5">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <div class="font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 text-xs uppercase tracking-wide">
-            <i class="fa-brands fa-google-drive text-amber-500 text-sm"></i> Google Drive Lưu Trữ Ảnh Thẻ SV:
-          </div>
-          <a :href="googleDriveFolderUrl" target="_blank"
-             class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-[11px] shadow-xs transition flex items-center gap-1.5 cursor-pointer">
-            <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Folder Drive
-          </a>
-        </div>
-        <div class="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-600 dark:text-slate-300 font-mono space-y-1">
-          <div>
-            📁 <span class="font-bold text-slate-900 dark:text-white">Folder ngày:</span>
-            <span class="text-indigo-600 dark:text-indigo-400 font-bold ml-1">{{ getFolderDateStr(activity?.date) }}</span>
-          </div>
-          <div class="break-all">
-            🏷️ <span class="font-bold text-slate-900 dark:text-white">Tên file:</span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">Họ và tên - MSSV - {{ getOnlyDateStr(activity?.date) }}.jpg</span>
-          </div>
-        </div>
-      </div>
-
       <!-- Detail Lists Tabs -->
       <div class="flex-grow overflow-y-auto pr-1 space-y-5 sm:space-y-6">
         <!-- Present List -->
@@ -242,22 +219,15 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-between gap-2 pt-2">
-          <a :href="googleDriveFolderUrl" target="_blank"
-             class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-extrabold text-xs transition flex items-center gap-1.5 cursor-pointer">
-            <i class="fa-brands fa-google-drive"></i> Mở Google Drive
-          </a>
-
-          <div class="flex items-center gap-2">
-            <button type="button" @click="downloadProofImage(previewPhotoModal.item)"
-                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
-              <i class="fa-solid fa-download"></i> Tải Ảnh Về Máy
-            </button>
-            <button type="button" @click="previewPhotoModal.show = false"
-                    class="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer">
-              Đóng
-            </button>
-          </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" @click="downloadProofImage(previewPhotoModal.item)"
+                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-download"></i> Tải Ảnh Về Máy
+          </button>
+          <button type="button" @click="previewPhotoModal.show = false"
+                  class="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer">
+            Đóng
+          </button>
         </div>
       </div>
     </div>

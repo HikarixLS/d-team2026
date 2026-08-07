@@ -305,30 +305,6 @@
           </button>
         </div>
 
-        <!-- Google Drive Cloud Target Info Banner -->
-        <div class="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 rounded-2xl p-3.5 space-y-2 text-xs">
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <div class="font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 text-xs uppercase tracking-wide">
-              <i class="fa-brands fa-google-drive text-amber-500 text-sm"></i> Thư Mục Google Drive Lưu Trữ:
-            </div>
-            <a :href="googleDriveFolderUrl" target="_blank"
-               class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-[11px] shadow-xs transition flex items-center gap-1 cursor-pointer">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Drive
-            </a>
-          </div>
-
-          <div class="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 space-y-1 font-mono text-[11px]">
-            <div class="text-slate-700 dark:text-slate-300">
-              📁 <span class="font-bold text-slate-900 dark:text-white">Folder Ngày:</span>
-              <span class="text-indigo-600 dark:text-indigo-400 font-bold ml-1">{{ currentProofFolderDate }}</span>
-            </div>
-            <div class="text-slate-700 dark:text-slate-300 break-all">
-              🏷️ <span class="font-bold text-slate-900 dark:text-white">Quy ước tên file:</span>
-              <span class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">{{ currentStandardFileName }}</span>
-            </div>
-          </div>
-        </div>
-
         <!-- Capture / Upload Modes Switcher -->
         <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
           <button type="button" @click="setCaptureMode('camera')"
@@ -389,13 +365,9 @@
               <i class="fa-solid fa-circle-check"></i> Ảnh đã sẵn sàng!
             </span>
             <div class="flex items-center gap-1.5">
-              <button type="button" @click="downloadCapturedPhoto" title="Tải ảnh về máy"
-                      class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1">
-                <i class="fa-solid fa-download"></i> Tải ảnh
-              </button>
               <button type="button" @click="retakePhoto"
-                      class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
-                ✕ Đổi ảnh
+                      class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
+                ✕ Đổi ảnh khác
               </button>
             </div>
           </div>
@@ -405,27 +377,20 @@
         <canvas ref="canvasElementRef" class="hidden"></canvas>
 
         <!-- Footer Actions -->
-        <div class="pt-2 flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800">
-          <a :href="googleDriveFolderUrl" target="_blank"
-             class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1">
-            <i class="fa-brands fa-google-drive"></i> Link Google Drive
-          </a>
-
-          <div class="flex items-center gap-2">
-            <button type="button" @click="closeCheckInModal" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer">
-              Hủy bỏ
-            </button>
-            <button type="button" @click="confirmCheckInWithProof"
-                    :disabled="!proofImageBase64"
-                    :class="[
-                      proofImageBase64
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 shadow-md'
-                        : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300/60'
-                    ]"
-                    class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition flex items-center gap-1.5 shadow-sm">
-              <i class="fa-solid fa-bolt"></i> ⚡ Xác Nhận Điểm Danh
-            </button>
-          </div>
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" @click="closeCheckInModal" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer">
+            Hủy bỏ
+          </button>
+          <button type="button" @click="confirmCheckInWithProof"
+                  :disabled="!proofImageBase64"
+                  :class="[
+                    proofImageBase64
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 shadow-md'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300/60'
+                  ]"
+                  class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-bolt"></i> ⚡ Xác Nhận Điểm Danh
+          </button>
         </div>
       </div>
     </div>
