@@ -87,7 +87,7 @@
                               :getUserCheckInRecord="getUserCheckInRecord"
                               :getActivityDates="getActivityDates"
                               :formatDate="formatDate"
-                              @check-in="checkInActivity"
+                              @check-in="handleUserActivityCheckIn"
                               @open-leave-modal="openLeaveActivityModal"
                               @register-activity-shift="registerActivityShift"
                               @delete-activity-reg="deleteActivityRegistration" />
@@ -344,6 +344,14 @@ const handleConfirmLeaveActivity = (reason) => {
 
 const handleAdminCheckInActivity = ({ activityId, memberId }) => {
   checkInActivity(activityId, memberId);
+};
+
+const handleUserActivityCheckIn = (payload) => {
+  if (typeof payload === 'object' && payload !== null && payload.activityId) {
+    checkInActivity(payload.activityId, null, payload.proofImage);
+  } else {
+    checkInActivity(payload);
+  }
 };
 
 const handleLoginWithTabReset = () => {

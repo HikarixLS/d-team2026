@@ -193,18 +193,18 @@
 
             <div class="grid grid-cols-2 gap-2">
               <!-- Điểm danh Button -->
-              <button @click="$emit('check-in', act.id)"
-                      :disabled="getUserCheckInRecord(act.id)?.status !== 'present' && act.date !== todayDate"
+              <button @click="handleCheckInClick(act)"
+                      :disabled="getUserCheckInRecord(act.id)?.status !== 'present' && !canUserCheckInToday(act)"
                       class="py-2 px-3 rounded-2xl font-extrabold transition flex items-center justify-center gap-1.5 shadow-xs"
                       :class="[
                         getUserCheckInRecord(act.id)?.status === 'present'
                           ? 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer'
-                          : (act.date === todayDate
+                          : (canUserCheckInToday(act)
                               ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer active:scale-95 shadow-md'
                               : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300/60')
                       ]"
                       :title="getCheckInButtonTitle(act)">
-                <i class="fa-solid" :class="getUserCheckInRecord(act.id)?.status === 'present' ? 'fa-user-check' : (act.date === todayDate ? 'fa-bolt' : 'fa-lock')"></i>
+                <i class="fa-solid" :class="getUserCheckInRecord(act.id)?.status === 'present' ? 'fa-user-check' : (canUserCheckInToday(act) ? 'fa-bolt' : 'fa-lock')"></i>
                 <span>{{ getCheckInButtonText(act) }}</span>
               </button>
 
@@ -265,7 +265,7 @@
           <div>
             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ghi chú (Tùy chọn)</label>
             <input type="text" v-model="regModalForm.notes" placeholder="VD: Tham gia ca sáng hỗ trợ khâu trang trí..."
-                   class="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl p-2 font-medium focus:outline-none">
+                   class="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white rounded-xl p-2 font-medium focus:outline-none" />
           </div>
 
           <div class="pt-2 flex items-center justify-end gap-2">
@@ -277,6 +277,85 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Modal Điểm Danh Yêu Cầu Ảnh Minh Chứng (Thẻ SV) -->
+    <div v-if="showCheckInProofModal && selectedActForCheckIn" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 max-w-lg w-full shadow-2xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-base font-bold shadow-md">
+              <i class="fa-solid fa-camera"></i>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-slate-900 dark:text-white text-base">Minh Chứng Điểm Danh Thẻ SV</h3>
+              <p class="text-xs text-slate-500 truncate max-w-xs">{{ selectedActForCheckIn.name }}</p>
+            </div>
+          </div>
+          <button @click="showCheckInProofModal = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Warning Note Requirement Box -->
+        <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 space-y-1.5 text-xs text-amber-900 dark:text-amber-200">
+          <div class="font-black text-amber-700 dark:text-amber-400 flex items-center gap-1.5 text-sm">
+            <i class="fa-solid fa-triangle-exclamation"></i> Quy Định Bắt Buộc:
+          </div>
+          <p class="font-bold leading-relaxed">
+            📌 Chụp thẻ sinh viên tại địa điểm hoạt động.
+          </p>
+          <p class="text-amber-800 dark:text-amber-300/90 text-[11px]">
+            Thành viên cần tải lên hình ảnh chụp thẻ sinh viên tại nơi tổ chức trước khi nút điểm danh được mở.
+          </p>
+        </div>
+
+        <!-- File Upload / Camera Trigger Area -->
+        <div>
+          <input type="file" accept="image/*" capture="environment" ref="fileInputRef" @change="handleProofImageUpload" class="hidden" />
+
+          <div v-if="!proofImageBase64">
+            <button type="button" @click="$refs.fileInputRef.click()"
+                    class="w-full border-2 border-dashed border-indigo-300 dark:border-indigo-700 hover:border-indigo-500 bg-indigo-50/50 dark:bg-slate-800/60 rounded-2xl p-6 text-center space-y-2 cursor-pointer transition group">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 mx-auto flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+              </div>
+              <div class="font-extrabold text-slate-800 dark:text-white text-xs">Bấm để chụp / Tải hình minh chứng thẻ SV</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Hỗ trợ ảnh chụp camera hoặc định dạng JPG, PNG, WEBP</div>
+            </button>
+          </div>
+
+          <div v-else class="relative group rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 p-2 flex flex-col items-center">
+            <img :src="proofImageBase64" class="max-h-52 object-contain rounded-xl shadow-md">
+            <div class="mt-2 flex items-center justify-between w-full px-2">
+              <span class="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                <i class="fa-solid fa-circle-check"></i> Đã tải ảnh minh chứng!
+              </span>
+              <button type="button" @click="proofImageBase64 = ''"
+                      class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
+                ✕ Đổi ảnh khác
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" @click="showCheckInProofModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer">
+            Hủy bỏ
+          </button>
+          <button type="button" @click="confirmCheckInWithProof"
+                  :disabled="!proofImageBase64"
+                  :class="[
+                    proofImageBase64
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 shadow-md'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300/60'
+                  ]"
+                  class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition flex items-center gap-1.5 shadow-sm"
+                  :title="!proofImageBase64 ? 'Vui lòng add hình minh chứng thẻ sinh viên trước r mới bấm nút điểm danh được!' : 'Bấm để hoàn tất điểm danh'">
+            <i class="fa-solid fa-bolt"></i> ⚡ Xác Nhận Điểm Danh
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -303,6 +382,10 @@ const emit = defineEmits(['update:selectedMonth', 'check-in', 'open-leave-modal'
 
 const selectedActForReg = ref(null);
 const regModalForm = ref({ date: '', shiftType: 'Ca 1', notes: '' });
+
+const showCheckInProofModal = ref(false);
+const selectedActForCheckIn = ref(null);
+const proofImageBase64 = ref('');
 
 const openRegModal = (act) => {
   selectedActForReg.value = act;
@@ -349,6 +432,51 @@ const todayDate = computed(() => {
   return `${yyyy}-${mm}-${dd}`;
 });
 
+const canUserCheckInToday = (act) => {
+  if (!act) return false;
+  const userRegs = getUserActivityRegs(act.id);
+  if (userRegs.length > 0) {
+    return userRegs.some(r => r.date === todayDate.value);
+  }
+  const actDates = props.getActivityDates ? props.getActivityDates(act) : [act.date];
+  return actDates.includes(todayDate.value);
+};
+
+const handleCheckInClick = (act) => {
+  const rec = props.getUserCheckInRecord(act.id);
+  if (rec?.status === 'present') return;
+  if (!canUserCheckInToday(act)) return;
+
+  selectedActForCheckIn.value = act;
+  proofImageBase64.value = '';
+  showCheckInProofModal.value = true;
+};
+
+const handleProofImageUpload = (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    alert('Vui lòng chọn file hình ảnh!');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    proofImageBase64.value = event.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+const confirmCheckInWithProof = () => {
+  if (!selectedActForCheckIn.value || !proofImageBase64.value) return;
+  emit('check-in', {
+    activityId: selectedActForCheckIn.value.id,
+    proofImage: proofImageBase64.value
+  });
+  showCheckInProofModal.value = false;
+  selectedActForCheckIn.value = null;
+  proofImageBase64.value = '';
+};
+
 const selectedMonthText = computed(() => {
   if (!props.selectedMonth) return '';
   const parts = props.selectedMonth.split('-');
@@ -382,6 +510,14 @@ const participationRate = computed(() => {
 const getCheckInButtonText = (act) => {
   const rec = props.getUserCheckInRecord(act.id);
   if (rec?.status === 'present') return 'Đã Điểm Danh';
+
+  const userRegs = getUserActivityRegs(act.id);
+  if (userRegs.length > 0) {
+    const isRegToday = userRegs.some(r => r.date === todayDate.value);
+    if (isRegToday) return 'Điểm Danh Ngay';
+    return 'Chưa Đến Ca Trực';
+  }
+
   if (act.date === todayDate.value) return 'Điểm Danh Ngay';
   if (act.date > todayDate.value) return 'Chưa Đến Ngày';
   return 'Quá Hạn Điểm Danh';
@@ -390,7 +526,16 @@ const getCheckInButtonText = (act) => {
 const getCheckInButtonTitle = (act) => {
   const rec = props.getUserCheckInRecord(act.id);
   if (rec?.status === 'present') return 'Bạn đã hoàn thành điểm danh ca này';
-  if (act.date === todayDate.value) return 'Bấm để điểm danh hoạt động hôm nay!';
+
+  const userRegs = getUserActivityRegs(act.id);
+  if (userRegs.length > 0) {
+    const isRegToday = userRegs.some(r => r.date === todayDate.value);
+    if (isRegToday) return 'Bấm để chụp hình thẻ sinh viên và điểm danh hôm nay!';
+    const regDatesStr = userRegs.map(r => props.formatDate(r.date)).join(', ');
+    return `Chưa đến ca trực bạn đã đăng ký (${regDatesStr}). Nút điểm danh chỉ mở đúng ngày ca trực!`;
+  }
+
+  if (act.date === todayDate.value) return 'Bấm để chụp hình thẻ sinh viên và điểm danh hôm nay!';
   if (act.date > todayDate.value) return `Chưa đến ngày diễn ra (${props.formatDate(act.date)}). Không thể điểm danh trước!`;
   return `Đã quá hạn điểm danh ngày ${props.formatDate(act.date)}. Vui lòng liên hệ Admin để điểm danh bù.`;
 };

@@ -532,7 +532,7 @@ const filteredActivities = computed(() => {
               <i class="fa-solid fa-chevron-right text-slate-400 text-xs group-hover:translate-x-1 transition"></i>
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-              Xuất danh sách các sinh viên đã điểm danh/tham gia hoạt động (File dạng bảng dọc chuẩn nộp điểm rèn luyện).
+              Xuất danh sách các sinh viên đã điểm danh (Bảng dọc 8 cột: STT, MSSV, Họ tên, Nội dung, Content, Thời gian điểm danh, Minh chứng thẻ SV, Trạng thái).
             </p>
           </button>
 
@@ -556,7 +556,7 @@ const filteredActivities = computed(() => {
             Đóng
           </button>
         </div>
-      </div>
+       </div>
     </div>
   </div>
 </template>

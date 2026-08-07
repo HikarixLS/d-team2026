@@ -293,92 +293,86 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         return true;
     };
 
+    const formatCheckInTime = (dateObj) => {
+        if (!dateObj) return '—';
+        const d = new Date(dateObj);
+        if (isNaN(d.getTime())) return String(dateObj);
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${hours}h${mins}, ${day}/${month}/${year}`;
+    };
+
     const exportActivityExcel = (act, stats, membersList = []) => {
         if (!window.XLSX) {
-            return showToast('Thư viện Excel (XLSX) chưa sẵn sàng!', 'error');
+            return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
         }
         if (!act) return;
 
         const derived = computeActivityDerivedFields(act);
-        const fileName = derived.excelFileName;
+        const fileName = `${derived.codeId}-${(derived.endDate || '').replace(/-/g, '')} DS DIEM DANH ${act.name}.xlsx`;
 
         const presentList = stats?.presentList || [];
-        const regsList = stats?.regsList || [];
-
-        const memberMap = new Map();
-
-        presentList.forEach(p => {
-            const mObj = membersList.find(m => m.id === p.memberId);
-            memberMap.set(p.memberId, {
-                mssv: String(p.memberId).trim(),
-                name: p.memberName || mObj?.name || p.memberId,
-                department: mObj?.department || 'Thành viên',
-                status: p.adminCheckedIn ? 'Admin Điểm danh hộ' : 'Đã điểm danh'
-            });
-        });
-
-        regsList.forEach(r => {
-            if (!memberMap.has(r.memberId)) {
-                const mObj = membersList.find(m => m.id === r.memberId);
-                memberMap.set(r.memberId, {
-                    mssv: String(r.memberId).trim(),
-                    name: r.memberName || mObj?.name || r.memberId,
-                    department: mObj?.department || 'Thành viên',
-                    status: 'Đã đăng ký ca'
-                });
-            }
-        });
 
         const rowsData = [];
         const headers = [
+            "STT",
+            "MSSV",
             "Họ và Tên",
-            "Ban Hoạt Động",
-            "Tên Hoạt Động",
-            "Địa Điểm Tổ Chức",
-            "Thời Gian Kết Thúc",
-            "Hạn Gửi Hồ Sơ",
-            "Ngày Gửi",
-            "Tiến Độ",
-            "Kết Luận",
-            "Trạng Thái Ghi Nhận"
+            "Nội dung",
+            "Content",
+            "Thời gian điểm danh",
+            "Hình ảnh minh chứng",
+            "Trạng thái điểm danh"
         ];
         rowsData.push(headers);
 
-        memberMap.forEach(item => {
-            rowsData.push([
-                item.name,
-                item.department,
-                act.name,
-                derived.location,
-                formatDate(derived.endDate),
-                formatDate(derived.deadlineDate),
-                derived.submitDate ? formatDate(derived.submitDate) : '—',
-                derived.progressStatus,
-                derived.conclusionStatus,
-                item.status
-            ]);
-        });
+        if (presentList.length > 0) {
+            presentList.forEach((p, idx) => {
+                const mObj = membersList.find(m => m.id === p.memberId);
+                const memberName = p.memberName || mObj?.name || p.memberId;
+                const mssvStr = String(p.memberId).trim().toUpperCase();
 
-        if (memberMap.size === 0) {
+                let timeStr = p.formattedTime || '';
+                if (!timeStr && p.timestamp) {
+                    timeStr = formatCheckInTime(p.timestamp);
+                }
+                if (!timeStr) timeStr = '—';
+
+                const proofStatus = p.proofImage ? (p.proofImage.startsWith('data:image') ? 'Đã đính kèm ảnh thẻ SV' : p.proofImage) : 'Chưa đính kèm ảnh';
+                const statusStr = p.adminCheckedIn ? 'Admin điểm danh hộ' : 'Đã điểm danh';
+
+                rowsData.push([
+                    idx + 1,
+                    mssvStr,
+                    memberName,
+                    derived.contentVN,
+                    derived.contentEN,
+                    timeStr,
+                    proofStatus,
+                    statusStr
+                ]);
+            });
+        } else {
             rowsData.push([
-                "Chưa có sinh viên tham gia",
+                1,
                 "—",
-                act.name,
-                derived.location,
-                formatDate(derived.endDate),
-                formatDate(derived.deadlineDate),
-                derived.submitDate ? formatDate(derived.submitDate) : '—',
-                derived.progressStatus,
-                derived.conclusionStatus,
+                "Chưa có sinh viên điểm danh",
+                derived.contentVN,
+                derived.contentEN,
+                "—",
+                "—",
                 "—"
             ]);
         }
 
         const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
         const wb = window.XLSX.utils.book_new();
-        window.XLSX.utils.book_append_sheet(wb, ws, "DSSV");
+        window.XLSX.utils.book_append_sheet(wb, ws, "DS Điểm Danh");
         window.XLSX.writeFile(wb, fileName);
-        showToast(`Xuất file Excel "${fileName}" thành công! 📊`);
+        showToast(`Xuất file Excel Danh sách Điểm danh "${fileName}" thành công! 📊`);
     };
 
     const formatDayMonth = (dateStr) => {
@@ -556,23 +550,18 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
 
     const registerActivityShift = async ({ activityId, date, shiftType, notes }) => {
         const memberId = loggedInMemberIdRef ? loggedInMemberIdRef.value : '';
-        if (!memberId) return showToast('Vui lòng đăng nhập để đăng ký!', 'error');
-        if (!activityId || !date || !shiftType) return showToast('Vui lòng chọn ngày và ca trực!', 'error');
-
-        const todayStr = getTodayStr();
-        if (date < todayStr) {
-            return showToast('⚠️ Không thể đăng ký ca hoạt động cho ngày trong quá khứ!', 'error');
-        }
-
-        const isDup = activityRegistrations.value.some(
-            r => r.activityId === activityId && r.memberId.toLowerCase() === memberId.toLowerCase() && r.date === date && r.shiftType === shiftType
-        );
-        if (isDup) {
-            return showToast(`Bạn đã đăng ký ${shiftType} ngày ${formatDate(date)} cho hoạt động này rồi!`, 'warning');
-        }
+        if (!memberId) return showToast('Bạn chưa đăng nhập MSSV!', 'error');
 
         const memberObj = membersRef?.value?.find(m => m.id === memberId);
         const memberName = memberObj ? memberObj.name : memberId;
+
+        const existing = activityRegistrations.value.find(
+            r => r.activityId === activityId && r.memberId.toLowerCase() === memberId.toLowerCase() && r.date === date && r.shiftType === shiftType
+        );
+
+        if (existing) {
+            return showToast('Bạn đã đăng ký ca này rồi!', 'warning');
+        }
 
         const newReg = {
             id: 'actreg_' + Date.now(),
@@ -581,14 +570,15 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             memberName,
             date,
             shiftType,
-            notes: notes ? notes.trim() : '',
+            notes: notes || '',
             createdAt: new Date().toISOString()
         };
 
-        activityRegistrations.value.unshift(newReg);
+        activityRegistrations.value.push(newReg);
         persistLocal();
         await syncActivityRegToCloud(newReg);
-        showToast(`Đăng ký tham gia ${shiftType} ngày ${formatDate(date)} thành công! 🎉`);
+
+        showToast(`Đăng ký thành công ca ${shiftType} ngày ${formatDate(date)}! 🎉`);
     };
 
     const deleteActivityRegistration = async (regId) => {
@@ -603,18 +593,16 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         showToast('Đã hủy lịch đăng ký ca hoạt động!');
     };
 
-    // Helper: generate array of date strings between start and end
     const getActivityDates = (act) => {
-        if (!act || !act.date) return [];
+        if (!act) return [];
+        const start = act.date || act.startDate || getTodayStr();
+        const end = act.endDate || act.date || start;
+        if (start === end) return [start];
+
         const dates = [];
-        const parts = act.date.split('-');
-        const endParts = (act.endDate || act.date).split('-');
-
-        const start = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-        const end = new Date(Number(endParts[0]), Number(endParts[1]) - 1, Number(endParts[2]));
-
         const curr = new Date(start);
-        while (curr <= end) {
+        const last = new Date(end);
+        while (curr <= last) {
             const yyyy = curr.getFullYear();
             const mm = String(curr.getMonth() + 1).padStart(2, '0');
             const dd = String(curr.getDate()).padStart(2, '0');
@@ -624,8 +612,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         return dates;
     };
 
-    // Check-in Activity with strict date permission & Admin check-in on behalf
-    const checkInActivity = async (activityId, targetMemberId = null) => {
+    // Check-in Activity with strict date permission, proof image, formatted timestamp & Admin check-in on behalf
+    const checkInActivity = async (activityId, targetMemberId = null, proofImage = null) => {
         const memberId = targetMemberId || (loggedInMemberIdRef ? loggedInMemberIdRef.value : '');
         const isAdminOperation = Boolean(targetMemberId) || (currentUserRoleRef && (currentUserRoleRef.value === 'admin' || currentUserRoleRef === 'admin'));
 
@@ -662,19 +650,23 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             c => c.activityId === activityId && c.memberId.toLowerCase() === memberId.toLowerCase()
         );
 
+        const formattedNow = formatCheckInTime(new Date());
+
         if (existing) {
             if (existing.status === 'present' && !isAdminOperation) {
                 return showToast('Bạn đã điểm danh hoạt động này rồi!', 'warning');
             }
             existing.status = 'present';
             existing.timestamp = new Date().toISOString();
+            existing.formattedTime = formattedNow;
             existing.leaveReason = '';
+            if (proofImage) existing.proofImage = proofImage;
             if (isAdminOperation) existing.adminCheckedIn = true;
             persistLocal();
             await syncCheckInToCloud(existing);
             return showToast(isAdminOperation 
                 ? `Quản trị viên đã điểm danh hộ/bù cho "${memberName}" [${memberId}]! 👑`
-                : `Đã chuyển trạng thái sang: Điểm Danh thành công cho "${memberName}"! ✅`
+                : `Đã chuyển trạng thái sang: Điểm Danh thành công cho "${memberName}" lúc ${formattedNow}! ✅`
             );
         }
 
