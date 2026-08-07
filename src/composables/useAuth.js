@@ -98,17 +98,9 @@ export function useAuth(membersRef) {
             localStorage.setItem('socatruc_user_role', 'admin');
             localStorage.setItem('socatruc_member_id', canonicalId);
 
-            const masterNames = {
-                '42300016': 'Đỗ Khánh Duy',
-                'C2300023': 'Lý Gia Huy',
-                'D2400032': 'Huỳnh Thị Mộng Ngân'
-            };
-
             const getDisplayName = (m, id) => {
                 if (isSuperAdmin) return 'Super Admin';
-                const realName = m ? (m.name || m.fullName || m.hoTen || m.ho_ten || m.full_name || m.ten) : null;
-                if (realName && realName !== id && !realName.startsWith('Thành viên [')) return realName;
-                if (masterNames[id]) return masterNames[id];
+                const realName = m ? (m.name || m.fullName || m.hoTen || m.ho_ten || m.full_name || m.ten || m.Name || m.HoTen || m.FullName) : null;
                 return realName || id;
             };
 
@@ -116,27 +108,6 @@ export function useAuth(membersRef) {
             showToast(`Đăng nhập Quản Trị Viên thành công! 👑 (${displayName})`);
         } else {
             // Member login:
-            // If member is not yet in cloud state, auto-register to Cloud Firestore so Admin can see them in list!
-            if (!cloudMember && window.firebaseDb && window.FirebaseSDK) {
-                try {
-                    const { doc, setDoc } = window.FirebaseSDK;
-                    const newMember = {
-                        id: canonicalId,
-                        mssv: canonicalId,
-                        name: `Thành viên [${canonicalId}]`,
-                        department: 'Ban Hành chính',
-                        dob: '',
-                        role: 'member',
-                        targetShifts: 10,
-                        createdAt: new Date().toISOString()
-                    };
-                    setDoc(doc(window.firebaseDb, 'members', canonicalId), newMember).catch(() => {});
-                    if (Array.isArray(currentMembers)) {
-                        currentMembers.push(newMember);
-                    }
-                } catch (e) {}
-            }
-
             isLoggedIn.value = true;
             currentUserRole.value = 'member';
             loggedInMemberId.value = canonicalId;
@@ -145,15 +116,8 @@ export function useAuth(membersRef) {
             localStorage.setItem('socatruc_user_role', 'member');
             localStorage.setItem('socatruc_member_id', canonicalId);
 
-            const masterNames = {
-                '42300016': 'Đỗ Khánh Duy',
-                'C2300023': 'Lý Gia Huy',
-                'D2400032': 'Huỳnh Thị Mộng Ngân'
-            };
             const getDisplayName = (m, id) => {
-                const realName = m ? (m.name || m.fullName || m.hoTen || m.ho_ten || m.full_name || m.ten) : null;
-                if (realName && realName !== id && !realName.startsWith('Thành viên [')) return realName;
-                if (masterNames[id]) return masterNames[id];
+                const realName = m ? (m.name || m.fullName || m.hoTen || m.ho_ten || m.full_name || m.ten || m.Name || m.HoTen || m.FullName) : null;
                 return realName || id;
             };
 

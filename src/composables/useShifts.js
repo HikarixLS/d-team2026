@@ -43,12 +43,6 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
 
     const toPlainObject = (obj) => JSON.parse(JSON.stringify(obj));
 
-    const masterNames = {
-        '42300016': 'Đỗ Khánh Duy',
-        'C2300023': 'Lý Gia Huy',
-        'D2400032': 'Huỳnh Thị Mộng Ngân'
-    };
-
     const findMemberObj = (id) => {
         if (!membersRef || !membersRef.value || !id) return null;
         const target = String(id).trim().toUpperCase();
@@ -71,15 +65,6 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         const target = String(id).trim().toUpperCase();
         const found = findMemberObj(id);
         const realName = found ? (found.name || found.fullName || found.hoTen || found.ho_ten || found.full_name || found.ten || found.Name || found.HoTen || found.FullName) : null;
-
-        if (realName && realName !== target && !realName.startsWith('Thành viên [')) {
-            return realName;
-        }
-
-        if (masterNames[target]) {
-            return masterNames[target];
-        }
-
         return realName || target;
     };
 

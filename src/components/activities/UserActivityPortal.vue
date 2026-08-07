@@ -20,7 +20,7 @@
           <div>
             <div class="text-xs font-black text-white flex items-center gap-1.5">
               <i class="fa-solid fa-user-check text-sky-400"></i>
-              <span>{{ (activeMemberName && !activeMemberName.startsWith('Thành viên [')) ? activeMemberName : `Thành Viên (${loggedInMemberId})` }}</span>
+              <span>{{ (activeMemberName && activeMemberName !== loggedInMemberId) ? activeMemberName : `Thành Viên (${loggedInMemberId})` }}</span>
             </div>
             <div class="text-[11px] font-bold text-sky-300 flex items-center gap-1 mt-0.5">
               <i class="fa-solid fa-id-card text-sky-400"></i>

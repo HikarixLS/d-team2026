@@ -364,7 +364,7 @@ const handleLoginWithTabReset = () => {
 // Computed UI Helpers
 const userRoleBadgeText = computed(() => {
   const name = getMemberName(loggedInMemberId.value);
-  const displayStr = (name && name !== loggedInMemberId.value && !name.startsWith('Thành viên ['))
+  const displayStr = (name && name !== loggedInMemberId.value)
     ? `${name} (${loggedInMemberId.value})`
     : loggedInMemberId.value;
   return currentUserRole.value === 'admin' ? `Quản Trị Viên: ${displayStr}` : `Thành Viên: ${displayStr}`;
