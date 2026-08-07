@@ -280,24 +280,41 @@ const previewPhotoModal = ref({
 });
 
 const getFolderDateStr = (dateStr) => {
-  if (!dateStr) {
+  let datePrefix = '';
+  const dStr = dateStr || props.activity?.date;
+  if (dStr && dStr.includes('-')) {
+    const parts = dStr.split('-');
+    datePrefix = `${parts[2]}_${parts[1]}_${parts[0]}`;
+  } else {
     const d = new Date();
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
-    return `${dd}_${mm}_${yyyy}`;
+    datePrefix = `${dd}_${mm}_${yyyy}`;
   }
-  const parts = dateStr.split('-');
-  if (parts.length < 3) return dateStr;
-  return `${parts[2]}_${parts[1]}_${parts[0]}`;
+  const actName = props.activity?.name ? ` _ ${props.activity.name}` : '';
+  return `${datePrefix}${actName}`;
+};
+
+const getOnlyDateStr = (dateStr) => {
+  const dStr = dateStr || props.activity?.date;
+  if (dStr && dStr.includes('-')) {
+    const parts = dStr.split('-');
+    return `${parts[2]}_${parts[1]}_${parts[0]}`;
+  }
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}_${mm}_${yyyy}`;
 };
 
 const getFormattedFileName = (item) => {
   if (!item) return 'photo.jpg';
   const name = item.memberName || 'Thành viên';
   const mssv = item.memberId || 'MSSV';
-  const folderDate = getFolderDateStr(props.activity?.date);
-  return `${name} - ${mssv} - ${folderDate}.jpg`;
+  const dateStr = getOnlyDateStr(props.activity?.date);
+  return `${name} - ${mssv} - ${dateStr}.jpg`;
 };
 
 const openPhotoPreview = (item) => {

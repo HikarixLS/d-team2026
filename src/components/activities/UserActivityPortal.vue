@@ -466,22 +466,43 @@ let mediaStream = null;
 
 const googleDriveFolderUrl = 'https://drive.google.com/drive/folders/1zbUHwDzxXVfYK_kTIdQvVZXYJ2sVMBsd';
 
+const formatActivityFolderName = (act) => {
+  const dateStr = act?.date;
+  let datePrefix = '';
+  if (dateStr && dateStr.includes('-')) {
+    const parts = dateStr.split('-');
+    datePrefix = `${parts[2]}_${parts[1]}_${parts[0]}`;
+  } else {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    datePrefix = `${dd}_${mm}_${yyyy}`;
+  }
+  const actName = act?.name ? ` _ ${act.name}` : '';
+  return `${datePrefix}${actName}`;
+};
+
 const currentProofFolderDate = computed(() => {
-  const d = new Date();
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${dd}_${mm}_${yyyy}`;
+  return formatActivityFolderName(selectedActForCheckIn.value);
 });
 
 const currentStandardFileName = computed(() => {
   const name = props.activeMemberName || 'Thành viên';
   const mssv = props.loggedInMemberId || 'MSSV';
-  const d = new Date();
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${name} - ${mssv} - ${dd}_${mm}_${yyyy}.jpg`;
+  const act = selectedActForCheckIn.value;
+  let dateStr = '';
+  if (act?.date && act.date.includes('-')) {
+    const parts = act.date.split('-');
+    dateStr = `${parts[2]}_${parts[1]}_${parts[0]}`;
+  } else {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    dateStr = `${dd}_${mm}_${yyyy}`;
+  }
+  return `${name} - ${mssv} - ${dateStr}.jpg`;
 });
 
 const startCamera = async () => {
