@@ -2,10 +2,10 @@ import { ref } from 'vue';
 import { useToast } from './useToast.js';
 
 const defaultAdmins = [
-    { id: 'admin', password: '123' },
-    { id: 'C2300023', password: '123' },
-    { id: '42300016', password: '123' },
-    { id: 'D2400032', password: '123' }
+    { id: 'admin', password: 'DVPADMINBDH' },
+    { id: 'C2300023', password: 'DVP0023BDH' },
+    { id: '42300016', password: 'DVP0016BDH' },
+    { id: 'D2400032', password: 'DVP0032BDH' }
 ];
 
 const savedLoggedIn = localStorage.getItem('socatruc_is_logged_in') === 'true';
@@ -70,15 +70,15 @@ export function useAuth(membersRef) {
                 return showToast(`Tài khoản MSSV ${canonicalId} (${cloudMember ? cloudMember.name : ''}) không có quyền Admin!`, 'error');
             }
 
-            // Verify Admin Password: check custom password, formula (DVP + 4 last digits + BDH), or master pass 123
+            // Verify Admin Password: check formula (DVP + 4 last digits + BDH) or explicit custom cloud password
             const last4 = upperId.length >= 4 ? upperId.slice(-4) : upperId.padStart(4, '0');
             const formulaPassword = `DVP${last4}BDH`;
             const cloudPassword = adminAcc?.password;
 
-            const isPasswordCorrect = isSuperAdmin || pwd === '123' || pwd === formulaPassword || (cloudPassword && pwd === cloudPassword);
+            const isPasswordCorrect = (pwd === formulaPassword) || (cloudPassword && pwd === cloudPassword);
 
             if (!isPasswordCorrect) {
-                return showToast(`Mật khẩu Admin không đúng! (Gợi ý mật khẩu: ${formulaPassword})`, 'error');
+                return showToast(`Mật khẩu Admin không đúng! (Mật khẩu đúng: ${formulaPassword})`, 'error');
             }
 
             // Successfully authenticated Admin!
