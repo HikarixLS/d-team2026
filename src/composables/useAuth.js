@@ -55,7 +55,13 @@ export function useAuth(membersRef) {
                 return showToast('Vui lòng nhập mật khẩu Admin!', 'error');
             }
 
-            // Check if member has Admin role in Cloud members list OR is super admin
+            const last4 = upperId.length >= 4 ? upperId.slice(-4) : upperId.padStart(4, '0');
+            const formulaPassword = `DVP${last4}BDH`;
+            const cloudPassword = cloudMember?.password;
+
+            const isPasswordCorrect = (pwd === formulaPassword) || (cloudPassword && pwd === cloudPassword) || (isSuperAdmin && (pwd === 'DVPADMINBDH' || pwd === formulaPassword));
+
+            // Check if member has Admin role in Cloud members list OR is super admin OR provided valid formula password
             const isCloudAdminRole = cloudMember && (
                 cloudMember.role === 'admin' || 
                 cloudMember.department === 'Ban Điều hành' ||
@@ -63,18 +69,11 @@ export function useAuth(membersRef) {
                 (cloudMember.department && cloudMember.department.toLowerCase().includes('bđh'))
             );
 
-            const isAuthorizedAdmin = isSuperAdmin || Boolean(isCloudAdminRole);
+            const isAuthorizedAdmin = isSuperAdmin || Boolean(isCloudAdminRole) || isPasswordCorrect;
 
             if (!isAuthorizedAdmin) {
                 return showToast(`Tài khoản MSSV ${canonicalId} (${cloudMember ? cloudMember.name : ''}) không có quyền Admin!`, 'error');
             }
-
-            // Verify Admin Password: strictly check formula (DVP + 4 last digits + BDH) or explicit custom cloud password
-            const last4 = upperId.length >= 4 ? upperId.slice(-4) : upperId.padStart(4, '0');
-            const formulaPassword = `DVP${last4}BDH`;
-            const cloudPassword = cloudMember?.password;
-
-            const isPasswordCorrect = (pwd === formulaPassword) || (cloudPassword && pwd === cloudPassword) || (isSuperAdmin && (pwd === 'DVPADMINBDH' || pwd === formulaPassword));
 
             if (!isPasswordCorrect) {
                 return showToast(`Mật khẩu Admin không đúng! (Mật khẩu đúng: ${formulaPassword})`, 'error');

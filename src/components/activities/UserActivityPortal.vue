@@ -13,13 +13,19 @@
           </p>
         </div>
 
-        <div class="flex items-center gap-2 bg-sky-950/60 backdrop-blur-md px-4 py-3 rounded-2xl border border-sky-700/50">
-          <div class="w-10 h-10 rounded-xl bg-sky-500 text-white font-black text-lg flex items-center justify-center shadow-md">
-            {{ activeMemberName.charAt(0).toUpperCase() }}
+        <div class="flex items-center gap-3 bg-sky-950/70 backdrop-blur-md px-4 py-3 rounded-2xl border border-sky-700/50 shadow-md">
+          <div class="w-10 h-10 rounded-xl bg-sky-500 text-white font-black text-lg flex items-center justify-center shadow-md shrink-0">
+            {{ activeMemberName ? activeMemberName.trim().slice(-1).toUpperCase() : 'T' }}
           </div>
           <div>
-            <div class="text-xs font-bold text-white">{{ activeMemberName }}</div>
-            <div class="text-[11px] text-sky-300">MSSV: {{ loggedInMemberId }}</div>
+            <div class="text-xs font-black text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-user-check text-sky-400"></i>
+              <span>{{ (activeMemberName && !activeMemberName.startsWith('Thành viên [')) ? activeMemberName : `Thành Viên (${loggedInMemberId})` }}</span>
+            </div>
+            <div class="text-[11px] font-bold text-sky-300 flex items-center gap-1 mt-0.5">
+              <i class="fa-solid fa-id-card text-sky-400"></i>
+              <span>MSSV: {{ loggedInMemberId }}</span>
+            </div>
           </div>
         </div>
       </div>

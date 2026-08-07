@@ -275,9 +275,6 @@ const { toast, showToast } = useToast();
 const { isDarkMode, applyTheme, toggleTheme } = useTheme();
 
 // Composables wiring
-const authModule = useAuth(null);
-const { isLoggedIn, loginRole, loginForm, currentUserRole, loggedInMemberId, adminAccounts, handleLogin, logout } = authModule;
-
 const membersModule = useMembers(currentUserRole, loggedInMemberId, null, null, null);
 const {
   members, departments, addDepartment, memberFilterSearch, memberFilterDept, memberFilterTarget, resetMemberFilters,
@@ -285,6 +282,9 @@ const {
   openMemberModal, saveMember, confirmDeleteMember, showBatchModal, batchText,
   openBatchModal, saveBatchMembers, pushAllMembersToCloud, deleteModal
 } = membersModule;
+
+const authModule = useAuth(members);
+const { isLoggedIn, loginRole, loginForm, currentUserRole, loggedInMemberId, adminAccounts, handleLogin, logout } = authModule;
 
 const shiftsModule = useShifts(members, currentUserRole, loggedInMemberId, deleteModal);
 const {
@@ -362,7 +362,13 @@ const handleLoginWithTabReset = () => {
 };
 
 // Computed UI Helpers
-const userRoleBadgeText = computed(() => currentUserRole.value === 'admin' ? `Quản Trị Viên [${loggedInMemberId.value}]` : `Thành Viên [${loggedInMemberId.value}]`);
+const userRoleBadgeText = computed(() => {
+  const name = getMemberName(loggedInMemberId.value);
+  const displayStr = (name && name !== loggedInMemberId.value && !name.startsWith('Thành viên ['))
+    ? `${name} (${loggedInMemberId.value})`
+    : loggedInMemberId.value;
+  return currentUserRole.value === 'admin' ? `Quản Trị Viên: ${displayStr}` : `Thành Viên: ${displayStr}`;
+});
 const leaveListTitle = computed(() => currentUserRole.value === 'admin' ? 'Quản Lý & Duyệt Đơn Xin Nghỉ Phép' : 'Danh Sách Đơn Xin Nghỉ Phép Của Tôi');
 const getLeaveStatusBadgeText = (status) => status === 'Chờ duyệt' ? '⏳ Chờ xét duyệt' : (status === 'Đã duyệt' ? '✅ Đã duyệt' : '✕ Đã từ chối');
 const formatCreatedAt = (dt) => dt ? new Date(dt).toLocaleString('vi-VN') : 'vừa xong';
