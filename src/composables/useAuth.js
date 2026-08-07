@@ -1,13 +1,6 @@
 import { ref } from 'vue';
 import { useToast } from './useToast.js';
 
-const defaultAdmins = [
-    { id: 'admin', password: 'DVPADMINBDH' },
-    { id: 'C2300023', password: 'DVP0023BDH' },
-    { id: '42300016', password: 'DVP0016BDH' },
-    { id: 'D2400032', password: 'DVP0032BDH' }
-];
-
 const savedLoggedIn = localStorage.getItem('socatruc_is_logged_in') === 'true';
 const savedRole = localStorage.getItem('socatruc_user_role') || 'member';
 const savedMemberId = localStorage.getItem('socatruc_member_id') || '';
@@ -17,7 +10,7 @@ const loginRole = ref('member');
 const loginForm = ref({ memberId: '', password: '' });
 const currentUserRole = ref(savedRole);
 const loggedInMemberId = ref(savedMemberId);
-const adminAccounts = ref(defaultAdmins);
+const adminAccounts = ref([]);
 
 export function useAuth(membersRef) {
     const { showToast } = useToast();
@@ -38,44 +31,39 @@ export function useAuth(membersRef) {
         const cleanId = rawId.toLowerCase();
         const isSuperAdmin = cleanId === 'admin';
 
-        // Check if ID matches an admin account in registered adminAccounts
-        const adminAcc = adminAccounts.value.find(
-            a => a.id && a.id.toString().trim().toUpperCase() === upperId
-        );
-        const isRegisteredAdminAcc = Boolean(adminAcc);
-
-        // Find member in Cloud/Local members list (Case-Insensitive & space trimmed)
+        // Find member in Cloud members list (Case-Insensitive & space trimmed)
         const cloudMember = membersRef?.value?.find(
             m => m.id && m.id.toString().trim().toUpperCase() === upperId
         );
 
         // Canonical Member ID (e.g. 42300016 / C2300023)
-        const canonicalId = cloudMember ? cloudMember.id : (adminAcc ? adminAcc.id : upperId);
+        const canonicalId = cloudMember ? cloudMember.id : upperId;
 
         if (loginRole.value === 'admin') {
             if (!pwd) {
                 return showToast('Vui lòng nhập mật khẩu Admin!', 'error');
             }
 
-            // Check if member is admin or in Ban Điều hành
+            // Check if member has Admin role in Cloud members list OR is super admin
             const isCloudAdminRole = cloudMember && (
                 cloudMember.role === 'admin' || 
                 cloudMember.department === 'Ban Điều hành' ||
-                (cloudMember.department && cloudMember.department.toLowerCase().includes('điều hành'))
+                (cloudMember.department && cloudMember.department.toLowerCase().includes('điều hành')) ||
+                (cloudMember.department && cloudMember.department.toLowerCase().includes('bđh'))
             );
 
-            const isAuthorizedAdmin = isSuperAdmin || isRegisteredAdminAcc || Boolean(isCloudAdminRole);
+            const isAuthorizedAdmin = isSuperAdmin || Boolean(isCloudAdminRole);
 
             if (!isAuthorizedAdmin) {
                 return showToast(`Tài khoản MSSV ${canonicalId} (${cloudMember ? cloudMember.name : ''}) không có quyền Admin!`, 'error');
             }
 
-            // Verify Admin Password: check formula (DVP + 4 last digits + BDH) or explicit custom cloud password
+            // Verify Admin Password: strictly check formula (DVP + 4 last digits + BDH) or explicit custom cloud password
             const last4 = upperId.length >= 4 ? upperId.slice(-4) : upperId.padStart(4, '0');
             const formulaPassword = `DVP${last4}BDH`;
-            const cloudPassword = adminAcc?.password;
+            const cloudPassword = cloudMember?.password;
 
-            const isPasswordCorrect = (pwd === formulaPassword) || (cloudPassword && pwd === cloudPassword);
+            const isPasswordCorrect = (pwd === formulaPassword) || (cloudPassword && pwd === cloudPassword) || (isSuperAdmin && (pwd === 'DVPADMINBDH' || pwd === formulaPassword));
 
             if (!isPasswordCorrect) {
                 return showToast(`Mật khẩu Admin không đúng! (Mật khẩu đúng: ${formulaPassword})`, 'error');
@@ -94,8 +82,8 @@ export function useAuth(membersRef) {
             showToast(`Đăng nhập Quản Trị Viên thành công! 👑 (${displayName})`);
         } else {
             // Member login authorization rule:
-            // Must be in Cloud members list OR registered admin accounts list OR super admin
-            const isAuthorizedMember = Boolean(cloudMember) || isRegisteredAdminAcc || isSuperAdmin;
+            // Must be in Cloud members list OR super admin
+            const isAuthorizedMember = Boolean(cloudMember) || isSuperAdmin;
 
             if (!isAuthorizedMember) {
                 return showToast(`MSSV ${upperId} chưa được Admin thêm vào hệ thống! Vui lòng liên hệ Admin.`, 'error');
