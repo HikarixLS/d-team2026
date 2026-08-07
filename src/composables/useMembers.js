@@ -2,11 +2,14 @@ import { ref, computed } from 'vue';
 import { useToast } from './useToast.js';
 
 const defaultDepartments = ['Ban Điều hành', 'Ban Hành chính', 'Ban Nhân sự', 'Ban Truyền thông'];
-const localMembersSaved = localStorage.getItem('local_members');
-const localDeptsSaved = localStorage.getItem('local_departments');
 
-const members = ref(localMembersSaved ? JSON.parse(localMembersSaved) : []);
-const departments = ref(localDeptsSaved ? JSON.parse(localDeptsSaved) : defaultDepartments);
+// Purge old stale local members cache so data always loads 100% fresh from Cloud Firestore
+try {
+    localStorage.removeItem('local_members');
+} catch (e) {}
+
+const members = ref([]);
+const departments = ref(defaultDepartments);
 
 const memberFilterSearch = ref('');
 const memberFilterDept = ref('all');
