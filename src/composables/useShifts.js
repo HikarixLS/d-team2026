@@ -43,16 +43,23 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
 
     const toPlainObject = (obj) => JSON.parse(JSON.stringify(obj));
 
+    const masterNames = {
+        '42300016': 'Đỗ Khánh Duy',
+        'C2300023': 'Lý Gia Huy',
+        'D2400032': 'Huỳnh Thị Mộng Ngân'
+    };
+
     const findMemberObj = (id) => {
         if (!membersRef || !membersRef.value || !id) return null;
-        const target = id.toString().trim().toUpperCase();
+        const target = String(id).trim().toUpperCase();
         return membersRef.value.find(m => {
             if (!m || typeof m !== 'object') return false;
-            const keys = [m.id, m.mssv, m.maSV, m.studentId, m.code, m.memberId, m.docId];
-            if (keys.some(k => k && k.toString().trim().toUpperCase() === target)) return true;
             for (const key in m) {
-                if (m[key] && typeof m[key] !== 'object' && m[key].toString().trim().toUpperCase() === target) {
-                    return true;
+                const val = m[key];
+                if (val !== undefined && val !== null && typeof val !== 'object') {
+                    if (String(val).trim().toUpperCase() === target) {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -61,11 +68,19 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
 
     const getMemberName = (id) => {
         if (!id) return '';
+        const target = String(id).trim().toUpperCase();
         const found = findMemberObj(id);
-        if (found && found.name && !found.name.startsWith('Thành viên [')) {
-            return found.name;
+        const realName = found ? (found.name || found.fullName || found.hoTen || found.ho_ten || found.full_name || found.ten || found.Name || found.HoTen || found.FullName) : null;
+
+        if (realName && realName !== target && !realName.startsWith('Thành viên [')) {
+            return realName;
         }
-        return found ? found.name : id;
+
+        if (masterNames[target]) {
+            return masterNames[target];
+        }
+
+        return realName || target;
     };
 
     const getMemberDept = (id) => {

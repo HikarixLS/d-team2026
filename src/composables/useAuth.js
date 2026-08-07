@@ -98,7 +98,21 @@ export function useAuth(membersRef) {
             localStorage.setItem('socatruc_user_role', 'admin');
             localStorage.setItem('socatruc_member_id', canonicalId);
 
-            const displayName = cloudMember ? cloudMember.name : (isSuperAdmin ? 'Super Admin' : canonicalId);
+            const masterNames = {
+                '42300016': 'Đỗ Khánh Duy',
+                'C2300023': 'Lý Gia Huy',
+                'D2400032': 'Huỳnh Thị Mộng Ngân'
+            };
+
+            const getDisplayName = (m, id) => {
+                if (isSuperAdmin) return 'Super Admin';
+                const realName = m ? (m.name || m.fullName || m.hoTen || m.ho_ten || m.full_name || m.ten) : null;
+                if (realName && realName !== id && !realName.startsWith('Thành viên [')) return realName;
+                if (masterNames[id]) return masterNames[id];
+                return realName || id;
+            };
+
+            const displayName = getDisplayName(cloudMember, canonicalId);
             showToast(`Đăng nhập Quản Trị Viên thành công! 👑 (${displayName})`);
         } else {
             // Member login:
@@ -131,7 +145,19 @@ export function useAuth(membersRef) {
             localStorage.setItem('socatruc_user_role', 'member');
             localStorage.setItem('socatruc_member_id', canonicalId);
 
-            const displayName = cloudMember ? cloudMember.name : canonicalId;
+            const masterNames = {
+                '42300016': 'Đỗ Khánh Duy',
+                'C2300023': 'Lý Gia Huy',
+                'D2400032': 'Huỳnh Thị Mộng Ngân'
+            };
+            const getDisplayName = (m, id) => {
+                const realName = m ? (m.name || m.fullName || m.hoTen || m.ho_ten || m.full_name || m.ten) : null;
+                if (realName && realName !== id && !realName.startsWith('Thành viên [')) return realName;
+                if (masterNames[id]) return masterNames[id];
+                return realName || id;
+            };
+
+            const displayName = getDisplayName(cloudMember, canonicalId);
             showToast(`Đăng nhập Thành Viên thành công! 🎉 (${displayName})`);
         }
     };
