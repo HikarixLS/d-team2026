@@ -107,6 +107,15 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             }
         } catch (e) {}
 
+        const initialMembersMap = {
+            'C2300023': { name: 'Lý Gia Huy', department: 'Ban Điều hành', role: 'admin' },
+            '42300016': { name: 'Đỗ Khánh Duy', department: 'Ban Điều hành', role: 'admin' },
+            'D2400032': { name: 'Huỳnh Thị Mộng Ngân', department: 'Ban Điều hành', role: 'admin' },
+            '20210001': { name: 'Nguyễn Văn An', department: 'Ban Hành chính', role: 'member' },
+            '20210002': { name: 'Trần Thị Bình', department: 'Ban Nhân sự', role: 'member' },
+            '20210003': { name: 'Lê Hoàng Cường', department: 'Ban Truyền thông', role: 'member' }
+        };
+
         try {
             const membersRefCol = collection(db, 'members');
             unsubMembers = onSnapshot(membersRefCol, (snapshot) => {
@@ -115,9 +124,21 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     const data = docSnap.data();
                     const rawId = data.id || data.mssv || data.maSV || data.studentId || data.code || data.memberId || docSnap.id;
                     const canonicalId = String(rawId).trim().toUpperCase();
+                    let name = data.name || data.fullName || data.hoTen || data.ho_ten || data.full_name || data.ten || data.Name || data.HoTen || data.FullName;
+
+                    const matchInitial = initialMembersMap[canonicalId];
+                    if (matchInitial && (!name || name.startsWith('Thành viên ['))) {
+                        name = matchInitial.name;
+                        try {
+                            const { doc, setDoc } = window.FirebaseSDK;
+                            setDoc(doc(db, 'members', docSnap.id), { name: matchInitial.name }, { merge: true }).catch(() => {});
+                        } catch (e) {}
+                    }
+
                     list.push({
                         ...data,
                         id: canonicalId,
+                        name: name || canonicalId,
                         docId: docSnap.id
                     });
                 });

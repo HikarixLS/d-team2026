@@ -65,7 +65,10 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         const target = String(id).trim().toUpperCase();
         const found = findMemberObj(id);
         const realName = found ? (found.name || found.fullName || found.hoTen || found.ho_ten || found.full_name || found.ten || found.Name || found.HoTen || found.FullName) : null;
-        return realName || target;
+        if (realName && !realName.startsWith('Thành viên [')) {
+            return realName;
+        }
+        return target;
     };
 
     const getMemberDept = (id) => {
