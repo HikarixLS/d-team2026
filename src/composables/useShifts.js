@@ -516,6 +516,143 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
             }
         }
     };
+    const formatDayMonth = (dateStr) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return dateStr;
+        return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+    };
+
+    const exportShiftScheduleMatrixExcel = (targetMonth = null, customRegs = null) => {
+        if (!window.XLSX) {
+            return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
+        }
+
+        const monthStr = targetMonth || selectedMonth.value || getMonthStr();
+        const regList = customRegs || registrations.value;
+        const currentMembers = membersRef ? (typeof membersRef === 'function' ? membersRef() : (membersRef.value || membersRef)) : [];
+
+        // Filter registrations for selected month if available, else fallback
+        let monthRegs = regList.filter(r => r.date && r.date.substring(0, 7) === monthStr);
+        if (monthRegs.length === 0 && regList.length > 0) {
+            monthRegs = [...regList];
+        }
+
+        if (monthRegs.length === 0) {
+            return showToast('Chưa có lịch đăng ký ca trực nào để xuất Excel!', 'warning');
+        }
+
+        // Discover unique sorted dates
+        const dateSet = new Set();
+        monthRegs.forEach(r => { if (r.date) dateSet.add(r.date); });
+        const dateList = Array.from(dateSet).sort();
+
+        const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
+
+        const rowsData = [];
+
+        // Row 1: Headers
+        const row1 = ["BUỔI", "STT"];
+        dateList.forEach(d => {
+            row1.push(formatDayMonth(d), "");
+        });
+        rowsData.push(row1);
+
+        // Row 2: Sub-headers
+        const row2 = ["", ""];
+        dateList.forEach(() => {
+            row2.push("MSSV", "HỌ VÀ TÊN");
+        });
+        rowsData.push(row2);
+
+        // Map shift and date to list of students
+        const shiftDateMap = {};
+        shiftTypes.forEach(st => {
+            shiftDateMap[st] = {};
+            dateList.forEach(d => {
+                shiftDateMap[st][d] = [];
+            });
+        });
+
+        monthRegs.forEach(r => {
+            const st = r.shiftType || 'Ca 1';
+            const d = r.date;
+            if (shiftDateMap[st] && shiftDateMap[st][d]) {
+                const mId = String(r.memberId || '').trim().toUpperCase();
+                const mObj = findMemberObj(mId) || (Array.isArray(currentMembers) ? currentMembers.find(m => String(m.id).toUpperCase() === mId) : null);
+                const name = r.memberName || mObj?.name || getMemberName(mId);
+                shiftDateMap[st][d].push({
+                    mssv: mId,
+                    name: name
+                });
+            }
+        });
+
+        const merges = [];
+
+        // Date headers merges (Row 1: C1:D1, E1:F1...)
+        for (let i = 0; i < dateList.length; i++) {
+            const colStart = 2 + i * 2;
+            merges.push({
+                s: { r: 0, c: colStart },
+                e: { r: 0, c: colStart + 1 }
+            });
+        }
+
+        // Sections per Shift (CA 1, CA 2, CA 3, CA 4) matching Hỗ trợ nhập học.xlsx template
+        shiftTypes.forEach(st => {
+            let maxCount = 0;
+            dateList.forEach(d => {
+                if (shiftDateMap[st][d].length > maxCount) {
+                    maxCount = shiftDateMap[st][d].length;
+                }
+            });
+
+            // Template standard: at least 15 rows per shift block (matching Hỗ trợ nhập học.xlsx)
+            if (maxCount < 15) maxCount = 15;
+
+            const startRowIndex = rowsData.length;
+
+            for (let idx = 0; idx < maxCount; idx++) {
+                const row = [st.toUpperCase(), idx + 1];
+                dateList.forEach(d => {
+                    const student = shiftDateMap[st][d][idx];
+                    if (student) {
+                        row.push(student.mssv, student.name);
+                    } else {
+                        row.push("", "");
+                    }
+                });
+                rowsData.push(row);
+            }
+
+            // Vertical merge for BUỔI column (Col A) for this shift block
+            merges.push({
+                s: { r: startRowIndex, c: 0 },
+                e: { r: startRowIndex + maxCount - 1, c: 0 }
+            });
+        });
+
+        const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
+        ws['!merges'] = merges;
+
+        // Set column widths matching template
+        const cols = [
+            { wch: 10 }, // BUỔI
+            { wch: 6 }   // STT
+        ];
+        dateList.forEach(() => {
+            cols.push({ wch: 14 }); // MSSV
+            cols.push({ wch: 25 }); // HỌ VÀ TÊN
+        });
+        ws['!cols'] = cols;
+
+        const wb = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(wb, ws, "Lịch Ca Làm");
+        const fileName = `Lich_Ca_Lam_${monthStr}.xlsx`;
+        window.XLSX.writeFile(wb, fileName);
+        showToast(`Xuất file Excel Mẫu Lịch Ca Làm "${fileName}" thành công! 📊`);
+    };
 
     return {
         shifts,
@@ -553,6 +690,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         historyFilter,
         searchedShifts,
         deleteRegistration,
-        confirmDeleteRegistration
+        confirmDeleteRegistration,
+        exportShiftScheduleMatrixExcel
     };
 }

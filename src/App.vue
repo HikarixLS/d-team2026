@@ -124,7 +124,8 @@
                           :getTakenShiftsCountForDate="getTakenShiftsCountForDate"
                           :isRegDateFull="isRegDateFull"
                           @save-registration="saveRegistration"
-                          @delete-registration="confirmDeleteRegistration" />
+                          @delete-registration="confirmDeleteRegistration"
+                          @export-matrix-excel="exportShiftScheduleMatrixExcel(selectedMonth, registrations)" />
 
         <!-- Tab 3: Đơn xin nghỉ phép -->
         <TabLeaveRequests v-show="currentTab === 'leave'"
@@ -171,7 +172,8 @@
                          :getMemberName="getMemberName"
                          :getMemberDept="getMemberDept"
                          :formatDate="formatDate"
-                         @export-excel="exportToExcel" />
+                         @export-excel="exportToExcel"
+                         @export-matrix-excel="exportShiftScheduleMatrixExcel(selectedMonth, searchedShifts)" />
 
         <!-- Tab 6: Quản lý Danh sách Thành viên -->
         <TabMembersList v-show="currentTab === 'members'"
@@ -294,7 +296,8 @@ const {
   regForm, saveRegistration, getShiftRegisteredCount, isShiftFullOnDate, isShiftTakenOnDate, getTakenShiftsCountForDate, isRegDateFull,
   leaveForm, availableRegisteredShifts, onLeaveMemberChange, onLeaveRegSelect,
   saveLeaveRequest, leaveStatusFilter, filteredLeaveRequests, pendingLeaveCount,
-  updateLeaveStatus, historyFilter, searchedShifts, confirmDeleteRegistration
+  updateLeaveStatus, historyFilter, searchedShifts, confirmDeleteRegistration,
+  exportShiftScheduleMatrixExcel
 } = shiftsModule;
 
 const activitiesModule = useActivities(members, loggedInMemberId, currentUserRole);

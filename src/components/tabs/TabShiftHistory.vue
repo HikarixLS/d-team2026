@@ -9,8 +9,11 @@
           <p class="text-xs text-slate-500 mt-0.5">{{ historySubtitle }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <button @click="$emit('export-excel')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
-            <i class="fa-solid fa-file-excel"></i> Xuất Excel
+          <button @click="$emit('export-matrix-excel')" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer" title="Xuất ma trận lịch ca làm theo mẫu Hỗ trợ nhập học.xlsx">
+            <i class="fa-solid fa-table-cells"></i> Xuất Mẫu Ca Làm
+          </button>
+          <button @click="$emit('export-excel')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer" title="Xuất báo cáo chi tiết từng dòng ca trực">
+            <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo
           </button>
         </div>
       </div>
@@ -84,5 +87,5 @@ defineProps([
   'getMemberDept',
   'formatDate'
 ]);
-defineEmits(['export-excel']);
+defineEmits(['export-excel', 'export-matrix-excel']);
 </script>

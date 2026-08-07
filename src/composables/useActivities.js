@@ -421,21 +421,21 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             return showToast('Hoạt động này chưa có ngày diễn ra để xuất danh sách!', 'warning');
         }
 
-        // 3. Shift Types
-        const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3'];
+        // 3. Shift Types (Ca 1, Ca 2, Ca 3, Ca 4)
+        const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
 
-        // 4. Build Matrix Rows Data matching Image 3
+        // 4. Build Matrix Rows Data matching Hỗ trợ nhập học.xlsx template
         const rowsData = [];
 
-        // Row 1: STT, Date Headers (Col B & C, D & E...)
-        const row1 = ["STT"];
+        // Row 1: Headers (Col A: BUỔI, Col B: STT, Date Headers merged across Col C&D, E&F...)
+        const row1 = ["BUỔI", "STT"];
         dateList.forEach(d => {
             row1.push(formatDayMonth(d), "");
         });
         rowsData.push(row1);
 
         // Row 2: Sub-headers ("MSSV", "HỌ VÀ TÊN" under each date)
-        const row2 = [""];
+        const row2 = ["", ""];
         dateList.forEach(() => {
             row2.push("MSSV", "HỌ VÀ TÊN");
         });
@@ -454,7 +454,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             const st = r.shiftType || 'Ca 1';
             const d = r.date;
             if (shiftDateMap[st] && shiftDateMap[st][d]) {
-                const mObj = membersList.find(m => m.id === r.memberId);
+                const mObj = membersList.find(m => String(m.id).toUpperCase() === String(r.memberId).toUpperCase());
                 const name = r.memberName || mObj?.name || r.memberId;
                 shiftDateMap[st][d].push({
                     mssv: String(r.memberId).trim().toUpperCase(),
@@ -463,7 +463,18 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             }
         });
 
-        // Generate Section Rows per Shift (Ca 1, Ca 2, Ca 3)
+        const merges = [];
+
+        // Date Header Merges (Row 1: C1:D1, E1:F1...)
+        for (let i = 0; i < dateList.length; i++) {
+            const colStart = 2 + i * 2;
+            merges.push({
+                s: { r: 0, c: colStart },
+                e: { r: 0, c: colStart + 1 }
+            });
+        }
+
+        // Generate Section Rows per Shift (Ca 1, Ca 2, Ca 3, Ca 4)
         shiftTypes.forEach(st => {
             let maxCount = 0;
             dateList.forEach(d => {
@@ -472,15 +483,13 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
                 }
             });
 
-            if (maxCount === 0) maxCount = 3;
+            // Standard template: at least 15 rows per shift block
+            if (maxCount < 15) maxCount = 15;
 
-            // Shift Title Header Row
-            const shiftTitleRow = [`--- ${st.toUpperCase()} ---`];
-            dateList.forEach(() => shiftTitleRow.push("", ""));
-            rowsData.push(shiftTitleRow);
+            const startRowIndex = rowsData.length;
 
             for (let idx = 0; idx < maxCount; idx++) {
-                const row = [idx + 1];
+                const row = [st.toUpperCase(), idx + 1];
                 dateList.forEach(d => {
                     const student = shiftDateMap[st][d][idx];
                     if (student) {
@@ -491,25 +500,32 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
                 });
                 rowsData.push(row);
             }
+
+            // Vertical merge for BUỔI column (Col A) for this shift block
+            merges.push({
+                s: { r: startRowIndex, c: 0 },
+                e: { r: startRowIndex + maxCount - 1, c: 0 }
+            });
         });
 
         const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
-
-        // Merge Date Header Cells
-        const merges = [];
-        for (let i = 0; i < dateList.length; i++) {
-            const colStart = 1 + i * 2;
-            merges.push({
-                s: { r: 0, c: colStart },
-                e: { r: 0, c: colStart + 1 }
-            });
-        }
         ws['!merges'] = merges;
+
+        // Set column widths matching Hỗ trợ nhập học.xlsx template
+        const cols = [
+            { wch: 10 }, // BUỔI
+            { wch: 6 }   // STT
+        ];
+        dateList.forEach(() => {
+            cols.push({ wch: 14 }); // MSSV
+            cols.push({ wch: 25 }); // HỌ VÀ TÊN
+        });
+        ws['!cols'] = cols;
 
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "DS Đăng Ký Ca");
         window.XLSX.writeFile(wb, fileName);
-        showToast(`Xuất file Excel Danh sách Đăng ký "${fileName}" thành công! 📊`);
+        showToast(`Xuất file Excel Mẫu Lịch Ca Làm "${fileName}" thành công! 📊`);
     };
 
     const adminActivitySummaryStats = computed(() => {

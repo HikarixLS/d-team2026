@@ -112,9 +112,14 @@
             </h3>
             <p class="text-xs text-slate-500 mt-0.5">Hiển thị lịch đăng ký ca trực dự kiến của toàn đội</p>
           </div>
-          <span class="px-3 py-1 bg-sky-50 text-sky-700 border border-sky-200 text-xs font-bold rounded-full">
-            Tổng: {{ filteredRegistrations.length }} Đăng Ký
-          </span>
+          <div class="flex items-center gap-2">
+            <button @click="$emit('export-matrix-excel')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer" title="Xuất ma trận ca làm theo mẫu Hỗ trợ nhập học.xlsx">
+              <i class="fa-solid fa-file-excel"></i> Xuất Mẫu Ca Làm
+            </button>
+            <span class="px-3 py-1 bg-sky-50 text-sky-700 border border-sky-200 text-xs font-bold rounded-full">
+              Tổng: {{ filteredRegistrations.length }} Đăng Ký
+            </span>
+          </div>
         </div>
 
         <div class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
@@ -173,5 +178,5 @@ defineProps([
   'getTakenShiftsCountForDate',
   'isRegDateFull'
 ]);
-defineEmits(['save-registration', 'delete-registration']);
+defineEmits(['save-registration', 'delete-registration', 'export-matrix-excel']);
 </script>

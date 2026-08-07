@@ -41,6 +41,11 @@ export function useAuth(membersRef) {
 
         const currentMembers = getMembersList();
 
+        // 1. Check if members list is empty
+        if (!isSuperAdmin && currentMembers.length === 0) {
+            return showToast('Danh sách thành viên Cloud đang được nạp, vui lòng thử lại sau giây lát...', 'warning');
+        }
+
         // Deep property scan to find member in Cloud members list
         const cloudMember = currentMembers.find(m => {
             if (!m || typeof m !== 'object') return false;
@@ -57,6 +62,11 @@ export function useAuth(membersRef) {
             return false;
         });
 
+        // 2. Strict Cloud Member existence check: Only allow MSSV present in Cloud
+        if (!cloudMember && !isSuperAdmin) {
+            return showToast(`Mã số sinh viên ${upperId} không tồn tại trong danh sách thành viên Cloud!`, 'error');
+        }
+
         // Canonical Member ID (e.g. 025H0180 / 42300016 / C2300023)
         const canonicalId = cloudMember ? (cloudMember.id || cloudMember.mssv || upperId) : upperId;
 
@@ -71,7 +81,7 @@ export function useAuth(membersRef) {
 
             const isPasswordCorrect = (pwd === formulaPassword) || (cloudPassword && pwd === cloudPassword) || (isSuperAdmin && (pwd === 'DVPADMINBDH' || pwd === formulaPassword));
 
-            // Check if member has Admin role in Cloud members list OR is super admin OR provided valid formula password
+            // Check if member has Admin role in Cloud members list OR is super admin
             const isCloudAdminRole = cloudMember && (
                 cloudMember.role === 'admin' || 
                 cloudMember.department === 'Ban Điều hành' ||
@@ -79,14 +89,15 @@ export function useAuth(membersRef) {
                 (cloudMember.department && cloudMember.department.toLowerCase().includes('bđh'))
             );
 
-            const isAuthorizedAdmin = isSuperAdmin || Boolean(isCloudAdminRole) || isPasswordCorrect;
+            const isAuthorizedAdmin = isSuperAdmin || Boolean(isCloudAdminRole);
 
             if (!isAuthorizedAdmin) {
-                return showToast(`Tài khoản MSSV ${canonicalId} (${cloudMember ? cloudMember.name : ''}) không có quyền Admin!`, 'error');
+                const memberName = cloudMember ? ` (${cloudMember.name})` : '';
+                return showToast(`Tài khoản MSSV ${canonicalId}${memberName} không có quyền Quản Trị Viên!`, 'error');
             }
 
             if (!isPasswordCorrect) {
-                return showToast(`Mật khẩu Admin không đúng! (Mật khẩu đúng: ${formulaPassword})`, 'error');
+                return showToast(`Mật khẩu Admin không đúng!`, 'error');
             }
 
             // Successfully authenticated Admin!
