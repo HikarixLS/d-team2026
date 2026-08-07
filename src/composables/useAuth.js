@@ -31,15 +31,24 @@ export function useAuth(membersRef) {
         const cleanId = rawId.toLowerCase();
         const isSuperAdmin = cleanId === 'admin';
 
-        // Find member in Cloud members list (Case-Insensitive & space trimmed across id, mssv, code, memberId)
+        // Deep property scan to find member in Cloud members list
         const cloudMember = membersRef?.value?.find(m => {
-            if (!m) return false;
-            const mId = (m.id || m.mssv || m.code || m.memberId || '').toString().trim().toUpperCase();
-            return mId === upperId;
+            if (!m || typeof m !== 'object') return false;
+            // 1. Direct key match
+            const keys = [m.id, m.mssv, m.maSV, m.studentId, m.code, m.memberId, m.docId];
+            if (keys.some(k => k && k.toString().trim().toUpperCase() === upperId)) return true;
+
+            // 2. Scan all primitive values in object
+            for (const key in m) {
+                if (m[key] && typeof m[key] !== 'object' && m[key].toString().trim().toUpperCase() === upperId) {
+                    return true;
+                }
+            }
+            return false;
         });
 
-        // Canonical Member ID (e.g. 42300016 / C2300023)
-        const canonicalId = cloudMember ? cloudMember.id : upperId;
+        // Canonical Member ID (e.g. 025H0180 / 42300016 / C2300023)
+        const canonicalId = cloudMember ? (cloudMember.id || cloudMember.mssv || upperId) : upperId;
 
         if (loginRole.value === 'admin') {
             if (!pwd) {
@@ -83,12 +92,26 @@ export function useAuth(membersRef) {
             const displayName = cloudMember ? cloudMember.name : (isSuperAdmin ? 'Super Admin' : canonicalId);
             showToast(`Đăng nhập Quản Trị Viên thành công! 👑 (${displayName})`);
         } else {
-            // Member login authorization rule:
-            // Must be in Cloud members list OR super admin
-            const isAuthorizedMember = Boolean(cloudMember) || isSuperAdmin;
-
-            if (!isAuthorizedMember) {
-                return showToast(`MSSV ${upperId} chưa được Admin thêm vào hệ thống! Vui lòng liên hệ Admin.`, 'error');
+            // Member login:
+            // If member is not yet in cloud state, auto-register to Cloud Firestore so Admin can see them in list!
+            if (!cloudMember && window.firebaseDb && window.FirebaseSDK) {
+                try {
+                    const { doc, setDoc } = window.FirebaseSDK;
+                    const newMember = {
+                        id: canonicalId,
+                        mssv: canonicalId,
+                        name: `Thành viên [${canonicalId}]`,
+                        department: 'Ban Hành chính',
+                        dob: '',
+                        role: 'member',
+                        targetShifts: 10,
+                        createdAt: new Date().toISOString()
+                    };
+                    setDoc(doc(window.firebaseDb, 'members', canonicalId), newMember).catch(() => {});
+                    if (membersRef && Array.isArray(membersRef.value)) {
+                        membersRef.value.push(newMember);
+                    }
+                } catch (e) {}
             }
 
             isLoggedIn.value = true;
@@ -99,7 +122,7 @@ export function useAuth(membersRef) {
             localStorage.setItem('socatruc_user_role', 'member');
             localStorage.setItem('socatruc_member_id', canonicalId);
 
-            const displayName = cloudMember ? cloudMember.name : (isSuperAdmin ? 'Super Admin' : canonicalId);
+            const displayName = cloudMember ? cloudMember.name : canonicalId;
             showToast(`Đăng nhập Thành Viên thành công! 🎉 (${displayName})`);
         }
     };

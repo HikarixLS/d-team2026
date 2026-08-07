@@ -113,13 +113,20 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 const list = [];
                 snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
-                    const rawId = data.id || data.mssv || data.code || data.memberId || docSnap.id;
+                    const rawId = data.id || data.mssv || data.maSV || data.studentId || data.code || data.memberId || docSnap.id;
+                    const canonicalId = String(rawId).trim().toUpperCase();
                     list.push({
                         ...data,
-                        id: String(rawId).trim()
+                        id: canonicalId,
+                        docId: docSnap.id
                     });
                 });
-                if (list.length > 0 && membersRef) membersRef.value = list;
+                if (membersRef) {
+                    membersRef.value = list;
+                    try {
+                        localStorage.setItem('local_members', JSON.stringify(list));
+                    } catch (e) {}
+                }
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
