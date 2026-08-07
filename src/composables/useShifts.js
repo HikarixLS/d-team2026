@@ -43,15 +43,34 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
 
     const toPlainObject = (obj) => JSON.parse(JSON.stringify(obj));
 
+    const findMemberObj = (id) => {
+        if (!membersRef || !membersRef.value || !id) return null;
+        const target = id.toString().trim().toUpperCase();
+        return membersRef.value.find(m => {
+            if (!m || typeof m !== 'object') return false;
+            const keys = [m.id, m.mssv, m.maSV, m.studentId, m.code, m.memberId, m.docId];
+            if (keys.some(k => k && k.toString().trim().toUpperCase() === target)) return true;
+            for (const key in m) {
+                if (m[key] && typeof m[key] !== 'object' && m[key].toString().trim().toUpperCase() === target) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    };
+
     const getMemberName = (id) => {
-        if (!membersRef) return id;
-        const found = membersRef.value.find(m => m.id === id);
+        if (!id) return '';
+        const found = findMemberObj(id);
+        if (found && found.name && !found.name.startsWith('Thành viên [')) {
+            return found.name;
+        }
         return found ? found.name : id;
     };
 
     const getMemberDept = (id) => {
-        if (!membersRef) return '—';
-        const found = membersRef.value.find(m => m.id === id);
+        if (!id) return '—';
+        const found = findMemberObj(id);
         return found ? (found.department || '—') : '—';
     };
 
