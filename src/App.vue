@@ -74,7 +74,7 @@
                                 @delete-semester="deleteSemester"
                                 @toggle-training-points="toggleTrainingPointsSubmitted"
                                 @update-submit-date="updateActivitySubmitDate"
-                                @export-excel="exportActivityExcel($event, getActivityStats($event.id), members)"
+                                @export-excel="handleExportActivityExcel"
                                 @open-detail="openActivityDetailModal" />
 
           <!-- User View: Trang riêng tổng hợp hoạt động tháng, điểm danh, xin nghỉ -->
@@ -302,7 +302,7 @@ const {
   activities, activityCheckIns, semesters, activityRegistrations, addSemester, deleteSemester, toggleTrainingPointsSubmitted,
   updateActivitySubmitDate, createActivity, deleteActivity, registerActivityShift, deleteActivityRegistration, getActivityDates,
   checkInActivity, requestLeaveActivity, getUserCheckInRecord, getActivityStats,
-  computeActivityDerivedFields, exportActivityExcel, adminActivitySummaryStats
+  computeActivityDerivedFields, exportActivityExcel, exportActivityRegistrationMatrixExcel, adminActivitySummaryStats
 } = activitiesModule;
 
 const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts, activities, activityCheckIns, semesters, departments);
@@ -317,6 +317,14 @@ const selectedActivityForDetail = ref(null);
 
 const showLeaveActivityModal = ref(false);
 const selectedActivityForLeave = ref(null);
+
+const handleExportActivityExcel = (act, exportType) => {
+  if (exportType === 'registration') {
+    exportActivityRegistrationMatrixExcel(act, members.value);
+  } else {
+    exportActivityExcel(act, getActivityStats(act.id), members.value);
+  }
+};
 
 const openActivityDetailModal = (act) => {
   selectedActivityForDetail.value = act;

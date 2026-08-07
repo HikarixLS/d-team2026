@@ -23,30 +23,42 @@ export function useAuth(membersRef) {
     const { showToast } = useToast();
 
     const handleLogin = () => {
-        const id = loginForm.value.memberId.trim();
+        const rawId = loginForm.value.memberId.trim();
         const pwd = loginForm.value.password.trim();
 
-        if (!id) {
+        if (!rawId) {
             return showToast('Vui lòng nhập MSSV!', 'error');
         }
 
-        const cleanId = id.toLowerCase();
+        if (rawId.length > 8) {
+            return showToast('Mã số sinh viên chỉ được phép tối đa 8 ký tự!', 'error');
+        }
 
-        // Find member from Cloud/Local list
+        const upperId = rawId.toUpperCase();
+        const cleanId = rawId.toLowerCase();
+        const isSuperAdmin = cleanId === 'admin';
+
+        // Find member in Cloud/Local members list (Case-Insensitive)
         const cloudMember = membersRef?.value?.find(
-            m => m.id && m.id.toString().toLowerCase() === cleanId
+            m => m.id && m.id.toString().trim().toUpperCase() === upperId
         );
+
+        // Rule: Only MSSV added by Admin (or super admin) can log into the system!
+        if (!cloudMember && !isSuperAdmin) {
+            return showToast(`MSSV ${upperId} chưa được Admin thêm vào hệ thống! Vui lòng liên hệ Admin.`, 'error');
+        }
+
+        // Canonical Member ID (e.g. C2300023)
+        const canonicalId = cloudMember ? cloudMember.id : upperId;
 
         if (loginRole.value === 'admin') {
             if (!pwd) {
                 return showToast('Vui lòng nhập mật khẩu Admin!', 'error');
             }
 
-            const isSuperAdmin = cleanId === 'admin';
-
             // Find matching admin account in adminAccounts
             const adminAcc = adminAccounts.value.find(
-                a => a.id && a.id.toString().toLowerCase() === cleanId
+                a => a.id && a.id.toString().trim().toUpperCase() === upperId
             );
 
             // Check if member is admin or in Ban Điều hành
@@ -59,50 +71,42 @@ export function useAuth(membersRef) {
             const isAuthorizedAdmin = isSuperAdmin || Boolean(adminAcc) || Boolean(isCloudAdminRole);
 
             if (!isAuthorizedAdmin) {
-                if (cloudMember) {
-                    return showToast(`Tài khoản MSSV ${id} (${cloudMember.name}) không có quyền Admin!`, 'error');
-                } else {
-                    return showToast(`MSSV ${id} chưa được cấp quyền Quản Trị Viên!`, 'error');
-                }
+                return showToast(`Tài khoản MSSV ${canonicalId} (${cloudMember ? cloudMember.name : ''}) không có quyền Admin!`, 'error');
             }
 
             // Verify Admin Password: check custom password, formula (DVP + 4 last digits + BDH), or master pass 123
-            const last4 = cleanId.length >= 4 ? cleanId.slice(-4).toUpperCase() : cleanId.padStart(4, '0').toUpperCase();
+            const last4 = upperId.length >= 4 ? upperId.slice(-4) : upperId.padStart(4, '0');
             const formulaPassword = `DVP${last4}BDH`;
             const cloudPassword = adminAcc?.password;
 
             const isPasswordCorrect = isSuperAdmin || pwd === '123' || pwd === formulaPassword || (cloudPassword && pwd === cloudPassword);
 
             if (!isPasswordCorrect) {
-                return showToast(`Mật khẩu Admin không đúng! (Định dạng mật khẩu: ${formulaPassword})`, 'error');
+                return showToast(`Mật khẩu Admin không đúng! (Gợi ý mật khẩu: ${formulaPassword})`, 'error');
             }
 
             // Successfully authenticated Admin!
             isLoggedIn.value = true;
             currentUserRole.value = 'admin';
-            loggedInMemberId.value = id;
+            loggedInMemberId.value = canonicalId;
 
             localStorage.setItem('socatruc_is_logged_in', 'true');
             localStorage.setItem('socatruc_user_role', 'admin');
-            localStorage.setItem('socatruc_member_id', id);
+            localStorage.setItem('socatruc_member_id', canonicalId);
 
-            const displayName = cloudMember ? cloudMember.name : (id === 'admin' ? 'Super Admin' : id);
+            const displayName = cloudMember ? cloudMember.name : (isSuperAdmin ? 'Super Admin' : canonicalId);
             showToast(`Đăng nhập Quản Trị Viên thành công! 👑 (${displayName})`);
         } else {
             // Member login
             isLoggedIn.value = true;
             currentUserRole.value = 'member';
-            loggedInMemberId.value = id;
+            loggedInMemberId.value = canonicalId;
 
             localStorage.setItem('socatruc_is_logged_in', 'true');
             localStorage.setItem('socatruc_user_role', 'member');
-            localStorage.setItem('socatruc_member_id', id);
+            localStorage.setItem('socatruc_member_id', canonicalId);
 
-            if (cloudMember) {
-                showToast(`Xin chào ${cloudMember.name}! 👋`);
-            } else {
-                showToast(`Đăng nhập thành công với MSSV ${id}! 👋`);
-            }
+            showToast(`Xin chào ${cloudMember ? cloudMember.name : canonicalId}! 👋`);
         }
     };
 

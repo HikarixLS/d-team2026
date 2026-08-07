@@ -177,11 +177,8 @@
               </div>
               <div class="flex flex-wrap gap-1">
                 <span v-for="r in getUserActivityRegs(act.id)" :key="r.id"
-                      class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-300 flex items-center gap-1">
-                  <span>{{ formatDate(r.date) }} ({{ r.shiftType }})</span>
-                  <button @click.stop="$emit('delete-activity-reg', r.id)" class="text-rose-500 hover:text-rose-700 ml-0.5 cursor-pointer" title="Hủy đăng ký ca này">
-                    <i class="fa-solid fa-xmark"></i>
-                  </button>
+                      class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-300 flex items-center gap-1">
+                  <span>✓ {{ formatDate(r.date) }} ({{ r.shiftType }})</span>
                 </span>
               </div>
             </div>

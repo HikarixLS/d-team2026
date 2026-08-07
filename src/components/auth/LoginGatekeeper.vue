@@ -37,11 +37,11 @@
 
       <form @submit.prevent="$emit('login')" class="space-y-4">
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-indigo-200 mb-1.5">Mã Số Sinh Viên (MSSV) <span class="text-rose-400">*</span></label>
+          <label class="block text-xs font-bold uppercase tracking-wider text-indigo-200 mb-1.5">Mã Số Sinh Viên (MSSV - Tối đa 8 ký tự) <span class="text-rose-400">*</span></label>
           <div class="relative">
             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-indigo-300"><i class="fa-solid fa-id-card"></i></span>
-            <input type="text" v-model="loginForm.memberId" required placeholder="Nhập MSSV (VD: 20210001)"
-                   class="w-full bg-slate-950/60 border border-indigo-500/40 rounded-xl py-3 pl-10 pr-4 text-sm font-semibold text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <input type="text" v-model="loginForm.memberId" required maxlength="8" placeholder="Nhập MSSV (Tối đa 8 ký tự, VD: C2300023)"
+                   class="w-full bg-slate-950/60 border border-indigo-500/40 rounded-xl py-3 pl-10 pr-4 text-sm font-bold uppercase tracking-wider text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400">
           </div>
         </div>
 

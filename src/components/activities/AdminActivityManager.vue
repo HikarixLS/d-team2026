@@ -1,3 +1,171 @@
+<script setup>
+import { ref, computed } from 'vue';
+
+const props = defineProps({
+  activities: Array,
+  semesters: {
+    type: Array,
+    default: () => ['Học kỳ 1 (2026-2027)', 'Học kỳ 2 (2026-2027)', 'Học kỳ 3 (2026-2027)', 'Học kỳ Hè (2026-2027)']
+  },
+  adminActivitySummaryStats: Object,
+  computeActivityDerivedFields: Function,
+  getActivityStats: Function,
+  formatDate: Function
+});
+
+const emit = defineEmits([
+  'create-activity',
+  'delete-activity',
+  'open-detail',
+  'add-semester',
+  'delete-semester',
+  'toggle-training-points',
+  'update-submit-date',
+  'export-excel'
+]);
+
+const getTodayStr = () => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const addDays = (dateStr, days) => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length < 3) return dateStr;
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  d.setDate(d.getDate() + days);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const form = ref({
+  name: '',
+  location: '',
+  date: getTodayStr(),
+  endDate: getTodayStr(),
+  submitDate: '',
+  semester: 'Học kỳ 1 (2026-2027)',
+  description: ''
+});
+
+const computedDeadline = computed(() => {
+  return addDays(form.value.endDate || form.value.date, 3);
+});
+
+const summaryStats = computed(() => {
+  if (props.adminActivitySummaryStats) return props.adminActivitySummaryStats;
+  return {
+    totalExecuted: props.activities ? props.activities.length : 0,
+    submittedOnTimeCount: 0,
+    overdueCount: 0
+  };
+});
+
+const getDerived = (act) => {
+  if (props.computeActivityDerivedFields) {
+    return props.computeActivityDerivedFields(act);
+  }
+  return {
+    codeId: act.codeId || 1,
+    startDate: act.date || getTodayStr(),
+    endDate: act.endDate || act.date || getTodayStr(),
+    deadlineDate: act.deadlineDate || getTodayStr(),
+    location: act.location || 'Trường ĐH',
+    contentVN: `Tham gia ${act.name}`,
+    contentEN: `Participating in ${act.name}`,
+    submitDate: act.submitDate || '',
+    progressStatus: 'Chưa gửi',
+    conclusionStatus: 'Chưa có',
+    excelFileName: `${act.name}.xlsx`
+  };
+};
+
+const handleUpdateSubmitDate = (actId, newDate) => {
+  emit('update-submit-date', actId, newDate);
+};
+
+const showAddSemesterModal = ref(false);
+const newSemesterName = ref('');
+
+const handleAddSemester = () => {
+  if (!newSemesterName.value || !newSemesterName.value.trim()) return;
+  emit('add-semester', newSemesterName.value.trim());
+  newSemesterName.value = '';
+};
+
+const handleDeleteSemester = (semName) => {
+  if (confirm(`Bạn có chắc muốn xóa học kỳ "${semName}"?`)) {
+    emit('delete-semester', semName);
+  }
+};
+
+const searchQuery = ref('');
+const selectedSemester = ref('all');
+
+const syncFormSemester = () => {
+  if (selectedSemester.value === '__manage__') {
+    selectedSemester.value = 'all';
+    showAddSemesterModal.value = true;
+    return;
+  }
+  if (selectedSemester.value !== 'all') {
+    form.value.semester = selectedSemester.value;
+  }
+};
+
+const onFormSemesterSelectChange = () => {
+  if (form.value.semester === '__manage__') {
+    form.value.semester = props.semesters[0] || '';
+    showAddSemesterModal.value = true;
+  }
+};
+
+const handleCreate = () => {
+  emit('create-activity', { ...form.value });
+  form.value.name = '';
+  form.value.location = '';
+  form.value.submitDate = '';
+  form.value.description = '';
+};
+
+const confirmDelete = (act) => {
+  if (confirm(`Bạn có chắc chắn muốn xóa hoạt động "${act.name}"?`)) {
+    emit('delete-activity', act.id);
+  }
+};
+
+const showExportModal = ref(false);
+const selectedExportAct = ref(null);
+
+const openExportModal = (act) => {
+  selectedExportAct.value = act;
+  showExportModal.value = true;
+};
+
+const triggerExport = (exportType) => {
+  if (selectedExportAct.value) {
+    emit('export-excel', selectedExportAct.value, exportType);
+  }
+  showExportModal.value = false;
+};
+
+const filteredActivities = computed(() => {
+  return props.activities.filter(act => {
+    const matchSearch = !searchQuery.value ||
+      act.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      String(act.codeId || act.code).includes(searchQuery.value);
+    const matchSem = selectedSemester.value === 'all' || act.semester === selectedSemester.value;
+    return matchSearch && matchSem;
+  });
+});
+</script>
+
 <template>
   <div class="space-y-6">
     <!-- Admin Hero Header with 3 Summary Stats Cards -->
@@ -8,7 +176,7 @@
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-black mb-1.5 border border-amber-400/30">
               <i class="fa-solid fa-crown"></i> Quyền Quản Trị Viên
             </div>
-            <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Quản Lý & Theo Dõi Hoạt Động</h2>
+            <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Quản Lý &amp; Theo Dõi Hoạt Động</h2>
             <p class="text-xs sm:text-sm text-indigo-200 mt-0.5">Quản lý hạn gửi hồ sơ (3 ngày), tự động tính tiến độ, kết luận và xuất Excel chuẩn MSSV.</p>
           </div>
         </div>
@@ -74,8 +242,8 @@
               Tên hoạt động <span class="text-rose-500">*</span>
             </label>
             <input type="text" v-model="form.name" required
-                   placeholder="VD: Tập huấn Kỹ năng Quản trò & Sinh hoạt"
-                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold">
+                   placeholder="VD: Tập huấn Kỹ năng Quản trò &amp; Sinh hoạt"
+                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold" />
           </div>
 
           <!-- 2. Location -->
@@ -85,41 +253,40 @@
             </label>
             <input type="text" v-model="form.location" required
                    placeholder="VD: Hội trường A / Sân trung tâm"
-                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium" />
           </div>
 
-          <!-- 3. Start Date & End Date Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Ngày bắt đầu <span class="text-rose-500">*</span>
-              </label>
-              <input type="date" v-model="form.date" required
-                     class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold">
-            </div>
-
-            <div>
-              <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Thời gian kết thúc <span class="text-rose-500">*</span>
-              </label>
-              <input type="date" v-model="form.endDate" :min="form.date" required
-                     class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-extrabold text-indigo-700 dark:text-indigo-400">
-            </div>
+          <!-- 3. Start Date (Thời gian bắt đầu hoạt động) -->
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Thời gian bắt đầu hoạt động <span class="text-rose-500">*</span>
+            </label>
+            <input type="date" v-model="form.date" required
+                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold" />
           </div>
-          <p v-if="form.endDate" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-            💡 Hạn gửi hồ sơ (+3 ngày): {{ formatDate(computedDeadline) }}
-          </p>
 
-          <!-- 4. Submit Date (Ngày gửi - optional) -->
+          <!-- 4. End Date (Thời gian kết thúc hoạt động) -->
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Thời gian kết thúc hoạt động <span class="text-rose-500">*</span>
+            </label>
+            <input type="date" v-model="form.endDate" :min="form.date" required
+                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-extrabold text-indigo-700 dark:text-indigo-400" />
+            <p v-if="form.endDate" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+              💡 Hạn gửi hồ sơ (+3 ngày): {{ formatDate(computedDeadline) }}
+            </p>
+          </div>
+
+          <!-- 5. Submit Date (Ngày gửi - optional) -->
           <div>
             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
               Ngày gửi (Có thể để trống)
             </label>
             <input type="date" v-model="form.submitDate"
-                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium" />
           </div>
 
-          <!-- 5. Synced Semester Field -->
+          <!-- 6. Synced Semester Field -->
           <div>
             <div class="flex items-center justify-between mb-1">
               <label class="font-bold text-slate-700 dark:text-slate-300">
@@ -137,7 +304,7 @@
             </select>
           </div>
 
-          <!-- 6. Description -->
+          <!-- 7. Description -->
           <div>
             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
               Ghi chú / Mô tả chi tiết
@@ -162,7 +329,7 @@
           <div class="flex items-center gap-2 w-full sm:w-auto flex-grow max-w-sm">
             <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
             <input type="text" v-model="searchQuery" placeholder="Tìm theo tên hoạt động hoặc mã..."
-                   class="w-full bg-slate-50 dark:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium">
+                   class="w-full bg-slate-50 dark:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium" />
           </div>
 
           <div class="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end flex-wrap">
@@ -171,7 +338,7 @@
                     class="bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-extrabold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
               <option value="all">🌐 Tất cả học kỳ ({{ activities.length }})</option>
               <option v-for="s in semesters" :key="s" :value="s">🎓 {{ s }}</option>
-              <option value="__manage__">⚙️ [Quản lý & Xóa học kỳ...]</option>
+              <option value="__manage__">⚙️ [Quản lý &amp; Xóa học kỳ...]</option>
             </select>
 
             <button type="button" @click="showAddSemesterModal = true"
@@ -256,13 +423,13 @@
               <div>
                 <span class="block text-[10px] font-bold uppercase text-slate-500">Ngày gửi thực tế:</span>
                 <input type="date" :value="act.submitDate" @change="handleUpdateSubmitDate(act.id, $event.target.value)"
-                       class="w-full bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-white focus:outline-none text-xs">
+                       class="w-full bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-white focus:outline-none text-xs" />
               </div>
             </div>
 
             <!-- Action Buttons: Export Excel, Details, Delete -->
             <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex-wrap">
-              <button @click="$emit('export-excel', act)"
+              <button @click="openExportModal(act)"
                       class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer">
                 <i class="fa-solid fa-file-excel"></i> Xuất Excel (DSSV)
               </button>
@@ -290,7 +457,7 @@
       <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 max-w-md w-full shadow-2xl space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <h3 class="font-extrabold text-slate-800 dark:text-white text-base flex items-center gap-2">
-            <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Quản Lý & Xóa Học Kỳ Thủ Công
+            <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Quản Lý &amp; Xóa Học Kỳ Thủ Công
           </h3>
           <button @click="showAddSemesterModal = false" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
             <i class="fa-solid fa-xmark text-lg"></i>
@@ -298,13 +465,13 @@
         </div>
 
         <!-- Add New Semester Form -->
-        <form @submit.prevent="handleAddNewSemester" class="space-y-3 text-xs bg-indigo-50/50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-indigo-100 dark:border-slate-700">
+        <form @submit.prevent="handleAddSemester" class="space-y-3 text-xs bg-indigo-50/50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-indigo-100 dark:border-slate-700">
           <label class="block font-black text-indigo-900 dark:text-indigo-200">
             ➕ Thêm học kỳ mới
           </label>
           <div class="flex items-center gap-2">
             <input type="text" v-model="newSemesterName" required placeholder="VD: Học kỳ 1 (2027-2028)"
-                   class="flex-grow px-3 py-2 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                   class="flex-grow px-3 py-2 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
             <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl shadow-xs cursor-pointer shrink-0">
               Thêm
             </button>
@@ -335,167 +502,61 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Chọn Loại File Excel Muốn Xuất -->
+    <div v-if="showExportModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-base font-bold shadow-md">
+              <i class="fa-solid fa-file-excel"></i>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-slate-900 dark:text-white text-base">Tùy Chọn Xuất File Excel</h3>
+              <p class="text-xs text-slate-500 truncate max-w-xs">{{ selectedExportAct ? selectedExportAct.name : '' }}</p>
+            </div>
+          </div>
+          <button @click="showExportModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <!-- Option 1: Danh sách điểm danh (Dùng nộp ĐRL) -->
+          <button @click="triggerExport('checkin')"
+                  class="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition text-left space-y-1 group cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-slate-800 dark:text-white text-sm group-hover:text-emerald-700 dark:group-hover:text-emerald-400 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-user text-emerald-600"></i> 1. Danh Sách Điểm Danh (Nộp Điểm Rèn Luyện)
+              </span>
+              <i class="fa-solid fa-chevron-right text-slate-400 text-xs group-hover:translate-x-1 transition"></i>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Xuất danh sách các sinh viên đã điểm danh/tham gia hoạt động (File dạng bảng dọc chuẩn nộp điểm rèn luyện).
+            </p>
+          </button>
+
+          <!-- Option 2: Danh sách đăng ký ca (Dạng ma trận Ngày/Ca) -->
+          <button @click="triggerExport('registration')"
+                  class="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-sky-500 bg-slate-50 dark:bg-slate-800/60 hover:bg-sky-50/50 dark:hover:bg-sky-950/30 transition text-left space-y-1 group cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-slate-800 dark:text-white text-sm group-hover:text-sky-700 dark:group-hover:text-sky-400 flex items-center gap-2">
+                <i class="fa-solid fa-table-cells text-sky-600"></i> 2. Danh Sách Đăng Ký Ca (Mẫu Ma Trận Ngày/Ca)
+              </span>
+              <i class="fa-solid fa-chevron-right text-slate-400 text-xs group-hover:translate-x-1 transition"></i>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Xuất danh sách phân chia ca trực đăng ký ngang theo từng Ngày &amp; Ca (Ca 1, Ca 2, Ca 3) giống mẫu thiết kế.
+            </p>
+          </button>
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button @click="showExportModal = false" type="button" class="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-300 transition cursor-pointer">
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
-
-<script setup>
-import { ref, computed } from 'vue';
-
-const props = defineProps({
-  activities: Array,
-  semesters: {
-    type: Array,
-    default: () => ['Học kỳ 1 (2026-2027)', 'Học kỳ 2 (2026-2027)', 'Học kỳ 3 (2026-2027)', 'Học kỳ Hè (2026-2027)']
-  },
-  adminActivitySummaryStats: Object,
-  computeActivityDerivedFields: Function,
-  getActivityStats: Function,
-  formatDate: Function
-});
-
-const emit = defineEmits([
-  'create-activity',
-  'delete-activity',
-  'open-detail',
-  'add-semester',
-  'delete-semester',
-  'toggle-training-points',
-  'update-submit-date',
-  'export-excel'
-]);
-
-const getTodayStr = () => {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-};
-
-const addDays = (dateStr, days) => {
-  if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  if (parts.length < 3) return dateStr;
-  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-  d.setDate(d.getDate() + days);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-};
-
-const form = ref({
-  name: '',
-  location: '',
-  date: getTodayStr(),
-  endDate: getTodayStr(),
-  submitDate: '',
-  semester: 'Học kỳ 1 (2026-2027)',
-  description: ''
-});
-
-const computedDeadline = computed(() => {
-  return addDays(form.value.endDate || form.value.date, 3);
-});
-
-const summaryStats = computed(() => {
-  if (props.adminActivitySummaryStats) return props.adminActivitySummaryStats;
-  return {
-    totalExecuted: props.activities ? props.activities.length : 0,
-    submittedOnTimeCount: 0,
-    overdueCount: 0
-  };
-});
-
-const getDerived = (act) => {
-  if (props.computeActivityDerivedFields) {
-    return props.computeActivityDerivedFields(act);
-  }
-  return {
-    codeId: act.codeId || act.code || 1,
-    endDate: act.endDate || act.date,
-    deadlineDate: addDays(act.endDate || act.date, 3),
-    location: act.location || 'Trường ĐH',
-    contentVN: `Tham gia ${act.name} tại ${act.location || 'Trường ĐH'}, ngày ${act.endDate || act.date}`,
-    contentEN: `Participating in ${act.name} at ${act.location || 'Trường ĐH'}, on ${act.endDate || act.date}`,
-    submitDate: act.submitDate || '',
-    progressStatus: act.submitDate ? 'Đã xử lý' : 'Chưa gửi',
-    conclusionStatus: act.submitDate ? 'Gửi đúng hạn' : 'Chưa gửi'
-  };
-};
-
-const handleUpdateSubmitDate = (actId, val) => {
-  emit('update-submit-date', actId, val);
-};
-
-const showAddSemesterModal = ref(false);
-const newSemesterName = ref('');
-
-const handleAddNewSemester = () => {
-  if (newSemesterName.value.trim()) {
-    const semName = newSemesterName.value.trim();
-    emit('add-semester', semName);
-    form.value.semester = semName;
-    selectedSemester.value = semName;
-    newSemesterName.value = '';
-  }
-};
-
-const handleDeleteSemester = (semName) => {
-  if (confirm(`Bạn có chắc chắn muốn xóa học kỳ "${semName}" khỏi hệ thống?`)) {
-    emit('delete-semester', semName);
-    if (form.value.semester === semName && props.semesters.length > 1) {
-      const remaining = props.semesters.filter(s => s !== semName);
-      form.value.semester = remaining[0] || '';
-    }
-    if (selectedSemester.value === semName) {
-      selectedSemester.value = 'all';
-    }
-  }
-};
-
-const searchQuery = ref('');
-const selectedSemester = ref('all');
-
-const syncFormSemester = () => {
-  if (selectedSemester.value === '__manage__') {
-    selectedSemester.value = 'all';
-    showAddSemesterModal.value = true;
-    return;
-  }
-  if (selectedSemester.value !== 'all') {
-    form.value.semester = selectedSemester.value;
-  }
-};
-
-const onFormSemesterSelectChange = () => {
-  if (form.value.semester === '__manage__') {
-    form.value.semester = props.semesters[0] || '';
-    showAddSemesterModal.value = true;
-  }
-};
-
-const handleCreate = () => {
-  emit('create-activity', { ...form.value });
-  form.value.name = '';
-  form.value.location = '';
-  form.value.submitDate = '';
-  form.value.description = '';
-};
-
-const confirmDelete = (act) => {
-  if (confirm(`Bạn có chắc chắn muốn xóa hoạt động "${act.name}"?`)) {
-    emit('delete-activity', act.id);
-  }
-};
-
-const filteredActivities = computed(() => {
-  return props.activities.filter(act => {
-    const matchSearch = !searchQuery.value ||
-      act.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      String(act.codeId || act.code).includes(searchQuery.value);
-    const matchSem = selectedSemester.value === 'all' || act.semester === selectedSemester.value;
-    return matchSearch && matchSem;
-  });
-});
-</script>

@@ -381,6 +381,143 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         showToast(`Xuất file Excel "${fileName}" thành công! 📊`);
     };
 
+    const formatDayMonth = (dateStr) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return dateStr;
+        return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+    };
+
+    const getDateRangeArray = (startStr, endStr) => {
+        if (!startStr) return [];
+        const end = endStr || startStr;
+        const result = [];
+        let curr = new Date(startStr);
+        const last = new Date(end);
+        while (curr <= last) {
+            const yyyy = curr.getFullYear();
+            const mm = String(curr.getMonth() + 1).padStart(2, '0');
+            const dd = String(curr.getDate()).padStart(2, '0');
+            result.push(`${yyyy}-${mm}-${dd}`);
+            curr.setDate(curr.getDate() + 1);
+        }
+        return result;
+    };
+
+    const exportActivityRegistrationMatrixExcel = (act, membersList = []) => {
+        if (!window.XLSX) {
+            return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
+        }
+
+        const derived = computeActivityDerivedFields(act);
+        const cleanEndDateStr = (derived.endDate || '').replace(/-/g, '');
+        const fileName = `${derived.codeId}-${cleanEndDateStr} DS DANG KY ${act.name}.xlsx`;
+
+        // 1. Gather all activity registrations for this activity
+        const actRegs = activityRegistrations.value.filter(r => r.activityId === act.id);
+
+        // 2. Discover dates
+        const dateSet = new Set(getDateRangeArray(derived.startDate, derived.endDate));
+        actRegs.forEach(r => {
+            if (r.date) dateSet.add(r.date);
+        });
+        const dateList = Array.from(dateSet).sort();
+
+        if (dateList.length === 0) {
+            return showToast('Hoạt động này chưa có ngày diễn ra để xuất danh sách!', 'warning');
+        }
+
+        // 3. Shift Types
+        const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3'];
+
+        // 4. Build Matrix Rows Data matching Image 3
+        const rowsData = [];
+
+        // Row 1: STT, Date Headers (Col B & C, D & E...)
+        const row1 = ["STT"];
+        dateList.forEach(d => {
+            row1.push(formatDayMonth(d), "");
+        });
+        rowsData.push(row1);
+
+        // Row 2: Sub-headers ("MSSV", "HỌ VÀ TÊN" under each date)
+        const row2 = [""];
+        dateList.forEach(() => {
+            row2.push("MSSV", "HỌ VÀ TÊN");
+        });
+        rowsData.push(row2);
+
+        // Group registrations by shiftType and date
+        const shiftDateMap = {};
+        shiftTypes.forEach(st => {
+            shiftDateMap[st] = {};
+            dateList.forEach(d => {
+                shiftDateMap[st][d] = [];
+            });
+        });
+
+        actRegs.forEach(r => {
+            const st = r.shiftType || 'Ca 1';
+            const d = r.date;
+            if (shiftDateMap[st] && shiftDateMap[st][d]) {
+                const mObj = membersList.find(m => m.id === r.memberId);
+                const name = r.memberName || mObj?.name || r.memberId;
+                shiftDateMap[st][d].push({
+                    mssv: String(r.memberId).trim().toUpperCase(),
+                    name: name
+                });
+            }
+        });
+
+        // Generate Section Rows per Shift (Ca 1, Ca 2, Ca 3)
+        shiftTypes.forEach(st => {
+            let maxCount = 0;
+            dateList.forEach(d => {
+                if (shiftDateMap[st][d].length > maxCount) {
+                    maxCount = shiftDateMap[st][d].length;
+                }
+            });
+
+            if (maxCount === 0) maxCount = 3;
+
+            // Shift Title Header Row
+            const shiftTitleRow = [`--- ${st.toUpperCase()} ---`];
+            dateList.forEach(() => shiftTitleRow.push("", ""));
+            rowsData.push(shiftTitleRow);
+
+            for (let idx = 0; idx < maxCount; idx++) {
+                const row = [idx + 1];
+                dateList.forEach(d => {
+                    const student = shiftDateMap[st][d][idx];
+                    if (student) {
+                        row.push(student.mssv, student.name);
+                    } else {
+                        row.push("", "");
+                    }
+                });
+                rowsData.push(row);
+            }
+        });
+
+        const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
+
+        // Merge Date Header Cells
+        const merges = [];
+        for (let i = 0; i < dateList.length; i++) {
+            const colStart = 1 + i * 2;
+            merges.push({
+                s: { r: 0, c: colStart },
+                e: { r: 0, c: colStart + 1 }
+            });
+        }
+        ws['!merges'] = merges;
+
+        const wb = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(wb, ws, "DS Đăng Ký Ca");
+        window.XLSX.writeFile(wb, fileName);
+        showToast(`Xuất file Excel Danh sách Đăng ký "${fileName}" thành công! 📊`);
+    };
+
     const adminActivitySummaryStats = computed(() => {
         const todayStr = getTodayStr();
         let totalExecuted = activities.value.length;
@@ -650,6 +787,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         computeActivityDerivedFields,
         addDaysToStr,
         exportActivityExcel,
+        exportActivityRegistrationMatrixExcel,
         adminActivitySummaryStats,
         persistLocal
     };
