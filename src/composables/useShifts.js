@@ -64,10 +64,35 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         if (!id) return '';
         const target = String(id).trim().toUpperCase();
         const found = findMemberObj(id);
-        const realName = found ? (found.name || found.fullName || found.hoTen || found.ho_ten || found.full_name || found.ten || found.Name || found.HoTen || found.FullName) : null;
-        if (realName && !realName.startsWith('Thành viên [')) {
-            return realName;
+        if (!found) return target;
+
+        const nameKeys = [
+            'name', 'fullName', 'hoTen', 'ho_ten', 'full_name', 'ten',
+            'Name', 'HoTen', 'FullName', 'HoVaTen', 'ho_va_ten',
+            'tenSV', 'ten_sv', 'TenSV', 'StudentName', 'student_name',
+            'user_name', 'display_name', 'label'
+        ];
+
+        for (const key of nameKeys) {
+            if (found[key] && typeof found[key] === 'string' && found[key].trim()) {
+                const val = found[key].trim();
+                if (val.toUpperCase() !== target && !val.startsWith('Thành viên [')) {
+                    return val;
+                }
+            }
         }
+
+        const excludeKeys = new Set(['id', 'mssv', 'maSV', 'studentId', 'code', 'memberId', 'role', 'department', 'dob', 'createdAt', 'targetShifts', 'password', 'docId']);
+
+        for (const key in found) {
+            if (!excludeKeys.has(key) && found[key] && typeof found[key] === 'string' && found[key].trim()) {
+                const val = found[key].trim();
+                if (val.toUpperCase() !== target && !val.startsWith('Thành viên [')) {
+                    return val;
+                }
+            }
+        }
+
         return target;
     };
 

@@ -107,6 +107,39 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             }
         } catch (e) {}
 
+        const extractNameFromData = (data, canonicalId) => {
+            if (!data || typeof data !== 'object') return canonicalId;
+
+            const nameKeys = [
+                'name', 'fullName', 'hoTen', 'ho_ten', 'full_name', 'ten',
+                'Name', 'HoTen', 'FullName', 'HoVaTen', 'ho_va_ten',
+                'tenSV', 'ten_sv', 'TenSV', 'StudentName', 'student_name',
+                'user_name', 'display_name', 'label'
+            ];
+
+            for (const key of nameKeys) {
+                if (data[key] && typeof data[key] === 'string' && data[key].trim()) {
+                    const val = data[key].trim();
+                    if (val.toUpperCase() !== canonicalId && !val.startsWith('Thành viên [')) {
+                        return val;
+                    }
+                }
+            }
+
+            const excludeKeys = new Set(['id', 'mssv', 'maSV', 'studentId', 'code', 'memberId', 'role', 'department', 'dob', 'createdAt', 'targetShifts', 'password']);
+
+            for (const key in data) {
+                if (!excludeKeys.has(key) && data[key] && typeof data[key] === 'string' && data[key].trim()) {
+                    const val = data[key].trim();
+                    if (val.toUpperCase() !== canonicalId && !val.startsWith('Thành viên [')) {
+                        return val;
+                    }
+                }
+            }
+
+            return canonicalId;
+        };
+
         try {
             const membersRefCol = collection(db, 'members');
             unsubMembers = onSnapshot(membersRefCol, (snapshot) => {
@@ -115,7 +148,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     const data = docSnap.data();
                     const rawId = data.id || data.mssv || data.maSV || data.studentId || data.code || data.memberId || docSnap.id;
                     const canonicalId = String(rawId).trim().toUpperCase();
-                    const name = data.name || data.fullName || data.hoTen || data.ho_ten || data.full_name || data.ten || data.Name || data.HoTen || data.FullName || canonicalId;
+                    const name = extractNameFromData(data, canonicalId);
 
                     list.push({
                         ...data,
