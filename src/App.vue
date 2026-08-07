@@ -275,6 +275,9 @@ const { toast, showToast } = useToast();
 const { isDarkMode, applyTheme, toggleTheme } = useTheme();
 
 // Composables wiring
+const authModule = useAuth(() => members.value);
+const { isLoggedIn, loginRole, loginForm, currentUserRole, loggedInMemberId, adminAccounts, handleLogin, logout } = authModule;
+
 const membersModule = useMembers(currentUserRole, loggedInMemberId, null, null, null);
 const {
   members, departments, addDepartment, memberFilterSearch, memberFilterDept, memberFilterTarget, resetMemberFilters,
@@ -282,9 +285,6 @@ const {
   openMemberModal, saveMember, confirmDeleteMember, showBatchModal, batchText,
   openBatchModal, saveBatchMembers, pushAllMembersToCloud, deleteModal
 } = membersModule;
-
-const authModule = useAuth(members);
-const { isLoggedIn, loginRole, loginForm, currentUserRole, loggedInMemberId, adminAccounts, handleLogin, logout } = authModule;
 
 const shiftsModule = useShifts(members, currentUserRole, loggedInMemberId, deleteModal);
 const {

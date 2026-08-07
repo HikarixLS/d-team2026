@@ -15,6 +15,14 @@ const adminAccounts = ref([]);
 export function useAuth(membersRef) {
     const { showToast } = useToast();
 
+    const getMembersList = () => {
+        if (!membersRef) return [];
+        if (typeof membersRef === 'function') return membersRef() || [];
+        if (membersRef.value && Array.isArray(membersRef.value)) return membersRef.value;
+        if (Array.isArray(membersRef)) return membersRef;
+        return [];
+    };
+
     const handleLogin = () => {
         const rawId = loginForm.value.memberId.trim();
         const pwd = loginForm.value.password.trim();
@@ -31,8 +39,10 @@ export function useAuth(membersRef) {
         const cleanId = rawId.toLowerCase();
         const isSuperAdmin = cleanId === 'admin';
 
+        const currentMembers = getMembersList();
+
         // Deep property scan to find member in Cloud members list
-        const cloudMember = membersRef?.value?.find(m => {
+        const cloudMember = currentMembers.find(m => {
             if (!m || typeof m !== 'object') return false;
             // 1. Direct key match
             const keys = [m.id, m.mssv, m.maSV, m.studentId, m.code, m.memberId, m.docId];
@@ -107,8 +117,8 @@ export function useAuth(membersRef) {
                         createdAt: new Date().toISOString()
                     };
                     setDoc(doc(window.firebaseDb, 'members', canonicalId), newMember).catch(() => {});
-                    if (membersRef && Array.isArray(membersRef.value)) {
-                        membersRef.value.push(newMember);
+                    if (Array.isArray(currentMembers)) {
+                        currentMembers.push(newMember);
                     }
                 } catch (e) {}
             }
