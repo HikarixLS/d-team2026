@@ -32,7 +32,7 @@
         <select :value="memberFilterDept" @change="$emit('update:memberFilterDept', $event.target.value)"
                 class="border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 min-h-[38px] cursor-pointer">
           <option value="all">🏛️ Tất cả các Ban ({{ members.length }})</option>
-          <option v-for="d in (departments || ['Ban Điều hành', 'Ban Hành chính', 'Ban Nhân sự', 'Ban Truyền thông'])" :key="d" :value="d">
+          <option v-for="d in departments" :key="d" :value="d">
             {{ d }}
           </option>
         </select>

@@ -40,7 +40,7 @@
 
           <select v-model="memberForm.department" required class="w-full border border-slate-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-medium">
             <option value="" disabled>-- Chọn Ban --</option>
-            <option v-for="d in (departments || ['Ban Điều hành', 'Ban Hành chính', 'Ban Nhân sự', 'Ban Truyền thông'])" :key="d" :value="d">
+            <option v-for="d in departments" :key="d" :value="d">
               {{ d }}
             </option>
           </select>
