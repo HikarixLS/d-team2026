@@ -5,7 +5,7 @@ const props = defineProps({
   activities: Array,
   semesters: {
     type: Array,
-    default: () => ['Học kỳ 1 (2026-2027)', 'Học kỳ 2 (2026-2027)', 'Học kỳ 3 (2026-2027)', 'Học kỳ Hè (2026-2027)']
+    default: () => []
   },
   adminActivitySummaryStats: Object,
   computeActivityDerivedFields: Function,
@@ -50,7 +50,7 @@ const form = ref({
   date: getTodayStr(),
   endDate: getTodayStr(),
   submitDate: '',
-  semester: 'Học kỳ 1 (2026-2027)',
+  semester: '',
   description: ''
 });
 

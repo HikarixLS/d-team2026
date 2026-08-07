@@ -1,13 +1,6 @@
 import { ref, computed } from 'vue';
 import { useToast } from './useToast.js';
 
-const defaultSemesters = [
-    'Học kỳ 1 (2026-2027)',
-    'Học kỳ 2 (2026-2027)',
-    'Học kỳ 3 (2026-2027)',
-    'Học kỳ Hè (2026-2027)'
-];
-
 // Clean up legacy local storage cache so ghost entries never persist
 try {
     localStorage.removeItem('local_activities');
@@ -17,7 +10,7 @@ try {
 
 const activities = ref([]);
 const activityCheckIns = ref([]);
-const semesters = ref([...defaultSemesters]);
+const semesters = ref([]);
 const activityRegistrations = ref([]);
 
 export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRef) {
