@@ -206,7 +206,47 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             const adminsRefCol = collection(db, 'admin_accounts');
             unsubAdmins = onSnapshot(adminsRefCol, (snapshot) => {
                 const list = [];
-                snapshot.forEach((docSnap) => list.push(docSnap.data()));
+                snapshot.forEach((docSnap) => {
+                    const admData = docSnap.data();
+                    list.push(admData);
+                    const rawId = admData.id || admData.mssv || docSnap.id;
+                    const canonicalId = String(rawId).trim().toUpperCase();
+                    const admName = admData.name || admData.fullName || admData.hoTen;
+
+                    if (admName && admName !== canonicalId && !admName.startsWith('Thành viên [')) {
+                        // Heal members collection on Firestore so members/id matches admin_accounts
+                        try {
+                            const { doc, setDoc } = window.FirebaseSDK;
+                            setDoc(doc(db, 'members', canonicalId), {
+                                id: canonicalId,
+                                mssv: canonicalId,
+                                name: admName,
+                                department: admData.department || 'Ban Điều hành',
+                                role: 'admin',
+                                targetShifts: 10
+                            }, { merge: true }).catch(() => {});
+                        } catch (e) {}
+
+                        // Sync in memory members list
+                        if (membersRef && Array.isArray(membersRef.value)) {
+                            const foundIndex = membersRef.value.findIndex(m => m && String(m.id || m.mssv).trim().toUpperCase() === canonicalId);
+                            if (foundIndex !== -1) {
+                                membersRef.value[foundIndex].name = admName;
+                                membersRef.value[foundIndex].department = admData.department || membersRef.value[foundIndex].department || 'Ban Điều hành';
+                                membersRef.value[foundIndex].role = 'admin';
+                            } else {
+                                membersRef.value.push({
+                                    id: canonicalId,
+                                    mssv: canonicalId,
+                                    name: admName,
+                                    department: admData.department || 'Ban Điều hành',
+                                    role: 'admin',
+                                    targetShifts: 10
+                                });
+                            }
+                        }
+                    }
+                });
                 if (list.length > 0 && adminAccounts) adminAccounts.value = list;
             }, (err) => { /* ignore if admin_accounts collection absent */ });
 
