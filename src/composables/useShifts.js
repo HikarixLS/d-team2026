@@ -46,7 +46,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     const findMemberObj = (id) => {
         if (!membersRef || !membersRef.value || !id) return null;
         const target = String(id).trim().toUpperCase();
-        return membersRef.value.find(m => {
+        const matches = membersRef.value.filter(m => {
             if (!m || typeof m !== 'object') return false;
             for (const key in m) {
                 const val = m[key];
@@ -58,6 +58,22 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
             }
             return false;
         });
+
+        if (!matches.length) return null;
+
+        const matchWithRealName = matches.find(m => {
+            for (const key in m) {
+                if (m[key] && typeof m[key] === 'string' && m[key].trim()) {
+                    const val = m[key].trim();
+                    if (val.toUpperCase() !== target && !val.startsWith('Thành viên [')) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        });
+
+        return matchWithRealName || matches[0];
     };
 
     const getMemberName = (id) => {

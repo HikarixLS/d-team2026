@@ -143,20 +143,30 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         try {
             const membersRefCol = collection(db, 'members');
             unsubMembers = onSnapshot(membersRefCol, (snapshot) => {
-                const list = [];
+                const map = new Map();
                 snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     const rawId = data.id || data.mssv || data.maSV || data.studentId || data.code || data.memberId || docSnap.id;
                     const canonicalId = String(rawId).trim().toUpperCase();
                     const name = extractNameFromData(data, canonicalId);
 
-                    list.push({
+                    const memberObj = {
                         ...data,
                         id: canonicalId,
                         name: name,
                         docId: docSnap.id
-                    });
+                    };
+
+                    if (map.has(canonicalId)) {
+                        const existing = map.get(canonicalId);
+                        if (existing.name === canonicalId && name !== canonicalId) {
+                            map.set(canonicalId, memberObj);
+                        }
+                    } else {
+                        map.set(canonicalId, memberObj);
+                    }
                 });
+                const list = Array.from(map.values());
                 if (membersRef) {
                     membersRef.value = list;
                     try {
