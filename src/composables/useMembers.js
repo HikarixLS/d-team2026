@@ -8,7 +8,41 @@ try {
     localStorage.removeItem('local_members');
 } catch (e) {}
 
-const members = ref([]);
+const defaultMembersList = [
+    { id: 'F2500127', name: 'Nguyễn Quốc Long', department: 'Ban Điều hành', role: 'member', targetShifts: 10 },
+    { id: '324H0081', name: 'Nguyễn Ngọc Linh', department: 'Ban Hành chính', role: 'member', targetShifts: 10 },
+    { id: '625H0029', name: 'Phạm Nguyễn Thiên Phước', department: 'Ban Nhân sự', role: 'member', targetShifts: 10 },
+    { id: 'B2500044', name: 'Đào Thanh Huyền', department: 'Ban Truyền thông', role: 'member', targetShifts: 10 },
+    { id: '22500177', name: 'Trần Thị Minh Tâm', department: 'Ban Điều hành', role: 'member', targetShifts: 10 },
+    { id: '02500310', name: 'Nguyễn Hoàng Vy', department: 'Ban Hành chính', role: 'member', targetShifts: 10 },
+    { id: 'B24H0103', name: 'Nguyễn Ngọc Quỳnh Hoa', department: 'Ban Nhân sự', role: 'member', targetShifts: 10 },
+    { id: 'D2500087', name: 'Nguyễn Kim Ngân', department: 'Ban Truyền thông', role: 'member', targetShifts: 10 },
+    { id: '324H0119', name: 'Trương Thanh Thuý', department: 'Ban Điều hành', role: 'member', targetShifts: 10 },
+    { id: '324H0092', name: 'Lương Phạm Hồng Ngọc', department: 'Ban Hành chính', role: 'member', targetShifts: 10 },
+    { id: 'E25H0202', name: 'Nguyễn Đặng Hoa Vy', department: 'Ban Nhân sự', role: 'member', targetShifts: 10 },
+    { id: '32500449', name: 'Vũ Thị Thu Trang', department: 'Ban Truyền thông', role: 'member', targetShifts: 10 },
+    { id: '72500150', name: 'Nguyễn Thị Thảo Nhi', department: 'Ban Điều hành', role: 'member', targetShifts: 10 },
+    { id: 'C2400046', name: 'Nguyễn Thị Huỳnh Như', department: 'Ban Hành chính', role: 'member', targetShifts: 10 },
+    { id: '62400259', name: 'Trương Lê Tuấn', department: 'Ban Nhân sự', role: 'member', targetShifts: 10 },
+    { id: '22400061', name: 'Lâm Hồ Lan Uyên', department: 'Ban Truyền thông', role: 'member', targetShifts: 10 },
+    { id: '825H0027', name: 'Ngô Minh Thiện', department: 'Ban Điều hành', role: 'member', targetShifts: 10 },
+    { id: 'E25H0004', name: 'Đỗ Kiều Anh', department: 'Ban Hành chính', role: 'member', targetShifts: 10 },
+    { id: '62500197', name: 'Phạm Nguyễn Thuý Vy', department: 'Ban Nhân sự', role: 'member', targetShifts: 10 },
+    { id: '42500516', name: 'Bùi văn uyn', department: 'Ban Truyền thông', role: 'member', targetShifts: 10 },
+    { id: '224H0144', name: 'Nguyễn Khánh Như Thụy', department: 'Ban Điều hành', role: 'member', targetShifts: 10 },
+    { id: 'F2500060', name: 'Lê Thảo Anh', department: 'Ban Hành chính', role: 'member', targetShifts: 10 },
+    { id: '223H0077', name: 'Đào Ngọc Mai', department: 'Ban Nhân sự', role: 'member', targetShifts: 10 },
+    { id: 'F2500156', name: 'Bùi Khả Nhu', department: 'Ban Truyền thông', role: 'member', targetShifts: 10 },
+    { id: 'B25H0140', name: 'Nguyễn Phương Trinh', department: 'Ban Điều hành', role: 'member', targetShifts: 10 },
+    { id: '42300016', name: 'Đỗ Khánh Duy', department: 'Ban Điều hành', role: 'admin', targetShifts: 10 },
+    { id: '62500288', name: 'Hoàng Thị Trà My', department: 'Ban Hành chính', role: 'member', targetShifts: 10 },
+    { id: '62500235', name: 'Vũ Kim Đoan', department: 'Ban Nhân sự', role: 'member', targetShifts: 10 },
+    { id: '52400293', name: 'Nguyễn Thị Kim Ngân', department: 'Ban Truyền thông', role: 'member', targetShifts: 10 },
+    { id: '72500391', name: 'Nguyễn Đoàn Kim Ngân', department: 'Ban Điều hành', role: 'member', targetShifts: 10 },
+    { id: '02500197', name: 'Phan Thị Phương Anh', department: 'Ban Nhân sự', role: 'member', targetShifts: 10 }
+];
+
+const members = ref([...defaultMembersList]);
 const departments = ref(defaultDepartments);
 
 const memberFilterSearch = ref('');

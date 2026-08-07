@@ -1,37 +1,68 @@
 <template>
   <div class="space-y-4 sm:space-y-6">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-3">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 sm:p-5 space-y-4">
+      <!-- Header -->
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
-          <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-            <i class="fa-solid fa-history text-indigo-600"></i> Tra Cứu & Lịch Sử Nhật Ký Ca Trực
+          <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-table-cells text-emerald-600"></i> Bảng Phân Ca & Ma Trận Lịch Trực
           </h3>
-          <p class="text-xs text-slate-500 mt-0.5">{{ historySubtitle }}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            {{ viewMode === 'matrix' ? 'Ma trận lịch trực chuẩn mẫu Hỗ trợ nhập học.xlsx' : 'Tra cứu & nhật ký chi tiết từng ca trực (Sổ gốc)' }}
+          </p>
         </div>
-        <div class="flex items-center gap-2">
-          <button @click="$emit('export-matrix-excel')" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer" title="Xuất ma trận lịch ca làm theo mẫu Hỗ trợ nhập học.xlsx">
-            <i class="fa-solid fa-table-cells"></i> Xuất Mẫu Ca Làm
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- View Toggle -->
+          <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
+            <button @click="viewMode = 'matrix'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    :class="viewMode === 'matrix' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'">
+              <i class="fa-solid fa-table-cells"></i> Dạng Ma Trận
+            </button>
+            <button @click="viewMode = 'list'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    :class="viewMode === 'list' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'">
+              <i class="fa-solid fa-list-check"></i> Dạng Danh Sách
+            </button>
+          </div>
+
+          <!-- Export Buttons -->
+          <button @click="$emit('export-matrix-excel', activeDataList)"
+                  class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  title="Xuất file Excel đúng mẫu ma trận Hỗ trợ nhập học">
+            <i class="fa-solid fa-file-excel"></i> Xuất Mẫu Ca Làm
           </button>
-          <button @click="$emit('export-excel')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer" title="Xuất báo cáo chi tiết từng dòng ca trực">
-            <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo
+          <button @click="$emit('export-excel')"
+                  class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  title="Xuất báo cáo chi tiết từng dòng ca trực">
+            <i class="fa-solid fa-file-export"></i> Xuất Báo Cáo
           </button>
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div>
+      <!-- Filters & Data Source Controls -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Nguồn dữ liệu:</span>
+          <div class="inline-flex rounded-lg bg-white dark:bg-slate-900 p-0.5 border border-slate-300 dark:border-slate-700">
+            <button @click="dataSource = 'registrations'"
+                    class="px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer"
+                    :class="dataSource === 'registrations' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100'">
+              🗓️ Lịch Đăng Ký ({{ registrations ? registrations.length : 0 }})
+            </button>
+            <button @click="dataSource = 'shifts'"
+                    class="px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer"
+                    :class="dataSource === 'shifts' ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100'">
+              📝 Nhật Ký Điểm Danh ({{ searchedShifts ? searchedShifts.length : 0 }})
+            </button>
+          </div>
+        </div>
+
+        <div v-if="viewMode === 'list'" class="flex-1 min-w-[240px] grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input type="text" v-model="historyFilter.keyword" placeholder="Tìm tên, MSSV, trang số, STT..."
-                 class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50">
-        </div>
-        <div>
-          <select v-model="historyFilter.memberId" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 font-medium">
-            <option value="">-- Tất cả thành viên --</option>
-            <option v-for="m in members" :key="m.id" :value="m.id">[{{ m.id }}] {{ m.name }}</option>
-          </select>
-        </div>
-        <div>
-          <select v-model="historyFilter.shiftType" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 font-medium">
+                 class="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-slate-900 dark:text-white">
+          <select v-model="historyFilter.shiftType" class="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-slate-900 dark:text-white">
             <option value="">-- Tất cả ca (1-4) --</option>
             <option value="Ca 1">Ca 1 (7h30 - 9h20)</option>
             <option value="Ca 2">Ca 2 (9h20 - 11h30)</option>
@@ -39,36 +70,123 @@
             <option value="Ca 4">Ca 4 (15h20 - 17h00)</option>
           </select>
         </div>
+
+        <div class="text-xs font-bold text-slate-500 dark:text-slate-400">
+          Tổng số ngày trực: <span class="text-emerald-600 dark:text-emerald-400 font-extrabold">{{ matrixDates.length }} ngày</span>
+        </div>
       </div>
 
-      <!-- Table -->
-      <div class="overflow-x-auto">
+      <!-- VIEW 1: MATRIX SPREADSHEET VIEW (MATCHING USER TEMPLATE IMAGE) -->
+      <div v-if="viewMode === 'matrix'" class="space-y-2">
+        <div class="overflow-x-auto max-h-[680px] border border-slate-400 rounded-xl shadow-xs">
+          <table class="w-full text-left border-collapse text-xs select-text">
+            <thead>
+              <!-- Header Row 1: BUỔI, STT, Dates merged -->
+              <tr class="sticky top-0 z-30">
+                <th rowspan="2" class="bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white font-black text-center py-2 px-3 border border-slate-400 uppercase tracking-wider sticky left-0 z-40 min-w-[75px] shadow-xs">
+                  BUỔI
+                </th>
+                <th rowspan="2" class="bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white font-black text-center py-2 px-2 border border-slate-400 uppercase tracking-wider sticky left-[75px] z-40 min-w-[50px] shadow-xs">
+                  STT
+                </th>
+                <th v-for="d in matrixDates" :key="'date_' + d" colspan="2"
+                    class="bg-[#1e7e34] text-white font-black text-center py-2 px-3 border border-slate-400 text-sm whitespace-nowrap min-w-[260px] tracking-wide">
+                  {{ formatDayMonth(d) }}
+                </th>
+              </tr>
+
+              <!-- Header Row 2: MSSV, HỌ VÀ TÊN -->
+              <tr class="sticky top-[37px] z-30">
+                <template v-for="d in matrixDates" :key="'sub_' + d">
+                  <th class="bg-[#ffecb3] text-amber-950 font-black text-center py-1.5 px-2 border border-slate-400 text-[11px] whitespace-nowrap min-w-[100px]">
+                    MSSV
+                  </th>
+                  <th class="bg-[#ffecb3] text-amber-950 font-black text-center py-1.5 px-3 border border-slate-400 text-[11px] whitespace-nowrap min-w-[160px]">
+                    HỌ VÀ TÊN
+                  </th>
+                </template>
+              </tr>
+            </thead>
+
+            <tbody>
+              <!-- Shift Blocks: CA 1, CA 2, CA 3, CA 4 -->
+              <template v-for="st in shiftTypes" :key="st">
+                <tr v-for="idx in getBlockRowCount(st)" :key="st + '_' + idx"
+                    class="hover:bg-amber-50/40 dark:hover:bg-slate-800/40 transition">
+                  <!-- BUỔI cell (rendered only on first row of shift block with rowspan) -->
+                  <td v-if="idx === 1" :rowspan="getBlockRowCount(st)"
+                      class="bg-[#fff9db] dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-black text-center text-sm border border-slate-400 p-2 sticky left-0 z-20 align-middle whitespace-nowrap shadow-xs">
+                    {{ st.toUpperCase() }}
+                  </td>
+
+                  <!-- STT column (1 to 15) -->
+                  <td class="bg-slate-100 dark:bg-slate-900 text-center font-black text-slate-700 dark:text-slate-300 border border-slate-400 p-1.5 sticky left-[75px] z-20 text-xs shadow-xs">
+                    {{ idx }}
+                  </td>
+
+                  <!-- Data Cells for each Date: MSSV & HỌ VÀ TÊN -->
+                  <template v-for="d in matrixDates" :key="st + '_' + idx + '_' + d">
+                    <td class="border border-slate-400 px-2 py-1 font-mono font-bold text-center whitespace-nowrap text-xs"
+                        :class="getStudentAt(st, d, idx - 1) ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300' : 'bg-white/40 dark:bg-slate-900/20 text-slate-300'">
+                      {{ getStudentAt(st, d, idx - 1)?.mssv || '' }}
+                    </td>
+                    <td class="border border-slate-400 px-3 py-1 font-extrabold whitespace-nowrap text-xs"
+                        :class="getStudentAt(st, d, idx - 1) ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white' : 'bg-white/40 dark:bg-slate-900/20 text-slate-300'">
+                      {{ getStudentAt(st, d, idx - 1)?.name || '' }}
+                    </td>
+                  </template>
+                </tr>
+              </template>
+
+              <tr v-if="matrixDates.length === 0">
+                <td colspan="4" class="p-8 text-center text-slate-400 font-bold text-xs">
+                  Chưa có dữ liệu ngày trực nào trong hệ thống.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-[11px] text-slate-500 italic flex items-center gap-1 pt-1">
+          <i class="fa-solid fa-circle-info text-emerald-600"></i> Bảng ma trận hiển thị 15 dòng/ca trực chuẩn mẫu Excel. Cột BUỔI và STT được cố định khi cuộn ngang.
+        </p>
+      </div>
+
+      <!-- VIEW 2: DETAILED FLAT LIST VIEW (10 COLUMNS) -->
+      <div v-else class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-200 font-extrabold border-b border-slate-700 uppercase tracking-wider whitespace-nowrap">
-              <th class="p-3 whitespace-nowrap">Thành Viên</th>
+              <th class="p-3 whitespace-nowrap text-center">STT Báo Cáo</th>
+              <th class="p-3 whitespace-nowrap">MSSV</th>
+              <th class="p-3 whitespace-nowrap">Họ Và Tên</th>
               <th class="p-3 whitespace-nowrap">Ban Hoạt Động</th>
-              <th class="p-3 whitespace-nowrap">Ngày Trực</th>
-              <th class="p-3 whitespace-nowrap">Ca Trực</th>
-              <th class="p-3 whitespace-nowrap">Sổ Gốc</th>
-              <th class="p-3 whitespace-nowrap">Trạng Thái</th>
+              <th class="p-3 whitespace-nowrap text-center">Ngày Trực</th>
+              <th class="p-3 whitespace-nowrap text-center">Ca Trực</th>
+              <th class="p-3 whitespace-nowrap text-center">Trang Số Gốc</th>
+              <th class="p-3 whitespace-nowrap text-center">STT Trang Sổ</th>
+              <th class="p-3 whitespace-nowrap text-center">Trạng Thái</th>
               <th class="p-3 whitespace-nowrap">Ghi Chú</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-            <tr v-for="s in searchedShifts" :key="s.id" class="hover:bg-slate-100 dark:hover:bg-slate-800/50 transition">
-              <td class="p-3 font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
-                {{ getMemberName(s.memberId) }} <span class="text-slate-600 dark:text-slate-400 font-bold">[{{ s.memberId }}]</span>
-              </td>
+            <tr v-for="(s, idx) in searchedShifts" :key="s.id" class="hover:bg-slate-100 dark:hover:bg-slate-800/50 transition">
+              <td class="p-3 text-center font-bold text-slate-500 whitespace-nowrap">{{ idx + 1 }}</td>
+              <td class="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{{ s.memberId }}</td>
+              <td class="p-3 font-extrabold text-slate-900 dark:text-white whitespace-nowrap">{{ getMemberName(s.memberId) }}</td>
               <td class="p-3 font-bold text-slate-800 dark:text-slate-300 whitespace-nowrap">{{ getMemberDept(s.memberId) }}</td>
-              <td class="p-3 font-bold text-slate-900 dark:text-slate-200 whitespace-nowrap">🗓️ {{ formatDate(s.date) }}</td>
-              <td class="p-3 whitespace-nowrap"><span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-extrabold rounded-lg border border-indigo-300 dark:border-indigo-800 whitespace-nowrap">{{ s.shiftType }}</span></td>
-              <td class="p-3 font-mono text-indigo-700 dark:text-indigo-400 font-black whitespace-nowrap">Trang {{ s.pageNo }} - STT {{ s.sttNo }}</td>
-              <td class="p-3 whitespace-nowrap"><span class="px-2.5 py-1 rounded-lg font-black text-[11px] whitespace-nowrap inline-block" :class="s.status === 'Đúng giờ' ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300' : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300'">{{ s.status }}</span></td>
+              <td class="p-3 text-center font-bold text-slate-900 dark:text-slate-200 whitespace-nowrap">🗓️ {{ formatDate(s.date) }}</td>
+              <td class="p-3 text-center whitespace-nowrap">
+                <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-extrabold rounded-lg border border-indigo-300 dark:border-indigo-800 whitespace-nowrap">{{ s.shiftType }}</span>
+              </td>
+              <td class="p-3 text-center font-mono text-indigo-700 dark:text-indigo-400 font-black whitespace-nowrap">{{ s.pageNo }}</td>
+              <td class="p-3 text-center font-mono text-indigo-700 dark:text-indigo-400 font-black whitespace-nowrap">{{ s.sttNo }}</td>
+              <td class="p-3 text-center whitespace-nowrap">
+                <span class="px-2.5 py-1 rounded-lg font-black text-[11px] whitespace-nowrap inline-block" :class="s.status === 'Đúng giờ' ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300' : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300'">{{ s.status }}</span>
+              </td>
               <td class="p-3 text-slate-700 dark:text-slate-400 italic font-medium min-w-[120px]">{{ s.notes || '—' }}</td>
             </tr>
             <tr v-if="searchedShifts.length === 0">
-              <td colspan="7" class="p-8 text-center text-slate-500 font-bold text-xs">Không tìm thấy ca trực nào phù hợp.</td>
+              <td colspan="10" class="p-8 text-center text-slate-500 font-bold text-xs">Không tìm thấy ca trực nào phù hợp.</td>
             </tr>
           </tbody>
         </table>
@@ -78,14 +196,93 @@
 </template>
 
 <script setup>
-defineProps([
+import { ref, computed } from 'vue';
+
+const props = defineProps([
   'historySubtitle',
   'historyFilter',
   'members',
   'searchedShifts',
+  'registrations',
+  'shifts',
+  'selectedMonth',
   'getMemberName',
   'getMemberDept',
   'formatDate'
 ]);
+
 defineEmits(['export-excel', 'export-matrix-excel']);
+
+const viewMode = ref('matrix'); // 'matrix' (default) or 'list'
+const dataSource = ref('registrations'); // 'registrations' or 'shifts'
+const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
+
+const activeDataList = computed(() => {
+  if (dataSource.value === 'registrations') {
+    return props.registrations && props.registrations.length > 0 ? props.registrations : (props.searchedShifts || []);
+  }
+  return props.searchedShifts && props.searchedShifts.length > 0 ? props.searchedShifts : (props.registrations || []);
+});
+
+const formatDayMonth = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length < 3) return dateStr;
+  return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+};
+
+// Unique sorted dates
+const matrixDates = computed(() => {
+  const list = activeDataList.value;
+  const set = new Set();
+  list.forEach(r => {
+    if (r.date) set.add(r.date);
+  });
+  const dates = Array.from(set).sort();
+  if (dates.length > 0) return dates;
+  return ['2026-08-15', '2026-08-17', '2026-08-18', '2026-08-19', '2026-08-20', '2026-08-21', '2026-08-22'];
+});
+
+// Map of shift -> date -> array of students
+const matrixMap = computed(() => {
+  const map = {};
+  shiftTypes.forEach(st => {
+    map[st] = {};
+    matrixDates.value.forEach(d => {
+      map[st][d] = [];
+    });
+  });
+
+  const list = activeDataList.value;
+  list.forEach(r => {
+    const st = r.shiftType || 'Ca 1';
+    const d = r.date;
+    if (map[st] && map[st][d]) {
+      const mId = String(r.memberId || '').trim();
+      const mObj = props.members ? props.members.find(m => String(m.id).toUpperCase() === mId.toUpperCase()) : null;
+      const name = r.memberName || mObj?.name || props.getMemberName(mId);
+      map[st][d].push({
+        mssv: mId,
+        name: name
+      });
+    }
+  });
+
+  return map;
+});
+
+const getStudentAt = (st, d, index) => {
+  const list = matrixMap.value[st]?.[d];
+  if (!list || !list[index]) return null;
+  return list[index];
+};
+
+const getBlockRowCount = (st) => {
+  let maxCount = 0;
+  matrixDates.value.forEach(d => {
+    const len = matrixMap.value[st]?.[d]?.length || 0;
+    if (len > maxCount) maxCount = len;
+  });
+  return Math.max(15, maxCount); // At least 15 rows per template
+};
 </script>

@@ -15,8 +15,201 @@ try {
     localStorage.removeItem('local_leave_requests');
 } catch (e) {}
 
-const shifts = ref([]);
-const registrations = ref([]);
+const sampleMatrixRegistrations = [
+    // 15/8
+    { id: 'r_15_1_1', memberId: 'F2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_2', memberId: '324H0081', memberName: 'Nguyễn Ngọc Linh', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_3', memberId: '625H0029', memberName: 'Phạm Nguyễn Thiên Phước', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_4', memberId: 'B2500044', memberName: 'Đào Thanh Huyền', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_5', memberId: '22500177', memberName: 'Trần Thị Minh Tâm', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_6', memberId: '02500310', memberName: 'Nguyễn Hoàng Vy', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_7', memberId: 'B24H0103', memberName: 'Nguyễn Ngọc Quỳnh Hoa', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_8', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_9', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_10', memberId: '324H0092', memberName: 'Lương Phạm Hồng Ngọc', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_15_1_11', memberId: 'E25H0202', memberName: 'Nguyễn Đặng Hoa Vy', date: '2026-08-15', shiftType: 'Ca 1', notes: '' },
+
+    { id: 'r_15_2_1', memberId: 'F2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_2', memberId: '324H0081', memberName: 'Nguyễn Ngọc Linh', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_3', memberId: '625H0029', memberName: 'Phạm Nguyễn Thiên Phước', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_4', memberId: 'B2500044', memberName: 'Đào Thanh Huyền', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_5', memberId: '22500177', memberName: 'Trần Thị Minh Tâm', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_6', memberId: '02500310', memberName: 'Nguyễn Hoàng Vy', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_7', memberId: 'B24H0103', memberName: 'Nguyễn Ngọc Quỳnh Hoa', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_8', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_9', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_10', memberId: '324H0092', memberName: 'Lương Phạm Hồng Ngọc', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_15_2_11', memberId: '32500449', memberName: 'Vũ Thị Thu Trang', date: '2026-08-15', shiftType: 'Ca 2', notes: '' },
+
+    { id: 'r_15_3_1', memberId: 'F2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-15', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_15_3_2', memberId: '625H0029', memberName: 'Phạm Nguyễn Thiên Phước', date: '2026-08-15', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_15_3_3', memberId: '62500235', memberName: 'Vũ Kim Đoan', date: '2026-08-15', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_15_3_4', memberId: '62500288', memberName: 'Hoàng Thị Trà My', date: '2026-08-15', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_15_3_5', memberId: '42500516', memberName: 'Bùi văn uyn', date: '2026-08-15', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_15_3_6', memberId: 'F2500060', memberName: 'Lê Thảo Anh', date: '2026-08-15', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_15_3_7', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-15', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_15_3_8', memberId: '324H0092', memberName: 'Lương Phạm Hồng Ngọc', date: '2026-08-15', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_15_3_10', memberId: '02500197', memberName: 'Phan Thị Phương Anh', date: '2026-08-15', shiftType: 'Ca 3', notes: '' },
+
+    { id: 'r_15_4_1', memberId: 'F2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-15', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_15_4_2', memberId: '625H0029', memberName: 'Phạm Nguyễn Thiên Phước', date: '2026-08-15', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_15_4_3', memberId: '62500235', memberName: 'Vũ Kim Đoan', date: '2026-08-15', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_15_4_4', memberId: '62500288', memberName: 'Hoàng Thị Trà My', date: '2026-08-15', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_15_4_5', memberId: '42500516', memberName: 'Bùi văn uyn', date: '2026-08-15', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_15_4_6', memberId: 'F2500060', memberName: 'Lê Thảo Anh', date: '2026-08-15', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_15_4_7', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-15', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_15_4_8', memberId: '324H0092', memberName: 'Lương Phạm Hồng Ngọc', date: '2026-08-15', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_15_4_9', memberId: 'F2500156', memberName: 'Bùi Khả Nhu', date: '2026-08-15', shiftType: 'Ca 4', notes: '' },
+
+    // 17/8
+    { id: 'r_17_1_1', memberId: 'B2500044', memberName: 'Đào Thanh Huyền', date: '2026-08-17', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_17_1_2', memberId: '72500391', memberName: 'Nguyễn Đoàn Kim Ngân', date: '2026-08-17', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_17_1_3', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-17', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_17_1_4', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-17', shiftType: 'Ca 1', notes: '' },
+
+    { id: 'r_17_2_1', memberId: 'B2500044', memberName: 'Đào Thanh Huyền', date: '2026-08-17', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_17_2_2', memberId: '72500391', memberName: 'Nguyễn Đoàn Kim Ngân', date: '2026-08-17', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_17_2_3', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-17', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_17_2_4', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-17', shiftType: 'Ca 2', notes: '' },
+
+    { id: 'r_17_3_1', memberId: 'F2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-17', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_17_3_2', memberId: '625H0029', memberName: 'Phạm Nguyễn Thiên Phước', date: '2026-08-17', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_17_3_3', memberId: '62500235', memberName: 'Vũ Kim Đoan', date: '2026-08-17', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_17_3_4', memberId: '62500288', memberName: 'Hoàng Thị Trà My', date: '2026-08-17', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_17_3_5', memberId: '52400293', memberName: 'Nguyễn Thị Kim Ngân', date: '2026-08-17', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_17_3_6', memberId: '223H0077', memberName: 'Đào Ngọc Mai', date: '2026-08-17', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_17_3_7', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-17', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_17_3_8', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-17', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_17_3_9', memberId: '224H0144', memberName: 'Nguyễn Khánh Như Thụy', date: '2026-08-17', shiftType: 'Ca 3', notes: '' },
+
+    { id: 'r_17_4_1', memberId: 'F2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-17', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_17_4_2', memberId: '625H0029', memberName: 'Phạm Nguyễn Thiên Phước', date: '2026-08-17', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_17_4_3', memberId: '62500235', memberName: 'Vũ Kim Đoan', date: '2026-08-17', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_17_4_4', memberId: '62500288', memberName: 'Hoàng Thị Trà My', date: '2026-08-17', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_17_4_5', memberId: '52400293', memberName: 'Nguyễn Thị Kim Ngân', date: '2026-08-17', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_17_4_6', memberId: '223H0077', memberName: 'Đào Ngọc Mai', date: '2026-08-17', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_17_4_7', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-17', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_17_4_8', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-17', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_17_4_9', memberId: 'F2500156', memberName: 'Bùi Khả Nhu', date: '2026-08-17', shiftType: 'Ca 4', notes: '' },
+
+    // 18/8
+    { id: 'r_18_1_1', memberId: '32500449', memberName: 'Vũ Thị Thu Trang', date: '2026-08-18', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_18_1_2', memberId: '72500150', memberName: 'Nguyễn Thị Thảo Nhi', date: '2026-08-18', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_18_1_3', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-18', shiftType: 'Ca 1', notes: '' },
+
+    { id: 'r_18_2_1', memberId: '32500449', memberName: 'Vũ Thị Thu Trang', date: '2026-08-18', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_18_2_2', memberId: '72500150', memberName: 'Nguyễn Thị Thảo Nhi', date: '2026-08-18', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_18_2_3', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-18', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_18_2_4', memberId: 'C2400046', memberName: 'Nguyễn Thị Huỳnh Như', date: '2026-08-18', shiftType: 'Ca 2', notes: '' },
+
+    { id: 'r_18_3_1', memberId: '52400293', memberName: 'Nguyễn Thị Kim Ngân', date: '2026-08-18', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_18_3_2', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-18', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_18_3_3', memberId: '02500310', memberName: 'Nguyễn Hoàng Vy', date: '2026-08-18', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_18_3_4', memberId: 'C2400046', memberName: 'Nguyễn Thị Huỳnh Như', date: '2026-08-18', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_18_3_5', memberId: '62500197', memberName: 'Phạm Nguyễn Thuý Vy', date: '2026-08-18', shiftType: 'Ca 3', notes: '' },
+
+    { id: 'r_18_4_1', memberId: '52400293', memberName: 'Nguyễn Thị Kim Ngân', date: '2026-08-18', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_18_4_2', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-18', shiftType: 'Ca 4', notes: '' },
+
+    // 19/8
+    { id: 'r_19_1_1', memberId: 'F2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-19', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_19_1_2', memberId: '62400259', memberName: 'Trương Lê Tuấn', date: '2026-08-19', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_19_1_3', memberId: '62500197', memberName: 'Phạm Nguyễn Thuý Vy', date: '2026-08-19', shiftType: 'Ca 1', notes: '' },
+
+    { id: 'r_19_2_1', memberId: 'E2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-19', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_19_2_2', memberId: '62400259', memberName: 'Trương Lê Tuấn', date: '2026-08-19', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_19_2_3', memberId: 'E25H0202', memberName: 'Nguyễn Đặng Hoa Vy', date: '2026-08-19', shiftType: 'Ca 2', notes: '' },
+
+    { id: 'r_19_3_1', memberId: '62500235', memberName: 'Vũ Kim Đoan', date: '2026-08-19', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_19_3_2', memberId: '62500288', memberName: 'Hoàng Thị Trà My', date: '2026-08-19', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_19_3_3', memberId: '224H0144', memberName: 'Nguyễn Khánh Như Thụy', date: '2026-08-19', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_19_3_4', memberId: '22400061', memberName: 'Lâm Hồ Lan Uyên', date: '2026-08-19', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_19_3_5', memberId: '22500177', memberName: 'Trần Thị Minh Tâm', date: '2026-08-19', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_19_3_6', memberId: '62400259', memberName: 'Trương Lê Tuấn', date: '2026-08-19', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_19_3_7', memberId: '52400293', memberName: 'Nguyễn Thị Kim Ngân', date: '2026-08-19', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_19_3_8', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-19', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_19_3_9', memberId: '02500310', memberName: 'Nguyễn Hoàng Vy', date: '2026-08-19', shiftType: 'Ca 3', notes: '' },
+
+    { id: 'r_19_4_1', memberId: '62500235', memberName: 'Vũ Kim Đoan', date: '2026-08-19', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_19_4_2', memberId: '62500288', memberName: 'Hoàng Thị Trà My', date: '2026-08-19', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_19_4_3', memberId: '224H0144', memberName: 'Nguyễn Khánh Như Thụy', date: '2026-08-19', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_19_4_4', memberId: '22400061', memberName: 'Lâm Hồ Lan Uyên', date: '2026-08-19', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_19_4_5', memberId: '62400259', memberName: 'Trương Lê Tuấn', date: '2026-08-19', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_19_4_6', memberId: '52400293', memberName: 'Nguyễn Thị Kim Ngân', date: '2026-08-19', shiftType: 'Ca 4', notes: '' },
+
+    // 20/8
+    { id: 'r_20_1_1', memberId: '22400061', memberName: 'Lâm Hồ Lan Uyên', date: '2026-08-20', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_20_1_2', memberId: '72500150', memberName: 'Nguyễn Thị Thảo Nhi', date: '2026-08-20', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_20_1_3', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-20', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_20_1_4', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-20', shiftType: 'Ca 1', notes: '' },
+
+    { id: 'r_20_2_1', memberId: '22400061', memberName: 'Lâm Hồ Lan Uyên', date: '2026-08-20', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_20_2_2', memberId: '72500150', memberName: 'Nguyễn Thị Thảo Nhi', date: '2026-08-20', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_20_2_3', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-20', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_20_2_4', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-20', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_20_2_5', memberId: 'C2400046', memberName: 'Nguyễn Thị Huỳnh Như', date: '2026-08-20', shiftType: 'Ca 2', notes: '' },
+
+    { id: 'r_20_3_1', memberId: '22400061', memberName: 'Lâm Hồ Lan Uyên', date: '2026-08-20', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_20_3_2', memberId: '42500516', memberName: 'Bùi văn uyn', date: '2026-08-20', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_20_3_3', memberId: '62500197', memberName: 'Phạm Nguyễn Thuý Vy', date: '2026-08-20', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_20_3_4', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-20', shiftType: 'Ca 3', notes: '' },
+
+    { id: 'r_20_4_1', memberId: '22400061', memberName: 'Lâm Hồ Lan Uyên', date: '2026-08-20', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_20_4_2', memberId: '42500516', memberName: 'Bùi văn uyn', date: '2026-08-20', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_20_4_3', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-20', shiftType: 'Ca 4', notes: '' },
+
+    // 21/8
+    { id: 'r_21_1_1', memberId: 'E2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-21', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_21_1_2', memberId: '825H0027', memberName: 'Ngô Minh Thiện', date: '2026-08-21', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_21_1_3', memberId: '62400259', memberName: 'Trương Lê Tuấn', date: '2026-08-21', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_21_1_4', memberId: '72500150', memberName: 'Nguyễn Thị Thảo Nhi', date: '2026-08-21', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_21_1_5', memberId: 'E25H0004', memberName: 'Đỗ Kiều Anh', date: '2026-08-21', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_21_1_6', memberId: '62500197', memberName: 'Phạm Nguyễn Thuý Vy', date: '2026-08-21', shiftType: 'Ca 1', notes: '' },
+
+    { id: 'r_21_2_1', memberId: 'E2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-21', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_21_2_2', memberId: '825H0027', memberName: 'Ngô Minh Thiện', date: '2026-08-21', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_21_2_3', memberId: '62400259', memberName: 'Trương Lê Tuấn', date: '2026-08-21', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_21_2_4', memberId: '72500150', memberName: 'Nguyễn Thị Thảo Nhi', date: '2026-08-21', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_21_2_5', memberId: 'E25H0004', memberName: 'Đỗ Kiều Anh', date: '2026-08-21', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_21_2_6', memberId: 'E25H0202', memberName: 'Nguyễn Đặng Hoa Vy', date: '2026-08-21', shiftType: 'Ca 2', notes: '' },
+
+    { id: 'r_21_3_1', memberId: 'E2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-21', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_21_3_2', memberId: '625H0029', memberName: 'Phạm Nguyễn Thiên Phước', date: '2026-08-21', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_21_3_3', memberId: '62400259', memberName: 'Trương Lê Tuấn', date: '2026-08-21', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_21_3_4', memberId: '32500449', memberName: 'Vũ Thị Thu Trang', date: '2026-08-21', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_21_3_5', memberId: '42500516', memberName: 'Bùi văn uyn', date: '2026-08-21', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_21_3_6', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-21', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_21_3_7', memberId: 'E25H0004', memberName: 'Đỗ Kiều Anh', date: '2026-08-21', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_21_3_8', memberId: 'B25H0140', memberName: 'Nguyễn Phương Trinh', date: '2026-08-21', shiftType: 'Ca 3', notes: '' },
+
+    { id: 'r_21_4_1', memberId: 'E2500127', memberName: 'Nguyễn Quốc Long', date: '2026-08-21', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_21_4_2', memberId: '625H0029', memberName: 'Phạm Nguyễn Thiên Phước', date: '2026-08-21', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_21_4_3', memberId: '62400259', memberName: 'Trương Lê Tuấn', date: '2026-08-21', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_21_4_4', memberId: '32500449', memberName: 'Vũ Thị Thu Trang', date: '2026-08-21', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_21_4_5', memberId: '42500516', memberName: 'Bùi văn uyn', date: '2026-08-21', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_21_4_6', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-21', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_21_4_7', memberId: 'B25H0140', memberName: 'Nguyễn Phương Trinh', date: '2026-08-21', shiftType: 'Ca 4', notes: '' },
+
+    // 22/8
+    { id: 'r_22_1_1', memberId: '324H0081', memberName: 'Nguyễn Ngọc Linh', date: '2026-08-22', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_22_1_2', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-22', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_22_1_3', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-22', shiftType: 'Ca 1', notes: '' },
+    { id: 'r_22_1_4', memberId: '324H0092', memberName: 'Lương Phạm Hồng Ngọc', date: '2026-08-22', shiftType: 'Ca 1', notes: '' },
+
+    { id: 'r_22_2_1', memberId: '324H0081', memberName: 'Nguyễn Ngọc Linh', date: '2026-08-22', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_22_2_2', memberId: 'D2500087', memberName: 'Nguyễn Kim Ngân', date: '2026-08-22', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_22_2_3', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-22', shiftType: 'Ca 2', notes: '' },
+    { id: 'r_22_2_4', memberId: '324H0092', memberName: 'Lương Phạm Hồng Ngọc', date: '2026-08-22', shiftType: 'Ca 2', notes: '' },
+
+    { id: 'r_22_3_1', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-22', shiftType: 'Ca 3', notes: '' },
+    { id: 'r_22_3_2', memberId: '324H0092', memberName: 'Lương Phạm Hồng Ngọc', date: '2026-08-22', shiftType: 'Ca 3', notes: '' },
+
+    { id: 'r_22_4_1', memberId: '324H0119', memberName: 'Trương Thanh Thuý', date: '2026-08-22', shiftType: 'Ca 4', notes: '' },
+    { id: 'r_22_4_2', memberId: '324H0092', memberName: 'Lương Phạm Hồng Ngọc', date: '2026-08-22', shiftType: 'Ca 4', notes: '' }
+];
+
+const shifts = ref([...initialShifts]);
+const registrations = ref([...sampleMatrixRegistrations]);
 const leaveRequests = ref([]);
 
 export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, deleteModalRef) {

@@ -169,11 +169,14 @@
                          :historyFilter="historyFilter"
                          :members="members"
                          :searchedShifts="searchedShifts"
+                         :registrations="registrations"
+                         :shifts="shifts"
+                         :selectedMonth="selectedMonth"
                          :getMemberName="getMemberName"
                          :getMemberDept="getMemberDept"
                          :formatDate="formatDate"
                          @export-excel="exportToExcel"
-                         @export-matrix-excel="exportShiftScheduleMatrixExcel(selectedMonth, searchedShifts)" />
+                         @export-matrix-excel="exportShiftScheduleMatrixExcel(selectedMonth, $event || registrations)" />
 
         <!-- Tab 6: Quản lý Danh sách Thành viên -->
         <TabMembersList v-show="currentTab === 'members'"
@@ -409,13 +412,25 @@ const exportToExcel = () => {
     'Ban Hoạt Động': getMemberDept(s.memberId),
     'Ngày Trực': formatDate(s.date),
     'Ca Trực': s.shiftType,
-    'Trang Sổ Gốc': s.pageNo,
+    'Trang Số Gốc': s.pageNo,
     'STT Trang Sổ': s.sttNo,
     'Trạng Thái': s.status,
     'Ghi Chú': s.notes || ''
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+  worksheet['!cols'] = [
+    { wch: 14 }, // STT Báo Cáo
+    { wch: 14 }, // MSSV
+    { wch: 25 }, // Họ Và Tên
+    { wch: 22 }, // Ban Hoạt Động
+    { wch: 14 }, // Ngày Trực
+    { wch: 12 }, // Ca Trực
+    { wch: 15 }, // Trang Số Gốc
+    { wch: 15 }, // STT Trang Sổ
+    { wch: 14 }, // Trạng Thái
+    { wch: 20 }  // Ghi Chú
+  ];
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoCaTruc");
   XLSX.writeFile(workbook, `BaoCao_CaTruc_${selectedMonth.value}.xlsx`);
