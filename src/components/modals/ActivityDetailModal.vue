@@ -63,26 +63,33 @@
       </div>
 
       <!-- Google Drive Cloud Target Info Banner -->
-      <div class="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 rounded-2xl p-3 space-y-1.5 text-xs">
+      <div class="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 rounded-2xl p-3.5 space-y-2 text-xs mb-4 sm:mb-5">
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div class="font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 text-xs uppercase tracking-wide">
             <i class="fa-brands fa-google-drive text-amber-500 text-sm"></i> Google Drive Lưu Trữ Ảnh Thẻ SV:
           </div>
           <a :href="googleDriveFolderUrl" target="_blank"
-             class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-[11px] shadow-xs transition flex items-center gap-1 cursor-pointer">
+             class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-[11px] shadow-xs transition flex items-center gap-1.5 cursor-pointer">
             <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Folder Drive
           </a>
         </div>
-        <div class="text-[11px] text-slate-600 dark:text-slate-300 font-mono">
-          📁 Folder ngày: <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ getFolderDateStr(activity?.date) }}</span> • Tên file: <span class="font-bold text-emerald-600 dark:text-emerald-400">Họ và tên - MSSV - {{ getFolderDateStr(activity?.date) }}.jpg</span>
+        <div class="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-600 dark:text-slate-300 font-mono space-y-1">
+          <div>
+            📁 <span class="font-bold text-slate-900 dark:text-white">Folder ngày:</span>
+            <span class="text-indigo-600 dark:text-indigo-400 font-bold ml-1">{{ getFolderDateStr(activity?.date) }}</span>
+          </div>
+          <div class="break-all">
+            🏷️ <span class="font-bold text-slate-900 dark:text-white">Tên file:</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">Họ và tên - MSSV - {{ getOnlyDateStr(activity?.date) }}.jpg</span>
+          </div>
         </div>
       </div>
 
       <!-- Detail Lists Tabs -->
-      <div class="flex-grow overflow-y-auto pr-1 space-y-4">
+      <div class="flex-grow overflow-y-auto pr-1 space-y-5 sm:space-y-6">
         <!-- Present List -->
         <div>
-          <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
             <i class="fa-solid fa-circle-check text-emerald-500"></i> Danh sách thành viên điểm danh ({{ stats?.presentList?.length || 0 }})
           </h4>
 
