@@ -360,14 +360,24 @@
         <div v-if="proofImageBase64" class="relative group rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 p-2.5 flex flex-col items-center space-y-2">
           <img :src="proofImageBase64" class="max-h-56 object-contain rounded-xl shadow-md border border-slate-800">
           
-          <div class="flex items-center justify-between w-full px-1">
+          <div class="flex flex-wrap items-center justify-between w-full px-1 gap-2">
             <span class="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
-              <i class="fa-solid fa-circle-check"></i> Ảnh đã sẵn sàng!
+              <i class="fa-solid fa-cloud-arrow-up"></i> ☁️ Tự động lưu lên Cloud khi xác nhận
             </span>
             <div class="flex items-center gap-1.5">
+              <button type="button" @click="downloadCapturedPhoto"
+                      class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-[11px] font-bold transition cursor-pointer flex items-center gap-1 border border-slate-700"
+                      title="Tải ảnh về máy nếu bạn muốn lưu một bản copy">
+                <i class="fa-solid fa-download"></i> Tải về máy
+              </button>
+              <a :href="googleDriveFolderUrl" target="_blank" rel="noopener noreferrer"
+                 class="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-[11px] font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
+                 title="Mở thư mục Google Drive của Đội">
+                <i class="fa-brands fa-google-drive"></i> Mở Drive
+              </a>
               <button type="button" @click="retakePhoto"
-                      class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
-                ✕ Đổi ảnh khác
+                      class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[11px] font-bold transition cursor-pointer">
+                ✕ Đổi ảnh
               </button>
             </div>
           </div>
@@ -645,9 +655,7 @@ const handleProofImageUpload = (e) => {
 const confirmCheckInWithProof = () => {
   if (!selectedActForCheckIn.value || !proofImageBase64.value) return;
 
-  // Auto-download standardized image for Google Drive folder
-  downloadCapturedPhoto();
-
+  // Save directly to Cloud Firestore & Cloud Storage
   emit('check-in', {
     activityId: selectedActForCheckIn.value.id,
     proofImage: proofImageBase64.value,

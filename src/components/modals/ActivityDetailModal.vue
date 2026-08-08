@@ -220,9 +220,13 @@
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-2">
+          <a :href="googleDriveFolderUrl" target="_blank" rel="noopener noreferrer"
+             class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-extrabold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer shadow-xs">
+            <i class="fa-brands fa-google-drive"></i> Mở Thư Mục Drive
+          </a>
           <button type="button" @click="downloadProofImage(previewPhotoModal.item)"
-                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
-            <i class="fa-solid fa-download"></i> Tải Ảnh Về Máy
+                  class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-extrabold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer border border-slate-700">
+            <i class="fa-solid fa-download"></i> Tải Về Máy
           </button>
           <button type="button" @click="previewPhotoModal.show = false"
                   class="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer">
