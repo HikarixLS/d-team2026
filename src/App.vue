@@ -358,7 +358,7 @@ const handleAdminCheckInActivity = ({ activityId, memberId }) => {
 
 const handleUserActivityCheckIn = (payload) => {
   if (typeof payload === 'object' && payload !== null && payload.activityId) {
-    checkInActivity(payload.activityId, null, payload.proofImage);
+    checkInActivity(payload.activityId, null, payload.proofImage, payload.proofFileName, payload.proofFolderDate);
   } else {
     checkInActivity(payload);
   }

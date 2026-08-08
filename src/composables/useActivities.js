@@ -642,8 +642,41 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         return dates;
     };
 
+    const uploadProofToGoogleDrive = async (base64Data, fileName, folderDateName, actName) => {
+        if (!base64Data) return;
+        const gasUrl = localStorage.getItem('google_drive_script_url') || window.__googleDriveScriptUrl || '';
+        if (!gasUrl) {
+            console.log('Google Drive Apps Script Web App chưa cấu hình (Ảnh đã lưu an toàn trên Firestore Cloud).');
+            return;
+        }
+
+        try {
+            const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+            const payload = {
+                base64: cleanBase64,
+                fileName: fileName || 'photo.jpg',
+                folderName: folderDateName || 'HoatDong',
+                folderId: '1zbUHwDzxXVfYK_kTIdQvVZXYJ2sVMBsd',
+                mimeType: 'image/jpeg',
+                actName: actName || ''
+            };
+
+            await fetch(gasUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify(payload)
+            });
+            console.log('⚡ Đã gửi yêu cầu tự động tạo folder & lưu ảnh lên Google Drive!');
+        } catch (err) {
+            console.warn('Lỗi khi gửi ảnh tới Google Drive Web App:', err);
+        }
+    };
+
     // Check-in Activity with strict date permission, proof image, formatted timestamp & Admin check-in on behalf
-    const checkInActivity = async (activityId, targetMemberId = null, proofImage = null) => {
+    const checkInActivity = async (activityId, targetMemberId = null, proofImage = null, proofFileName = null, proofFolderDate = null) => {
         const memberId = targetMemberId || (loggedInMemberIdRef ? loggedInMemberIdRef.value : '');
         const isAdminOperation = Boolean(targetMemberId) || (currentUserRoleRef && (currentUserRoleRef.value === 'admin' || currentUserRoleRef === 'admin'));
 
@@ -691,9 +724,14 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             existing.formattedTime = formattedNow;
             existing.leaveReason = '';
             if (proofImage) existing.proofImage = proofImage;
+            if (proofFileName) existing.proofFileName = proofFileName;
+            if (proofFolderDate) existing.proofFolderDate = proofFolderDate;
             if (isAdminOperation) existing.adminCheckedIn = true;
             persistLocal();
             await syncCheckInToCloud(existing);
+            if (proofImage) {
+                uploadProofToGoogleDrive(proofImage, proofFileName, proofFolderDate, act.name);
+            }
             return showToast(isAdminOperation 
                 ? `Quản trị viên đã điểm danh hộ/bù cho "${memberName}" [${memberId}]! 👑`
                 : `Đã chuyển trạng thái sang: Điểm Danh thành công cho "${memberName}" lúc ${formattedNow}! ✅`
@@ -709,12 +747,17 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             status: 'present',
             leaveReason: '',
             proofImage: proofImage || '',
+            proofFileName: proofFileName || '',
+            proofFolderDate: proofFolderDate || '',
             adminCheckedIn: isAdminOperation
         };
 
         activityCheckIns.value.unshift(newChk);
         persistLocal();
         await syncCheckInToCloud(newChk);
+        if (proofImage) {
+            uploadProofToGoogleDrive(proofImage, proofFileName, proofFolderDate, act.name);
+        }
 
         showToast(isAdminOperation 
             ? `Quản trị viên đã điểm danh hộ/bù thành công cho "${memberName}"! 👑`
