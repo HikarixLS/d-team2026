@@ -642,9 +642,11 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         return dates;
     };
 
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbymKPkZlGwOwHSW1wiUoyNRKvsNnaevzPXZ-EvXHDa4Nauc5iAjjblCJet7Bg62quLE/exec';
+
     const uploadProofToGoogleDrive = async (base64Data, fileName, folderDateName, actName) => {
         if (!base64Data) return;
-        const gasUrl = localStorage.getItem('google_drive_script_url') || window.__googleDriveScriptUrl || '';
+        const gasUrl = localStorage.getItem('google_drive_script_url') || window.__googleDriveScriptUrl || DEFAULT_GAS_URL;
         if (!gasUrl) {
             console.log('Google Drive Apps Script Web App chưa cấu hình (Ảnh đã lưu an toàn trên Firestore Cloud).');
             return;
