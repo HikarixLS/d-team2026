@@ -370,11 +370,6 @@
                       title="Tải ảnh về máy nếu bạn muốn lưu một bản copy">
                 <i class="fa-solid fa-download"></i> Tải về máy
               </button>
-              <a :href="googleDriveFolderUrl" target="_blank" rel="noopener noreferrer"
-                 class="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-[11px] font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
-                 title="Mở thư mục Google Drive của Đội">
-                <i class="fa-brands fa-google-drive"></i> Mở Drive
-              </a>
               <button type="button" @click="retakePhoto"
                       class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[11px] font-bold transition cursor-pointer">
                 ✕ Đổi ảnh

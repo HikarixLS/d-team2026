@@ -155,6 +155,8 @@ const triggerExport = (exportType) => {
   showExportModal.value = false;
 };
 
+const googleDriveFolderUrl = 'https://drive.google.com/drive/folders/1zbUHwDzxXVfYK_kTIdQvVZXYJ2sVMBsd';
+
 const filteredActivities = computed(() => {
   return props.activities.filter(act => {
     const matchSearch = !searchQuery.value ||
@@ -179,6 +181,11 @@ const filteredActivities = computed(() => {
             <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Quản Lý &amp; Theo Dõi Hoạt Động</h2>
             <p class="text-xs sm:text-sm text-indigo-200 mt-0.5">Quản lý hạn gửi hồ sơ (3 ngày), tự động tính tiến độ, kết luận và xuất Excel chuẩn MSSV.</p>
           </div>
+
+          <a :href="googleDriveFolderUrl" target="_blank" rel="noopener noreferrer"
+             class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-extrabold rounded-2xl shadow-md transition flex items-center gap-2 text-xs border border-sky-400/40 cursor-pointer shrink-0">
+            <i class="fa-brands fa-google-drive text-base text-amber-300"></i> Mở Thư Mục Google Drive
+          </a>
         </div>
 
         <!-- 3 Stats Columns Cards (Hoạt động thực hiện, Đã đi điểm <= 3 ngày, Trễ hạn > 3 ngày) -->
