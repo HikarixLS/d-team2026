@@ -57,9 +57,9 @@
 
       <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-chart-pie text-sky-600 dark:text-sky-400"></i> Biểu Đồ Tròn: Phân Bổ Các Ca Trực Trong Tháng (Ca 1 - 4)
+          <i class="fa-solid fa-chart-pie text-sky-600 dark:text-sky-400"></i> Biểu Đồ Tròn: Phân Bổ Các Ca Trực Trong Tháng
         </h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Ca 1 (7h30-9h20), Ca 2 (9h20-11h30), Ca 3 (13h00-15h20), Ca 4 (15h20-17h00)</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Thống kê phân bổ tỷ lệ các ca trực đã hoàn thành</p>
         <div class="relative h-64 flex items-center justify-center min-h-[256px]">
           <canvas id="shiftTypeChart" class="w-full h-full"></canvas>
         </div>
@@ -76,6 +76,7 @@ const props = defineProps([
   'currentTab',
   'currentUserRole',
   'filteredShifts',
+  'shiftTypes',
   'personalShiftsCount',
   'registrations',
   'personalRegistrationsCount',
@@ -158,7 +159,7 @@ const renderCharts = () => {
       });
     }
 
-    // 2. Shift Distribution Chart (Ca 1 - 4)
+    // 2. Shift Distribution Chart (Dynamic shift types)
     const canvas2 = document.getElementById('shiftTypeChart');
     if (canvas2) {
       if (shiftTypeChartInstance) {
@@ -166,23 +167,30 @@ const renderCharts = () => {
       }
 
       const shiftList = props.filteredShifts || [];
-      const ca1 = shiftList.filter(s => s.shiftType === 'Ca 1').length;
-      const ca2 = shiftList.filter(s => s.shiftType === 'Ca 2').length;
-      const ca3 = shiftList.filter(s => s.shiftType === 'Ca 3').length;
-      const ca4 = shiftList.filter(s => s.shiftType === 'Ca 4').length;
+      const sTypes = (props.shiftTypes && props.shiftTypes.length > 0)
+        ? props.shiftTypes
+        : [
+            { id: 'Ca 1', name: 'Ca 1', time: '7h30-9h20' },
+            { id: 'Ca 2', name: 'Ca 2', time: '9h20-11h30' },
+            { id: 'Ca 3', name: 'Ca 3', time: '13h00-15h20' },
+            { id: 'Ca 4', name: 'Ca 4', time: '15h20-17h00' }
+          ];
+
+      const palette = ['#6366F1', '#0284C7', '#F59E0B', '#F43F5E', '#10B981', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+      const chartLabels = sTypes.map(st => {
+        const count = shiftList.filter(s => s.shiftType === st.name || s.shiftType === st.id).length;
+        return `${st.name} ${st.time ? '(' + st.time + ')' : ''}: ${count}`;
+      });
+      const chartData = sTypes.map(st => shiftList.filter(s => s.shiftType === st.name || s.shiftType === st.id).length);
+      const chartColors = sTypes.map((_, i) => palette[i % palette.length]);
 
       shiftTypeChartInstance = new Chart(canvas2, {
         type: 'doughnut',
         data: {
-          labels: [
-            `Ca 1 (7h30-9h20): ${ca1}`,
-            `Ca 2 (9h20-11h30): ${ca2}`,
-            `Ca 3 (13h00-15h20): ${ca3}`,
-            `Ca 4 (15h20-17h00): ${ca4}`
-          ],
+          labels: chartLabels,
           datasets: [{
-            data: [ca1, ca2, ca3, ca4],
-            backgroundColor: ['#6366F1', '#0284C7', '#F59E0B', '#F43F5E'],
+            data: chartData,
+            backgroundColor: chartColors,
             borderWidth: 2,
             borderColor: '#ffffff'
           }]

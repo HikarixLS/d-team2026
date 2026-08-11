@@ -435,8 +435,12 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             return showToast('Hoạt động này chưa có ngày diễn ra để xuất danh sách!', 'warning');
         }
 
-        // 3. Shift Types (Ca 1, Ca 2, Ca 3, Ca 4)
-        const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
+        // 3. Dynamic Shift Types
+        const dynamicTypesSet = new Set(['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4']);
+        actRegs.forEach(r => {
+            if (r.shiftType) dynamicTypesSet.add(r.shiftType);
+        });
+        const shiftTypes = Array.from(dynamicTypesSet);
 
         // 4. Build Matrix Rows Data
         const rowsData = [];

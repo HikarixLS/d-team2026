@@ -5,8 +5,77 @@ const shifts = ref([]);
 const registrations = ref([]);
 const leaveRequests = ref([]);
 
+const DEFAULT_SHIFT_SETTINGS = {
+    maxPerShift: 0, // 0 = Không giới hạn số người/ca (hoặc số > 0)
+    maxPerDay: 0,   // 0 = Không giới hạn số ca/ngày (hoặc số > 0)
+    shiftTypes: [
+        { id: 'Ca 1', name: 'Ca 1', time: '7h30 - 9h20' },
+        { id: 'Ca 2', name: 'Ca 2', time: '9h20 - 11h30' },
+        { id: 'Ca 3', name: 'Ca 3', time: '13h00 - 15h20' },
+        { id: 'Ca 4', name: 'Ca 4', time: '15h20 - 17h00' }
+    ]
+};
+
+const getSavedShiftSettings = () => {
+    try {
+        const saved = localStorage.getItem('shift_settings');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && Array.isArray(parsed.shiftTypes) && parsed.shiftTypes.length > 0) {
+                return {
+                    maxPerShift: typeof parsed.maxPerShift === 'number' ? parsed.maxPerShift : 0,
+                    maxPerDay: typeof parsed.maxPerDay === 'number' ? parsed.maxPerDay : 0,
+                    shiftTypes: parsed.shiftTypes
+                };
+            }
+        }
+    } catch (e) {}
+    return JSON.parse(JSON.stringify(DEFAULT_SHIFT_SETTINGS));
+};
+
+const shiftSettings = ref(getSavedShiftSettings());
+const showShiftSettingsModal = ref(false);
+
 export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, deleteModalRef) {
     const { showToast } = useToast();
+
+    const shiftTypes = computed(() => {
+        if (shiftSettings.value && Array.isArray(shiftSettings.value.shiftTypes) && shiftSettings.value.shiftTypes.length > 0) {
+            return shiftSettings.value.shiftTypes;
+        }
+        return DEFAULT_SHIFT_SETTINGS.shiftTypes;
+    });
+
+    const shiftTypeNames = computed(() => shiftTypes.value.map(st => st.name || st.id));
+
+    const openShiftSettingsModal = () => {
+        showShiftSettingsModal.value = true;
+    };
+
+    const saveShiftSettings = async (newSettings) => {
+        shiftSettings.value = {
+            maxPerShift: Number(newSettings.maxPerShift) || 0,
+            maxPerDay: Number(newSettings.maxPerDay) || 0,
+            shiftTypes: (newSettings.shiftTypes && newSettings.shiftTypes.length > 0) ? newSettings.shiftTypes : DEFAULT_SHIFT_SETTINGS.shiftTypes
+        };
+        localStorage.setItem('shift_settings', JSON.stringify(shiftSettings.value));
+
+        if (window.firebaseDb && window.FirebaseSDK) {
+            try {
+                const { doc, setDoc } = window.FirebaseSDK;
+                await setDoc(doc(window.firebaseDb, 'app_config', 'shift_settings'), shiftSettings.value);
+            } catch (e) {
+                console.warn("Lỗi lưu shift_settings lên cloud:", e);
+            }
+        }
+        showToast('Đã lưu cấu hình ca trực & Đồng bộ Cloud! 🚀');
+        showShiftSettingsModal.value = false;
+    };
+
+    const resetShiftSettingsToDefault = async () => {
+        await saveShiftSettings(DEFAULT_SHIFT_SETTINGS);
+        showToast('Đã khôi phục cấu hình ca trực mặc định! ⚡');
+    };
 
     const getTodayStr = () => {
         const d = new Date();
@@ -257,7 +326,9 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     };
 
     const isShiftFullOnDate = (shiftType, dateStr) => {
-        return getShiftRegisteredCount(shiftType, dateStr) >= 3;
+        const max = Number(shiftSettings.value?.maxPerShift) || 0;
+        if (max <= 0) return false; // 0 = Không giới hạn số người
+        return getShiftRegisteredCount(shiftType, dateStr) >= max;
     };
 
     const isShiftTakenOnDate = (shiftType, dateStr) => {
@@ -266,13 +337,17 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
 
     const getTakenShiftsCountForDate = (dateStr) => {
         if (!dateStr) return 0;
-        const allTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
+        const allTypes = shiftTypeNames.value;
         return allTypes.filter(st => isShiftFullOnDate(st, dateStr)).length;
     };
 
     const isRegDateFull = computed(() => {
         if (!regForm.value.date) return false;
-        return getTakenShiftsCountForDate(regForm.value.date) >= 4;
+        const max = Number(shiftSettings.value?.maxPerShift) || 0;
+        if (max <= 0) return false; // Không bao giờ khóa ngày nếu không giới hạn số người
+        const totalShifts = shiftTypeNames.value.length;
+        if (totalShifts === 0) return false;
+        return getTakenShiftsCountForDate(regForm.value.date) >= totalShifts;
     });
 
     const saveRegistration = async () => {
@@ -297,12 +372,16 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         if (isDuplicate) return showToast(`⚠️ Thành viên đã đăng ký ${rShift} cho ngày ${formatDate(rDate)} rồi!`, 'error');
 
         if (isShiftFullOnDate(rShift, rDate)) {
-            return showToast(`⚠️ Ca trực ${rShift} ngày ${formatDate(rDate)} đã kín (Đã đủ 3/3 người)! Vui lòng chọn ca khác.`, 'error');
+            const max = Number(shiftSettings.value?.maxPerShift) || 0;
+            return showToast(`⚠️ Ca trực ${rShift} ngày ${formatDate(rDate)} đã kín (Đã đủ ${max}/${max} người)! Vui lòng chọn ca khác.`, 'error');
         }
 
-        const countForDay = registrations.value.filter(r => r.memberId === mId && r.date === rDate).length;
-        if (countForDay >= 3) {
-            return showToast(`⚠️ Thành viên đã đăng ký tối đa 3 ca trực trong ngày ${formatDate(rDate)}! Không thể đăng ký thêm.`, 'error');
+        const maxPerDay = Number(shiftSettings.value?.maxPerDay) || 0;
+        if (maxPerDay > 0) {
+            const countForDay = registrations.value.filter(r => r.memberId === mId && r.date === rDate).length;
+            if (countForDay >= maxPerDay) {
+                return showToast(`⚠️ Thành viên đã đăng ký tối đa ${maxPerDay} ca trực trong ngày ${formatDate(rDate)}! Không thể đăng ký thêm.`, 'error');
+            }
         }
 
         const newId = 'r_' + Date.now();
@@ -573,7 +652,12 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         monthRegs.forEach(r => { if (r.date) dateSet.add(r.date); });
         const dateList = Array.from(dateSet).sort();
 
-        const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
+        const configuredTypes = shiftTypeNames.value && shiftTypeNames.value.length > 0 ? shiftTypeNames.value : ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
+        const dynamicTypesSet = new Set(configuredTypes);
+        monthRegs.forEach(r => {
+            if (r.shiftType) dynamicTypesSet.add(r.shiftType);
+        });
+        const matrixShiftTypes = Array.from(dynamicTypesSet);
 
         const rowsData = [];
 
@@ -593,7 +677,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
 
         // Map shift and date to list of students
         const shiftDateMap = {};
-        shiftTypes.forEach(st => {
+        matrixShiftTypes.forEach(st => {
             shiftDateMap[st] = {};
             dateList.forEach(d => {
                 shiftDateMap[st][d] = [];
@@ -601,7 +685,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         });
 
         monthRegs.forEach(r => {
-            const st = r.shiftType || 'Ca 1';
+            const st = r.shiftType || (matrixShiftTypes[0] || 'Ca 1');
             const d = r.date;
             if (shiftDateMap[st] && shiftDateMap[st][d]) {
                 const mId = String(r.memberId || '').trim().toUpperCase();
@@ -625,8 +709,8 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
             });
         }
 
-        // Sections per Shift (CA 1, CA 2, CA 3, CA 4) dynamically adapted to actual participants
-        shiftTypes.forEach(st => {
+        // Sections per Shift dynamically adapted to actual participants
+        matrixShiftTypes.forEach(st => {
             let maxCount = 0;
             dateList.forEach(d => {
                 if (shiftDateMap[st][d].length > maxCount) {
@@ -684,6 +768,13 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         shifts,
         registrations,
         leaveRequests,
+        shiftSettings,
+        shiftTypes,
+        shiftTypeNames,
+        showShiftSettingsModal,
+        openShiftSettingsModal,
+        saveShiftSettings,
+        resetShiftSettingsToDefault,
         selectedMonth,
         selectedWeek,
         todayDate,

@@ -24,8 +24,9 @@ let unsubActivities = null;
 let unsubCheckIns = null;
 let unsubSemesters = null;
 let unsubDepartments = null;
+let unsubShiftSettings = null;
 
-export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef, semestersRef, departmentsRef) {
+export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef, semestersRef, departmentsRef, shiftSettingsRef) {
     const { showToast } = useToast();
 
     const cloudStatusText = computed(() => isCloudConnected.value ? '🟢 Cloud' : (hasFirebaseConfig.value ? '🟡 Đang kết nối...' : '🔴 Local Mode'));
@@ -81,6 +82,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         if (unsubCheckIns) unsubCheckIns();
         if (unsubSemesters) unsubSemesters();
         if (unsubDepartments) unsubDepartments();
+        if (unsubShiftSettings) unsubShiftSettings();
 
         if (!db) return;
 
@@ -292,6 +294,25 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 } else {
                     if (departmentsRef && departmentsRef.value && departmentsRef.value.length > 0) {
                         setDoc(deptRefDoc, { list: departmentsRef.value }).catch(() => {});
+                    }
+                }
+            }, (err) => {});
+
+            const shiftSettingsDoc = doc(db, 'app_config', 'shift_settings');
+            unsubShiftSettings = onSnapshot(shiftSettingsDoc, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data && shiftSettingsRef) {
+                        shiftSettingsRef.value = {
+                            maxPerShift: typeof data.maxPerShift === 'number' ? data.maxPerShift : 0,
+                            maxPerDay: typeof data.maxPerDay === 'number' ? data.maxPerDay : 0,
+                            shiftTypes: Array.isArray(data.shiftTypes) && data.shiftTypes.length > 0 ? data.shiftTypes : shiftSettingsRef.value.shiftTypes
+                        };
+                        localStorage.setItem('shift_settings', JSON.stringify(shiftSettingsRef.value));
+                    }
+                } else {
+                    if (shiftSettingsRef && shiftSettingsRef.value) {
+                        setDoc(shiftSettingsDoc, shiftSettingsRef.value).catch(() => {});
                     }
                 }
             }, (err) => {});

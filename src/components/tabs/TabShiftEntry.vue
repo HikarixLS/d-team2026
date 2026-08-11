@@ -40,15 +40,14 @@
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
               Ca Trực <span class="text-red-500">*</span>
             </label>
             <select v-model="shiftForm.shiftType" required
-                    class="w-full border border-slate-300 rounded-lg p-2.5 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white min-h-[44px]">
-              <option value="Ca 1">Ca 1 (7h30 - 9h20)</option>
-              <option value="Ca 2">Ca 2 (9h20 - 11h30)</option>
-              <option value="Ca 3">Ca 3 (13h00 - 15h20)</option>
-              <option value="Ca 4">Ca 4 (15h20 - 17h00)</option>
+                    class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-slate-900 dark:text-white min-h-[44px]">
+              <option v-for="st in dynamicShiftTypes" :key="st.id || st.name" :value="st.name || st.id">
+                {{ st.name }} {{ st.time ? '(' + st.time + ')' : '' }}
+              </option>
             </select>
           </div>
 
@@ -129,14 +128,30 @@
 </template>
 
 <script setup>
-defineProps([
+import { computed } from 'vue';
+
+const props = defineProps([
   'shiftForm',
   'members',
+  'shiftTypes',
   'currentUserRole',
   'todayDate',
   'shifts',
   'getMemberName',
   'formatDate'
 ]);
+
 defineEmits(['save-shift', 'reset-form', 'go-tab']);
+
+const dynamicShiftTypes = computed(() => {
+  if (props.shiftTypes && Array.isArray(props.shiftTypes) && props.shiftTypes.length > 0) {
+    return props.shiftTypes;
+  }
+  return [
+    { id: 'Ca 1', name: 'Ca 1', time: '7h30 - 9h20' },
+    { id: 'Ca 2', name: 'Ca 2', time: '9h20 - 11h30' },
+    { id: 'Ca 3', name: 'Ca 3', time: '13h00 - 15h20' },
+    { id: 'Ca 4', name: 'Ca 4', time: '15h20 - 17h00' }
+  ];
+});
 </script>

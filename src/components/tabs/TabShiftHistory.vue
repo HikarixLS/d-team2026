@@ -63,11 +63,8 @@
           <input type="text" v-model="historyFilter.keyword" placeholder="Tìm tên, MSSV, trang số, STT..."
                  class="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-slate-900 dark:text-white">
           <select v-model="historyFilter.shiftType" class="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-slate-900 dark:text-white">
-            <option value="">-- Tất cả ca (1-4) --</option>
-            <option value="Ca 1">Ca 1 (7h30 - 9h20)</option>
-            <option value="Ca 2">Ca 2 (9h20 - 11h30)</option>
-            <option value="Ca 3">Ca 3 (13h00 - 15h20)</option>
-            <option value="Ca 4">Ca 4 (15h20 - 17h00)</option>
+            <option value="">-- Tất cả ca --</option>
+            <option v-for="st in effectiveShiftTypes" :key="st" :value="st">{{ st }}</option>
           </select>
         </div>
 
@@ -107,10 +104,9 @@
                 </template>
               </tr>
             </thead>
-
             <tbody>
-              <!-- Shift Blocks: CA 1, CA 2, CA 3, CA 4 -->
-              <template v-for="st in shiftTypes" :key="st">
+              <!-- Shift Blocks -->
+              <template v-for="st in effectiveShiftTypes" :key="st">
                 <tr v-for="idx in getBlockRowCount(st)" :key="st + '_' + idx"
                     class="hover:bg-amber-50/40 dark:hover:bg-slate-800/40 transition">
                   <!-- BUỔI cell (rendered only on first row of shift block with rowspan) -->
@@ -119,7 +115,7 @@
                     {{ st.toUpperCase() }}
                   </td>
 
-                  <!-- STT column (1 to 15) -->
+                  <!-- STT column -->
                   <td class="bg-slate-100 dark:bg-slate-900 text-center font-black text-slate-700 dark:text-slate-300 border border-slate-400 p-1.5 sticky left-[75px] z-20 text-xs shadow-xs">
                     {{ idx }}
                   </td>
@@ -137,59 +133,61 @@
                   </template>
                 </tr>
               </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-              <tr v-if="matrixDates.length === 0">
-                <td colspan="4" class="p-8 text-center text-slate-400 font-bold text-xs">
-                  Chưa có dữ liệu ngày trực nào trong hệ thống.
+      <!-- VIEW 2: STANDARD LIST VIEW -->
+      <div v-else class="space-y-3">
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                <th class="p-3">STT</th>
+                <th class="p-3">MSSV</th>
+                <th class="p-3">Họ và Tên</th>
+                <th class="p-3">Ban</th>
+                <th class="p-3">Ngày Trực</th>
+                <th class="p-3">Ca Trực</th>
+                <th v-if="dataSource === 'shifts'" class="p-3">Sổ Gốc</th>
+                <th v-if="dataSource === 'shifts'" class="p-3">Trạng Thái</th>
+                <th class="p-3">Ghi Chú</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr v-for="(item, idx) in filteredList" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition">
+                <td class="p-3 text-slate-400 font-mono">{{ idx + 1 }}</td>
+                <td class="p-3 font-mono font-bold text-slate-700 dark:text-slate-300">{{ item.memberId }}</td>
+                <td class="p-3 font-bold text-slate-900 dark:text-white">{{ getMemberName(item.memberId) }}</td>
+                <td class="p-3 text-slate-500 dark:text-slate-400">{{ getMemberDept(item.memberId) }}</td>
+                <td class="p-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{{ formatDate(item.date) }}</td>
+                <td class="p-3">
+                  <span class="px-2 py-0.5 rounded-md font-bold text-[10px] bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                    {{ item.shiftType }}
+                  </span>
+                </td>
+                <td v-if="dataSource === 'shifts'" class="p-3 text-slate-600 dark:text-slate-300 font-medium">
+                  Trang {{ item.pageNo }} - STT {{ item.sttNo }}
+                </td>
+                <td v-if="dataSource === 'shifts'" class="p-3">
+                  <span class="px-2 py-0.5 rounded-md font-bold text-[10px]"
+                        :class="item.status === 'Đúng giờ' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200' : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200'">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td class="p-3 text-slate-500 dark:text-slate-400 italic text-[11px]">
+                  {{ item.notes || '—' }}
+                </td>
+              </tr>
+              <tr v-if="filteredList.length === 0">
+                <td colspan="9" class="p-8 text-center text-slate-400 text-xs">
+                  Không tìm thấy dữ liệu ca trực phù hợp.
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="text-[11px] text-slate-500 italic flex items-center gap-1 pt-1">
-          <i class="fa-solid fa-circle-info text-emerald-600"></i> Bảng ma trận hiển thị 15 dòng/ca trực chuẩn mẫu Excel. Cột BUỔI và STT được cố định khi cuộn ngang.
-        </p>
-      </div>
-
-      <!-- VIEW 2: DETAILED FLAT LIST VIEW (10 COLUMNS) -->
-      <div v-else class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr class="bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-200 font-extrabold border-b border-slate-700 uppercase tracking-wider whitespace-nowrap">
-              <th class="p-3 whitespace-nowrap text-center">STT Báo Cáo</th>
-              <th class="p-3 whitespace-nowrap">MSSV</th>
-              <th class="p-3 whitespace-nowrap">Họ Và Tên</th>
-              <th class="p-3 whitespace-nowrap">Ban Hoạt Động</th>
-              <th class="p-3 whitespace-nowrap text-center">Ngày Trực</th>
-              <th class="p-3 whitespace-nowrap text-center">Ca Trực</th>
-              <th class="p-3 whitespace-nowrap text-center">Trang Số Gốc</th>
-              <th class="p-3 whitespace-nowrap text-center">STT Trang Sổ</th>
-              <th class="p-3 whitespace-nowrap text-center">Trạng Thái</th>
-              <th class="p-3 whitespace-nowrap">Ghi Chú</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-            <tr v-for="(s, idx) in searchedShifts" :key="s.id" class="hover:bg-slate-100 dark:hover:bg-slate-800/50 transition">
-              <td class="p-3 text-center font-bold text-slate-500 whitespace-nowrap">{{ idx + 1 }}</td>
-              <td class="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{{ s.memberId }}</td>
-              <td class="p-3 font-extrabold text-slate-900 dark:text-white whitespace-nowrap">{{ getMemberName(s.memberId) }}</td>
-              <td class="p-3 font-bold text-slate-800 dark:text-slate-300 whitespace-nowrap">{{ getMemberDept(s.memberId) }}</td>
-              <td class="p-3 text-center font-bold text-slate-900 dark:text-slate-200 whitespace-nowrap">🗓️ {{ formatDate(s.date) }}</td>
-              <td class="p-3 text-center whitespace-nowrap">
-                <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-extrabold rounded-lg border border-indigo-300 dark:border-indigo-800 whitespace-nowrap">{{ s.shiftType }}</span>
-              </td>
-              <td class="p-3 text-center font-mono text-indigo-700 dark:text-indigo-400 font-black whitespace-nowrap">{{ s.pageNo }}</td>
-              <td class="p-3 text-center font-mono text-indigo-700 dark:text-indigo-400 font-black whitespace-nowrap">{{ s.sttNo }}</td>
-              <td class="p-3 text-center whitespace-nowrap">
-                <span class="px-2.5 py-1 rounded-lg font-black text-[11px] whitespace-nowrap inline-block" :class="s.status === 'Đúng giờ' ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300' : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300'">{{ s.status }}</span>
-              </td>
-              <td class="p-3 text-slate-700 dark:text-slate-400 italic font-medium min-w-[120px]">{{ s.notes || '—' }}</td>
-            </tr>
-            <tr v-if="searchedShifts.length === 0">
-              <td colspan="10" class="p-8 text-center text-slate-500 font-bold text-xs">Không tìm thấy ca trực nào phù hợp.</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   </div>
@@ -206,6 +204,7 @@ const props = defineProps([
   'registrations',
   'filteredRegistrations',
   'shifts',
+  'shiftTypes',
   'selectedMonth',
   'selectedWeek',
   'getMemberName',
@@ -217,7 +216,6 @@ defineEmits(['export-excel', 'export-matrix-excel']);
 
 const viewMode = ref('matrix'); // 'matrix' (default) or 'list'
 const dataSource = ref('registrations'); // 'registrations' or 'shifts'
-const shiftTypes = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
 
 const isDateInSelectedWeek = (dateStr) => {
   if (!dateStr) return false;
@@ -242,6 +240,18 @@ const activeDataList = computed(() => {
   return list.filter(r => isDateInSelectedWeek(r.date));
 });
 
+const effectiveShiftTypes = computed(() => {
+  const defaultList = (props.shiftTypes && props.shiftTypes.length > 0)
+    ? props.shiftTypes.map(st => typeof st === 'string' ? st : (st.name || st.id))
+    : ['Ca 1', 'Ca 2', 'Ca 3', 'Ca 4'];
+  const set = new Set(defaultList);
+  const list = activeDataList.value;
+  list.forEach(r => {
+    if (r.shiftType) set.add(r.shiftType);
+  });
+  return Array.from(set);
+});
+
 const formatDayMonth = (dateStr) => {
   if (!dateStr) return '';
   const parts = dateStr.split('-');
@@ -264,7 +274,7 @@ const matrixDates = computed(() => {
 // Map of shift -> date -> array of students
 const matrixMap = computed(() => {
   const map = {};
-  shiftTypes.forEach(st => {
+  effectiveShiftTypes.value.forEach(st => {
     map[st] = {};
     matrixDates.value.forEach(d => {
       map[st][d] = [];
@@ -273,7 +283,7 @@ const matrixMap = computed(() => {
 
   const list = activeDataList.value;
   list.forEach(r => {
-    const st = r.shiftType || 'Ca 1';
+    const st = r.shiftType || (effectiveShiftTypes.value[0] || 'Ca 1');
     const d = r.date;
     if (map[st] && map[st][d]) {
       const mId = String(r.memberId || '').trim();
@@ -303,4 +313,24 @@ const getBlockRowCount = (st) => {
   });
   return Math.max(1, maxCount); // Dynamically adapt to actual number of attendees per shift
 };
+
+const filteredList = computed(() => {
+  let list = activeDataList.value;
+  const kw = (props.historyFilter?.keyword || '').trim().toLowerCase();
+  const st = (props.historyFilter?.shiftType || '').trim();
+
+  if (st) {
+    list = list.filter(item => item.shiftType === st);
+  }
+  if (kw) {
+    list = list.filter(item => {
+      const mName = props.getMemberName(item.memberId).toLowerCase();
+      const mId = String(item.memberId).toLowerCase();
+      const page = String(item.pageNo || '');
+      const num = String(item.sttNo || '');
+      return mName.includes(kw) || mId.includes(kw) || page.includes(kw) || num.includes(kw);
+    });
+  }
+  return list;
+});
 </script>

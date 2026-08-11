@@ -1,13 +1,12 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 flex items-center justify-center p-4">
-    <div class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 sm:p-8 max-w-md w-full text-white shadow-2xl space-y-6">
+  <div class="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 relative" style="background-image: linear-gradient(rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.88)), url('/app-bg.jpg');">
+    <div class="bg-slate-900/60 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 sm:p-8 max-w-md w-full text-white shadow-2xl space-y-6 relative z-10">
       <div class="text-center space-y-2">
         <img src="/logo.jpg" alt="Logo" class="w-16 h-16 rounded-2xl mx-auto object-cover shadow-lg border border-indigo-400/40">
-        <h1 class="text-base sm:text-lg font-black tracking-tight text-white uppercase leading-snug">
-          HỆ THỐNG QUẢN LÝ ĐIỆN TỬ<br>
-          ĐỘI VĂN PHÒNG ĐOÀN - HỘI TDTU
+        <h1 class="text-lg sm:text-xl font-black tracking-tight text-white uppercase leading-snug">
+          HỆ THỐNG QUẢN LÝ ĐVP
         </h1>
-        <p class="text-xs text-indigo-200">Quản lý Ca trực, Hoạt động & Đồng bộ Cloud</p>
+        <p class="text-xs text-indigo-200">Đội Văn Phòng Đoàn - Hội TDTU • Cloud Realtime</p>
         <div class="mt-2 inline-flex flex-wrap items-center justify-center gap-1.5 px-3 py-1 bg-amber-500/20 border border-amber-400/40 rounded-full text-[11px] font-semibold text-amber-300">
           <i class="fa-solid fa-shield-halved"></i>
           <span>Đăng nhập theo danh sách trên Cloud</span>
