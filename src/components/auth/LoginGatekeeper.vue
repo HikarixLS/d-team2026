@@ -1,21 +1,36 @@
 <template>
-  <div class="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 relative" style="background-image: linear-gradient(rgba(15, 23, 42, 0.60), rgba(15, 23, 42, 0.72)), url('/app-bg.jpg');">
-    <div class="bg-slate-900/60 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 sm:p-8 max-w-md w-full text-white shadow-2xl space-y-6 relative z-10">
-      <div class="text-center space-y-2">
-        <img src="/logo.jpg" alt="Logo" class="w-16 h-16 rounded-2xl mx-auto object-cover shadow-lg border border-indigo-400/40">
-        <h1 class="text-lg sm:text-xl font-black tracking-tight text-white uppercase leading-snug">
-          HỆ THỐNG QUẢN LÝ ĐVP
-        </h1>
-        <p class="text-xs text-indigo-200">Đội Văn Phòng Đoàn - Hội TDTU • Cloud Realtime</p>
-        <div class="mt-2 inline-flex flex-wrap items-center justify-center gap-1.5 px-3 py-1 bg-amber-500/20 border border-amber-400/40 rounded-full text-[11px] font-semibold text-amber-300">
-          <i class="fa-solid fa-shield-halved"></i>
-          <span>Đăng nhập theo danh sách trên Cloud</span>
+  <div class="min-h-screen bg-gradient-to-br from-[#0c1222] via-[#161f38] to-[#0c1222] flex items-center justify-center p-4 relative overflow-hidden">
+    <!-- Ambient background glow elements -->
+    <div class="absolute -top-32 -left-32 w-80 h-80 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="bg-slate-900/75 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full text-white shadow-2xl space-y-6 relative z-10">
+      <div class="text-center space-y-2.5">
+        <img src="/logo.jpg" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl mx-auto object-cover shadow-xl border border-indigo-400/30">
+        
+        <div class="space-y-0.5 pt-1">
+          <h1 class="text-lg sm:text-xl font-black tracking-tight text-white uppercase leading-snug">
+            HỆ THỐNG QUẢN LÝ ĐIỆN TỬ
+          </h1>
+          <h2 class="text-base sm:text-lg font-black tracking-tight text-white uppercase leading-snug">
+            ĐỘI VĂN PHÒNG ĐOÀN - HỘI TDTU
+          </h2>
+        </div>
+
+        <p class="text-xs sm:text-sm text-indigo-200/90 font-medium">Quản lý Ca trực, Hoạt động & Đồng bộ Cloud</p>
+        
+        <div class="pt-0.5">
+          <div class="inline-flex flex-wrap items-center justify-center gap-1.5 px-4 py-1.5 bg-amber-500/10 border border-amber-400/40 rounded-full text-xs font-semibold text-amber-300 shadow-sm">
+            <i class="fa-solid fa-shield-halved text-amber-400"></i>
+            <span>Đăng nhập theo danh sách trên Cloud</span>
+          </div>
         </div>
 
         <div class="flex items-center justify-center gap-2 pt-1 text-xs font-semibold">
           <span class="w-2.5 h-2.5 rounded-full" :class="isCloudConnected ? 'bg-emerald-400 animate-pulse' : (hasFirebaseConfig ? 'bg-amber-400 animate-ping' : 'bg-rose-500')"></span>
-          <span :class="isCloudConnected ? 'text-emerald-300' : 'text-amber-300'">
-            {{ isCloudConnected ? '🟢 Đã kết nối Cloud Firestore' : (hasFirebaseConfig ? '🟡 Đang kết nối Cloud...' : '🔴 Chưa kết nối Cloud') }}
+          <span class="flex items-center gap-1.5" :class="isCloudConnected ? 'text-emerald-400' : 'text-amber-300'">
+            <i v-if="isCloudConnected" class="fa-solid fa-globe text-emerald-400"></i>
+            <span>{{ isCloudConnected ? 'Đã kết nối Cloud Firestore' : (hasFirebaseConfig ? 'Đang kết nối Cloud...' : 'Chưa kết nối Cloud') }}</span>
           </span>
           <button v-if="!isCloudConnected" @click="$emit('retry-cloud')" type="button" class="text-[11px] text-sky-300 hover:text-white underline font-bold ml-1 cursor-pointer">
             [Thử lại]
@@ -24,11 +39,11 @@
       </div>
 
       <div class="grid grid-cols-2 p-1 bg-slate-950/70 rounded-2xl border border-indigo-500/30 text-xs font-bold">
-        <button @click="$emit('update:loginRole', 'member')" class="py-2.5 rounded-xl transition flex items-center justify-center gap-2"
+        <button @click="$emit('update:loginRole', 'member')" class="py-2.5 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
                 :class="loginRole === 'member' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'">
           <i class="fa-solid fa-user"></i> Thành Viên
         </button>
-        <button @click="$emit('update:loginRole', 'admin')" class="py-2.5 rounded-xl transition flex items-center justify-center gap-2"
+        <button @click="$emit('update:loginRole', 'admin')" class="py-2.5 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
                 :class="loginRole === 'admin' ? 'bg-amber-500 text-slate-900 shadow-md' : 'text-slate-400 hover:text-white'">
           <i class="fa-solid fa-crown"></i> Quản Trị Viên
         </button>
