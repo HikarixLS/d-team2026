@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 relative" style="background-image: linear-gradient(rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.88)), url('/app-bg.jpg');">
+  <div class="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 relative" style="background-image: linear-gradient(rgba(15, 23, 42, 0.60), rgba(15, 23, 42, 0.72)), url('/app-bg.jpg');">
     <div class="bg-slate-900/60 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 sm:p-8 max-w-md w-full text-white shadow-2xl space-y-6 relative z-10">
       <div class="text-center space-y-2">
         <img src="/logo.jpg" alt="Logo" class="w-16 h-16 rounded-2xl mx-auto object-cover shadow-lg border border-indigo-400/40">
