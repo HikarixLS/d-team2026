@@ -132,6 +132,7 @@
                             @save-registration="saveRegistration"
                             @delete-registration="confirmDeleteRegistration"
                             @open-shift-settings="openShiftSettingsModal"
+                            @toggle-registration-open="toggleRegistrationOpen"
                             @export-matrix-excel="exportShiftScheduleMatrixExcel(selectedMonth, filteredRegistrations)" />
 
           <!-- Tab 3: Đơn xin nghỉ phép -->
@@ -315,7 +316,7 @@ const {
 const shiftsModule = useShifts(members, currentUserRole, loggedInMemberId, deleteModal);
 const {
   shifts, registrations, leaveRequests, shiftSettings, shiftTypes, shiftTypeNames,
-  showShiftSettingsModal, openShiftSettingsModal, saveShiftSettings, resetShiftSettingsToDefault,
+  showShiftSettingsModal, openShiftSettingsModal, saveShiftSettings, toggleRegistrationOpen, resetShiftSettingsToDefault,
   selectedMonth, selectedWeek, todayDate,
   activeMember, getMemberName, getMemberDept, formatDate, getInitials,
   getWeekNumFromDate, getWeekNameFromDate, shiftForm, resetShiftForm, saveShift,

@@ -304,6 +304,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     const data = snapshot.data();
                     if (data && shiftSettingsRef) {
                         shiftSettingsRef.value = {
+                            isRegistrationOpen: data.isRegistrationOpen !== false,
                             maxPerShift: typeof data.maxPerShift === 'number' ? data.maxPerShift : 0,
                             maxPerDay: typeof data.maxPerDay === 'number' ? data.maxPerDay : 0,
                             shiftTypes: Array.isArray(data.shiftTypes) && data.shiftTypes.length > 0 ? data.shiftTypes : shiftSettingsRef.value.shiftTypes

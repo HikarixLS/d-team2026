@@ -15,6 +15,31 @@
         </div>
 
         <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1 text-xs">
+          <!-- 0. Bật / Tắt Cổng Đăng Ký Ca Trực -->
+          <div class="p-3.5 rounded-2xl border transition-all"
+               :class="localSettings.isRegistrationOpen !== false ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60' : 'bg-rose-50/70 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/60'">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <label class="font-bold flex items-center gap-1.5 text-xs"
+                       :class="localSettings.isRegistrationOpen !== false ? 'text-emerald-900 dark:text-emerald-200' : 'text-rose-900 dark:text-rose-200'">
+                  <i class="fa-solid" :class="localSettings.isRegistrationOpen !== false ? 'fa-door-open text-emerald-600 dark:text-emerald-400' : 'fa-door-closed text-rose-600 dark:text-rose-400'"></i>
+                  Trạng Thái Cổng Đăng Ký Ca Trực (Admin)
+                </label>
+                <p class="text-[11px] mt-0.5"
+                   :class="localSettings.isRegistrationOpen !== false ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'">
+                  {{ localSettings.isRegistrationOpen !== false ? '🟢 Đang MỞ: Thành viên được phép đăng ký ca.' : '🔴 Đang ĐÓNG: Tạm khóa đăng ký với thành viên.' }}
+                </p>
+              </div>
+
+              <button type="button" @click="localSettings.isRegistrationOpen = !(localSettings.isRegistrationOpen !== false)"
+                      class="px-3.5 py-1.5 rounded-xl font-black text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                      :class="localSettings.isRegistrationOpen !== false ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'">
+                <i class="fa-solid" :class="localSettings.isRegistrationOpen !== false ? 'fa-toggle-on text-sm' : 'fa-toggle-off text-sm'"></i>
+                <span>{{ localSettings.isRegistrationOpen !== false ? 'Đang Mở' : 'Đang Khóa' }}</span>
+              </button>
+            </div>
+          </div>
+
           <!-- 1. Cấu hình số người trực tối đa mỗi ca -->
           <div class="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/60 space-y-2.5">
             <label class="font-bold text-slate-800 dark:text-indigo-200 flex items-center gap-1.5 text-xs">
@@ -189,6 +214,7 @@ const handleResetDefault = () => {
 
 const handleSave = () => {
   const payload = {
+    isRegistrationOpen: localSettings.value.isRegistrationOpen !== false,
     maxPerShift: isUnlimitedPerShift.value ? 0 : Math.max(1, Number(localSettings.value.maxPerShift) || 3),
     maxPerDay: isUnlimitedPerDay.value ? 0 : Math.max(1, Number(localSettings.value.maxPerDay) || 3),
     shiftTypes: localSettings.value.shiftTypes.filter(st => st.name && st.name.trim()).map(st => ({

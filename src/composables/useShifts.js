@@ -6,6 +6,7 @@ const registrations = ref([]);
 const leaveRequests = ref([]);
 
 const DEFAULT_SHIFT_SETTINGS = {
+    isRegistrationOpen: true, // true = Cho phép thành viên đăng ký, false = Tạm đóng cổng đăng ký
     maxPerShift: 0, // 0 = Không giới hạn số người/ca (hoặc số > 0)
     maxPerDay: 0,   // 0 = Không giới hạn số ca/ngày (hoặc số > 0)
     shiftTypes: [
@@ -23,6 +24,7 @@ const getSavedShiftSettings = () => {
             const parsed = JSON.parse(saved);
             if (parsed && Array.isArray(parsed.shiftTypes) && parsed.shiftTypes.length > 0) {
                 return {
+                    isRegistrationOpen: parsed.isRegistrationOpen !== false,
                     maxPerShift: typeof parsed.maxPerShift === 'number' ? parsed.maxPerShift : 0,
                     maxPerDay: typeof parsed.maxPerDay === 'number' ? parsed.maxPerDay : 0,
                     shiftTypes: parsed.shiftTypes
@@ -54,6 +56,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
 
     const saveShiftSettings = async (newSettings) => {
         shiftSettings.value = {
+            isRegistrationOpen: newSettings.isRegistrationOpen !== false,
             maxPerShift: Number(newSettings.maxPerShift) || 0,
             maxPerDay: Number(newSettings.maxPerDay) || 0,
             shiftTypes: (newSettings.shiftTypes && newSettings.shiftTypes.length > 0) ? newSettings.shiftTypes : DEFAULT_SHIFT_SETTINGS.shiftTypes
@@ -70,6 +73,30 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         }
         showToast('Đã lưu cấu hình ca trực & Đồng bộ Cloud! 🚀');
         showShiftSettingsModal.value = false;
+    };
+
+    const toggleRegistrationOpen = async (explicitState = null) => {
+        const nextState = explicitState !== null ? Boolean(explicitState) : !(shiftSettings.value?.isRegistrationOpen !== false);
+        const updated = {
+            ...shiftSettings.value,
+            isRegistrationOpen: nextState
+        };
+        shiftSettings.value = updated;
+        localStorage.setItem('shift_settings', JSON.stringify(updated));
+
+        if (window.firebaseDb && window.FirebaseSDK) {
+            try {
+                const { doc, setDoc } = window.FirebaseSDK;
+                await setDoc(doc(window.firebaseDb, 'app_config', 'shift_settings'), updated);
+            } catch (e) {
+                console.warn("Lỗi lưu toggle shift_settings lên cloud:", e);
+            }
+        }
+        if (nextState) {
+            showToast('🟢 Đã MỞ cổng đăng ký ca trực cho thành viên! 🚀');
+        } else {
+            showToast('🔴 Đã ĐÓNG cổng đăng ký ca trực! (Chỉ Admin mới có thể điều chỉnh)', 'info');
+        }
     };
 
     const resetShiftSettingsToDefault = async () => {
@@ -351,6 +378,11 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     });
 
     const saveRegistration = async () => {
+        // Check if registration is closed for non-admin
+        if (shiftSettings.value?.isRegistrationOpen === false && (!currentUserRoleRef || currentUserRoleRef.value !== 'admin')) {
+            return showToast('🔒 Cổng đăng ký ca trực hiện đang tạm đóng bởi Quản trị viên!', 'error');
+        }
+
         // Enforce memberId for non-admin users or if empty
         if ((!currentUserRoleRef || currentUserRoleRef.value !== 'admin' || !regForm.value.memberId) && loggedInMemberIdRef && loggedInMemberIdRef.value) {
             regForm.value.memberId = loggedInMemberIdRef.value;
@@ -774,6 +806,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         showShiftSettingsModal,
         openShiftSettingsModal,
         saveShiftSettings,
+        toggleRegistrationOpen,
         resetShiftSettingsToDefault,
         selectedMonth,
         selectedWeek,

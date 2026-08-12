@@ -1,5 +1,55 @@
 <template>
   <div class="space-y-4 sm:space-y-6">
+    <!-- Admin Quick Control Bar: Bật / Tắt Cổng Đăng Ký Ca Trực -->
+    <div v-if="currentUserRole === 'admin'" class="p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs transition-all"
+         :class="shiftSettings?.isRegistrationOpen !== false ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+             :class="shiftSettings?.isRegistrationOpen !== false ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'">
+          <i class="fa-solid" :class="shiftSettings?.isRegistrationOpen !== false ? 'fa-door-open text-base' : 'fa-door-closed text-base'"></i>
+        </div>
+        <div>
+          <div class="text-xs font-black flex items-center gap-2 flex-wrap"
+               :class="shiftSettings?.isRegistrationOpen !== false ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'">
+            <span>CỔNG ĐĂNG KÝ CA TRỰC:</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide shadow-xs"
+                  :class="shiftSettings?.isRegistrationOpen !== false ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'">
+              {{ shiftSettings?.isRegistrationOpen !== false ? '🟢 Đang Mở Cho Thành Viên' : '🔴 Đang Đóng Cổng Đăng Ký' }}
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+            {{ shiftSettings?.isRegistrationOpen !== false ? 'Thành viên có thể tự do đăng ký ca trực. Bấm nút bên cạnh để đóng cổng khi cần chốt ca.' : 'Thành viên đang bị khóa form đăng ký. Quản trị viên vẫn có quyền đăng ký bổ sung thay thành viên.' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <button type="button" @click="$emit('toggle-registration-open')"
+                class="px-4 py-2 rounded-xl text-xs font-extrabold text-white shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95"
+                :class="shiftSettings?.isRegistrationOpen !== false ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'">
+          <i class="fa-solid" :class="shiftSettings?.isRegistrationOpen !== false ? 'fa-lock' : 'fa-lock-open'"></i>
+          <span>{{ shiftSettings?.isRegistrationOpen !== false ? 'Đóng Cổng Đăng Ký' : 'Mở Cổng Đăng Ký' }}</span>
+        </button>
+        <button @click="$emit('open-shift-settings')" type="button"
+                class="px-3 py-2 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-xl text-xs font-bold border border-indigo-200 dark:border-indigo-800 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                title="Tùy chỉnh số lượng người trực mỗi ca & danh sách ca không giới hạn">
+          <i class="fa-solid fa-sliders"></i>
+          <span class="hidden sm:inline">Cấu hình</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Member Warning Banner when Registration is Closed -->
+    <div v-if="currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false"
+         class="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-xs space-y-1">
+      <div class="font-extrabold text-rose-600 dark:text-rose-400 flex items-center gap-2 text-sm">
+        <i class="fa-solid fa-lock text-base"></i> CỔNG ĐĂNG KÝ CA TRỰC ĐANG TẠM ĐÓNG
+      </div>
+      <p class="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
+        Quản trị viên đã tạm khóa cổng đăng ký ca trực tuần này để tổng hợp lịch. Nếu bạn có nhu cầu đăng ký đột xuất hoặc đổi ca, vui lòng liên hệ Ban Điều Hành / Quản trị viên để được hỗ trợ.
+      </p>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
       <!-- Left: Form Đăng ký ca trực -->
       <div class="md:col-span-1 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 sm:p-5 space-y-4">
@@ -52,7 +102,9 @@
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
               Ngày Đăng Ký Trực <span class="text-red-500">*</span>
             </label>
-            <input type="date" v-model="regForm.date" :min="todayDate" required class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            <input type="date" v-model="regForm.date" :min="todayDate" required
+                   :disabled="currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false"
+                   class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed">
             <div class="flex items-center justify-between mt-1 text-[11px]" v-if="regForm.date">
               <span class="text-sky-600 dark:text-sky-400 font-medium">📅 {{ getWeekNameFromDate(regForm.date) }}</span>
               <span class="font-bold" :class="isRegDateFull ? 'text-rose-600' : 'text-emerald-600'">
@@ -76,8 +128,9 @@
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
               Ca Trực Muốn Đăng Ký <span class="text-red-500">*</span>
             </label>
-            <select v-model="regForm.shiftType" required :disabled="isRegDateFull || (regForm.date && regForm.date < todayDate)"
-                    class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white dark:bg-slate-900 dark:text-white font-medium">
+            <select v-model="regForm.shiftType" required
+                    :disabled="(currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) || isRegDateFull || (regForm.date && regForm.date < todayDate)"
+                    class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white dark:bg-slate-900 dark:text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed">
               <option v-for="st in dynamicShiftTypes" :key="st.id || st.name" :value="st.name || st.id" :disabled="isShiftFullOnDate(st.name || st.id, regForm.date)">
                 {{ st.name }} {{ st.time ? '(' + st.time + ')' : '' }} — [{{ getShiftSlotLabel(st.name || st.id, regForm.date) }}] {{ isShiftFullOnDate(st.name || st.id, regForm.date) ? '🔴 [FULL]' : '🟢 [Còn chỗ]' }}
               </option>
@@ -86,17 +139,20 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Ghi Chú (Tùy chọn)</label>
-            <input type="text" v-model="regForm.notes" placeholder="VD: Đăng ký cố định hàng tuần..." class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none">
+            <input type="text" v-model="regForm.notes" placeholder="VD: Đăng ký cố định hàng tuần..."
+                   :disabled="currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false"
+                   class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed">
             <p class="text-[11px] text-amber-600 dark:text-amber-400 mt-1.5 font-semibold flex items-center gap-1">
               <i class="fa-solid fa-circle-info"></i> Quy định: {{ (!shiftSettings?.maxPerShift || shiftSettings.maxPerShift <= 0) ? 'Không giới hạn số người/ca' : 'Tối đa ' + shiftSettings.maxPerShift + ' người/ca' }} • {{ (!shiftSettings?.maxPerDay || shiftSettings.maxPerDay <= 0) ? 'Không giới hạn số ca/ngày' : 'Tối đa ' + shiftSettings.maxPerDay + ' ca/ngày' }}
             </p>
           </div>
 
-          <button type="submit" :disabled="isRegDateFull || (regForm.date && regForm.date < todayDate)"
+          <button type="submit"
+                  :disabled="(currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) || isRegDateFull || (regForm.date && regForm.date < todayDate)"
                   class="w-full py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2"
-                  :class="(isRegDateFull || (regForm.date && regForm.date < todayDate)) ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700 text-white cursor-pointer'">
-            <i class="fa-solid" :class="isRegDateFull ? 'fa-ban' : 'fa-paper-plane'"></i>
-            {{ isRegDateFull ? 'Ngày Đã Kín Ca (Full)' : 'Đăng Ký Lịch Trực' }}
+                  :class="((currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) || isRegDateFull || (regForm.date && regForm.date < todayDate)) ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700 text-white cursor-pointer'">
+            <i class="fa-solid" :class="(currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) ? 'fa-lock' : (isRegDateFull ? 'fa-ban' : 'fa-paper-plane')"></i>
+            {{ (currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) ? 'Cổng Đăng Ký Đang Tạm Đóng' : (isRegDateFull ? 'Ngày Đã Kín Ca (Full)' : 'Đăng Ký Lịch Trực') }}
           </button>
         </form>
       </div>
@@ -181,7 +237,7 @@ const props = defineProps([
   'isRegDateFull'
 ]);
 
-defineEmits(['save-registration', 'delete-registration', 'open-shift-settings', 'export-matrix-excel']);
+defineEmits(['save-registration', 'delete-registration', 'open-shift-settings', 'toggle-registration-open', 'export-matrix-excel']);
 
 const dynamicShiftTypes = computed(() => {
   if (props.shiftTypes && Array.isArray(props.shiftTypes) && props.shiftTypes.length > 0) {
