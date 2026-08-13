@@ -6,7 +6,7 @@
 
     <div class="bg-slate-900/75 backdrop-blur-2xl border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full text-white shadow-2xl space-y-6 relative z-10">
       <div class="text-center space-y-2.5">
-        <img src="/logo.jpg" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl mx-auto object-cover shadow-xl border border-indigo-400/30">
+        <img src="/logo.jpg" alt="Logo" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl mx-auto object-contain shadow-xl border border-indigo-400/30 bg-white/95 p-1">
         
         <div class="space-y-0.5 pt-1">
           <h1 class="text-lg sm:text-xl font-black tracking-tight text-white uppercase leading-snug">

@@ -2,13 +2,15 @@
   <header class="bg-indigo-950 text-white shadow-lg sticky top-0 z-30 min-h-[60px] border-b border-indigo-800/50">
     <div class="max-w-7xl mx-auto px-2.5 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2">
       <!-- Title & Branding -->
-      <div class="flex items-center gap-2.5 cursor-pointer">
-        <img src="/logo.jpg" alt="Logo" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover shadow-md border border-indigo-400/30 shrink-0">
-        <div>
+      <div class="flex items-center gap-2 sm:gap-2.5 cursor-pointer shrink-0">
+        <img src="/logo.jpg" alt="Logo" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain shadow-md border border-indigo-400/30 shrink-0 bg-white/95 p-0.5">
+        <div class="flex flex-col justify-center">
           <h1 class="font-black text-xs sm:text-base tracking-tight leading-tight text-white uppercase">
-            HỆ THỐNG QUẢN LÝ ĐVP
+            HỆ THỐNG QUẢN LÝ ĐIỆN TỬ
           </h1>
-          <p class="text-[10px] text-indigo-300 font-medium hidden sm:block">Đội Văn Phòng Đoàn - Hội TDTU • Realtime Cloud</p>
+          <h2 class="font-bold text-[10px] sm:text-xs tracking-tight leading-tight text-indigo-200 uppercase">
+            ĐỘI VĂN PHÒNG ĐOÀN - HỘI TDTU
+          </h2>
         </div>
       </div>
 
