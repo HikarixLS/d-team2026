@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue';
 import { useToast } from './useToast.js';
+import { exportExcelFile } from '../utils/fileExport.js';
 
 const shifts = ref([]);
 const registrations = ref([]);
@@ -656,7 +657,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
     };
 
-    const exportShiftScheduleMatrixExcel = (targetMonth = null, customRegs = null) => {
+    const exportShiftScheduleMatrixExcel = async (targetMonth = null, customRegs = null) => {
         if (!window.XLSX) {
             return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
         }
@@ -792,8 +793,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "Lịch Ca Làm");
         const fileName = `Lich_Ca_Lam_${monthStr}.xlsx`;
-        window.XLSX.writeFile(wb, fileName);
-        showToast(`Xuất file Excel Mẫu Lịch Ca Làm "${fileName}" thành công! 📊`);
+        await exportExcelFile(wb, fileName, showToast);
     };
 
     return {

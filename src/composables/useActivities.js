@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue';
 import { useToast } from './useToast.js';
+import { exportExcelFile } from '../utils/fileExport.js';
 
 // Clean up legacy local storage cache so ghost entries never persist
 try {
@@ -265,7 +266,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         return `${hours}h${mins}, ${day}/${month}/${year}`;
     };
 
-    const exportActivityExcel = (act, stats, membersList = []) => {
+    const exportActivityExcel = async (act, stats, membersList = []) => {
         if (!window.XLSX) {
             return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
         }
@@ -385,8 +386,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
 
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "DS Điểm Danh");
-        window.XLSX.writeFile(wb, fileName);
-        showToast(`Xuất file Excel Danh sách Điểm danh "${fileName}" thành công! 📊`);
+        await exportExcelFile(wb, fileName, showToast);
     };
 
     const formatDayMonth = (dateStr) => {
@@ -412,7 +412,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         return result;
     };
 
-    const exportActivityRegistrationMatrixExcel = (act, membersList = []) => {
+    const exportActivityRegistrationMatrixExcel = async (act, membersList = []) => {
         if (!window.XLSX) {
             return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
         }
@@ -542,8 +542,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
 
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "DS Đăng Ký Ca");
-        window.XLSX.writeFile(wb, fileName);
-        showToast(`Xuất file Excel Mẫu Lịch Ca Làm "${fileName}" thành công! 📊`);
+        await exportExcelFile(wb, fileName, showToast);
     };
 
     const adminActivitySummaryStats = computed(() => {

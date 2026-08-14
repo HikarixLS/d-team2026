@@ -242,6 +242,7 @@
 
 <script setup>
 import { ref } from 'vue';
+import { downloadBase64File } from '../../utils/fileExport.js';
 
 const props = defineProps({
   show: Boolean,
@@ -308,14 +309,10 @@ const openPhotoPreview = (item) => {
   };
 };
 
-const downloadProofImage = (item) => {
+const downloadProofImage = async (item) => {
   if (!item || !item.proofImage) return;
-  const link = document.createElement('a');
-  link.href = item.proofImage;
-  link.download = getFormattedFileName(item);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const fileName = getFormattedFileName(item);
+  await downloadBase64File(item.proofImage, fileName);
 };
 
 const handleAdminCheckIn = () => {

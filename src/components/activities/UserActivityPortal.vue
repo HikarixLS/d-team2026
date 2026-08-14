@@ -404,6 +404,7 @@
 
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue';
+import { downloadBase64File } from '../../utils/fileExport.js';
 
 const props = defineProps({
   activities: Array,
@@ -545,14 +546,9 @@ const retakePhoto = () => {
   }
 };
 
-const downloadCapturedPhoto = () => {
+const downloadCapturedPhoto = async () => {
   if (!proofImageBase64.value) return;
-  const link = document.createElement('a');
-  link.href = proofImageBase64.value;
-  link.download = currentStandardFileName.value;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  await downloadBase64File(proofImageBase64.value, currentStandardFileName.value);
 };
 
 const closeCheckInModal = () => {

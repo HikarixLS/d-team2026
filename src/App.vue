@@ -270,6 +270,7 @@ import { useCloud } from './composables/useCloud.js';
 import { useMembers } from './composables/useMembers.js';
 import { useShifts } from './composables/useShifts.js';
 import { useActivities } from './composables/useActivities.js';
+import { exportExcelFile } from './utils/fileExport.js';
 
 // Components
 import Toast from './components/common/Toast.vue';
@@ -479,7 +480,7 @@ const tabs = computed(() => {
 });
 
 // Excel Export Helper
-const exportToExcel = () => {
+const exportToExcel = async () => {
   if (typeof XLSX === 'undefined') return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
   if (searchedShifts.value.length === 0) return showToast('Không có dữ liệu ca trực để xuất!', 'error');
 
@@ -511,8 +512,7 @@ const exportToExcel = () => {
   ];
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoCaTruc");
-  XLSX.writeFile(workbook, `BaoCao_CaTruc_${selectedMonth.value}.xlsx`);
-  showToast('Đã xuất báo cáo Excel thành công!');
+  await exportExcelFile(workbook, `BaoCao_CaTruc_${selectedMonth.value}.xlsx`, showToast);
 };
 
 // Lifecycle
