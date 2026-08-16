@@ -1,0 +1,30 @@
+﻿{
+  "appId": "vn.tdtu.sctdt",
+  "appName": "Hệ thống quản lý ĐVP",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#0b1120",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": true,
+      "androidSpinnerStyle": "large",
+      "spinnerColor": "#ffffff"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0b1120"
+    },
+    "Keyboard": {
+      "resize": "body",
+      "style": "DARK",
+      "resizeOnFullScreen": true
+    }
+  }
+}

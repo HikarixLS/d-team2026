@@ -1,20 +1,35 @@
 {
-  "name": "so-ca-truc-vue3",
+  "name": "so-ca-truc-tdtu",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync": "cap sync android",
+    "cap:copy": "cap copy android",
+    "cap:open": "cap open android",
+    "cap:build": "npm run build && cap sync android",
+    "build:apk": "npm run build && cap sync android && cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/filesystem": "^6.0.4",
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/keyboard": "^6.0.3",
+    "@capacitor/share": "^6.0.4",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2",
     "chart.js": "^4.4.1",
     "firebase": "^12.17.1",
     "vue": "^3.4.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "vite": "^6.2.0"
   }
