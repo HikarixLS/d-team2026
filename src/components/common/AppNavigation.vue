@@ -1,6 +1,6 @@
 <template>
   <nav class="bg-indigo-900 border-b border-indigo-800 text-xs font-bold no-print hidden md:block">
-    <div class="max-w-7xl mx-auto px-4 flex items-center gap-1 overflow-x-auto">
+    <div class="w-full px-3 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto">
       <button v-for="tab in tabs" :key="tab.id" @click="$emit('select-tab', tab.id)"
               class="px-4 py-3 flex items-center gap-2 border-b-2 transition whitespace-nowrap cursor-pointer"
               :class="currentTab === tab.id ? 'border-amber-400 text-amber-300 bg-indigo-800/60 font-black' : 'border-transparent text-indigo-200 hover:text-white hover:bg-indigo-800/30'">

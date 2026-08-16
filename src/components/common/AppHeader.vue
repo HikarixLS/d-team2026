@@ -1,6 +1,6 @@
 <template>
   <header class="bg-indigo-950 text-white shadow-lg sticky top-0 z-30 min-h-[60px] border-b border-indigo-800/50">
-    <div class="max-w-7xl mx-auto px-2.5 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2">
+    <div class="w-full px-3 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-2">
       <!-- Title & Branding -->
       <div class="flex items-center gap-2 sm:gap-2.5 cursor-pointer shrink-0">
         <img src="/logo.jpg" alt="Logo" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain shadow-md border border-indigo-400/30 shrink-0 bg-white/95 p-0.5">
