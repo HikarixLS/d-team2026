@@ -170,6 +170,9 @@
                         :membersInProgressCount="membersInProgressCount"
                         :membersZeroCount="membersZeroCount"
                         :members="members"
+                        :selectedMonth="selectedMonth"
+                        :getMemberName="getMemberName"
+                        :getMemberDept="getMemberDept"
                         :leaveRequests="filteredLeaveRequests"
                         :personalLeaveRequests="filteredLeaveRequests.filter(l => String(l.memberId).toUpperCase() === String(loggedInMemberId).toUpperCase())"
                         :pieChartTitle="pieChartTitle" />
@@ -463,7 +466,7 @@ const historySubtitle = computed(() => currentUserRole.value === 'admin' ? 'Danh
 // Navigation Tabs Config (Roles Separation)
 const tabs = computed(() => {
   const isAdmin = currentUserRole.value === 'admin';
-  return [
+  const list = [
     {
       id: 'activities',
       label: isAdmin ? 'Quản Lý Hoạt Động' : 'Trang Hoạt Động',
@@ -472,12 +475,28 @@ const tabs = computed(() => {
     },
     { id: 'entry', label: 'Ghi Ca Trực', shortLabel: 'Ghi ca', icon: 'fa-solid fa-pen-to-square' },
     { id: 'register', label: 'Đăng Ký Ca', shortLabel: 'Đăng ký', icon: 'fa-solid fa-calendar-plus' },
-    { id: 'leave', label: 'Xin Nghỉ Phép', shortLabel: 'Nghỉ phép', icon: 'fa-solid fa-file-pen', badge: (pendingLeaveCount.value > 0 && isAdmin) ? pendingLeaveCount.value : null },
-    { id: 'dashboard', label: 'Thống Kê & Chỉ Tiêu', shortLabel: 'Thống kê', icon: 'fa-solid fa-chart-pie' },
-    { id: 'history', label: 'Nhật Ký & Tra Cứu', shortLabel: 'Nhật ký', icon: 'fa-solid fa-clock-rotate-left' },
-    { id: 'members', label: 'Danh Sách Thành Viên', shortLabel: 'Thành viên', icon: 'fa-solid fa-users' }
+    { id: 'leave', label: 'Xin Nghỉ Phép', shortLabel: 'Nghỉ phép', icon: 'fa-solid fa-file-pen', badge: (pendingLeaveCount.value > 0 && isAdmin) ? pendingLeaveCount.value : null }
   ];
+
+  if (isAdmin) {
+    list.push(
+      { id: 'dashboard', label: 'Thống Kê & Chỉ Tiêu', shortLabel: 'Thống kê', icon: 'fa-solid fa-chart-pie' },
+      { id: 'history', label: 'Nhật Ký & Tra Cứu', shortLabel: 'Nhật ký', icon: 'fa-solid fa-clock-rotate-left' },
+      { id: 'members', label: 'Danh Sách Thành Viên', shortLabel: 'Thành viên', icon: 'fa-solid fa-users' }
+    );
+  }
+
+  return list;
 });
+
+watch(
+  () => currentUserRole.value,
+  (role) => {
+    if (role !== 'admin' && ['dashboard', 'history', 'members'].includes(currentTab.value)) {
+      currentTab.value = 'activities';
+    }
+  }
+);
 
 // Excel Export Helper
 const exportToExcel = async () => {

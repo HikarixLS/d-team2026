@@ -47,8 +47,10 @@ export async function downloadBlobOrFile(blob, fileName, mimeType = 'application
         // 1. Nếu đang chạy trong ứng dụng Capacitor Native (Android APK / iOS App)
         if (typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
             try {
-                const { Filesystem, Directory } = await import('@capacitor/filesystem').catch(() => ({}));
-                const { Share } = await import('@capacitor/share').catch(() => ({}));
+                const fsPkg = '@capacitor/filesystem';
+                const sharePkg = '@capacitor/share';
+                const { Filesystem, Directory } = await import(/* @vite-ignore */ fsPkg).catch(() => ({}));
+                const { Share } = await import(/* @vite-ignore */ sharePkg).catch(() => ({}));
 
                 if (Filesystem && Share) {
                     const rawBase64 = await blobToBase64(blob);
@@ -194,8 +196,10 @@ export async function downloadBase64File(base64Data, fileName, showToast = null)
         // 1. Nếu đang chạy trong ứng dụng Capacitor Native
         if (typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
             try {
-                const { Filesystem, Directory } = await import('@capacitor/filesystem').catch(() => ({}));
-                const { Share } = await import('@capacitor/share').catch(() => ({}));
+                const fsPkg = '@capacitor/filesystem';
+                const sharePkg = '@capacitor/share';
+                const { Filesystem, Directory } = await import(/* @vite-ignore */ fsPkg).catch(() => ({}));
+                const { Share } = await import(/* @vite-ignore */ sharePkg).catch(() => ({}));
                 if (Filesystem && Share) {
                     const rawBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
                     const fileWriteRes = await Filesystem.writeFile({
