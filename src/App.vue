@@ -262,6 +262,13 @@
                         :activity="selectedActivityForLeave"
                         @close="showLeaveActivityModal = false"
                         @confirm="handleConfirmLeaveActivity" />
+
+    <!-- App OTA Update Modal -->
+    <AppUpdateModal :show="showUpdateModal"
+                    :currentVersion="CURRENT_APP_VERSION"
+                    :updateInfo="updateInfo"
+                    @close="showUpdateModal = false"
+                    @update="downloadAndInstall" />
   </div>
 </template>
 
@@ -280,6 +287,7 @@ import { useActivities } from './composables/useActivities.js';
 import { useHaptics } from './composables/useHaptics.js';
 import { useNetwork } from './composables/useNetwork.js';
 import { useNotifications } from './composables/useNotifications.js';
+import { useAppUpdater, CURRENT_APP_VERSION } from './composables/useAppUpdater.js';
 import { exportExcelFile } from './utils/fileExport.js';
 
 // Components
@@ -305,6 +313,7 @@ import BatchImportModal from './components/modals/BatchImportModal.vue';
 import ConfirmDeleteModal from './components/modals/ConfirmDeleteModal.vue';
 import ActivityDetailModal from './components/modals/ActivityDetailModal.vue';
 import LeaveActivityModal from './components/modals/LeaveActivityModal.vue';
+import AppUpdateModal from './components/modals/AppUpdateModal.vue';
 
 // State & Navigation
 const currentTab = ref('activities');
@@ -315,6 +324,7 @@ const { isDarkMode, applyTheme, toggleTheme } = useTheme();
 const { impactLight, notificationWarning } = useHaptics();
 const { isOnline, isCheckingNetwork, initNetworkListener, checkNetworkStatus } = useNetwork();
 const { initPushNotifications, syncAllUpcomingShiftReminders } = useNotifications();
+const { isChecking: isCheckingUpdate, hasUpdate, showUpdateModal, updateInfo, checkForUpdate, downloadAndInstall } = useAppUpdater();
 
 // Composables wiring
 const authModule = useAuth(() => members.value);
@@ -554,6 +564,11 @@ const setupBackButtonListener = async () => {
     try {
       backListenerHandle = await CapApp.addListener('backButton', () => {
         // 1. Close open modals in priority order
+        if (showUpdateModal.value && !updateInfo.value?.forceUpdate) {
+          showUpdateModal.value = false;
+          impactLight();
+          return;
+        }
         if (showActivityDetailModal.value) {
           showActivityDetailModal.value = false;
           impactLight();
@@ -648,6 +663,11 @@ onMounted(() => {
   initNetworkListener(initCloudRealtime);
   setupBackButtonListener();
   setupNotifications();
+
+  // Auto-check for OTA updates after app launch
+  setTimeout(() => {
+    checkForUpdate(false);
+  }, 2500);
 
   const tryConnectCloud = () => {
     if (window.FirebaseSDK && !isCloudConnected.value) {
