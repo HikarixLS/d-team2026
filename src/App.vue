@@ -1,5 +1,8 @@
 <template>
   <div class="flex-grow flex flex-col font-sans selection:bg-indigo-500 selection:text-white" :class="{ 'dark-mode': isDarkMode }">
+    <!-- Network Offline Status Banner -->
+    <NetworkStatusBanner :isOnline="isOnline" :isChecking="isCheckingNetwork" @retry="checkNetworkStatus(initCloudRealtime)" />
+
     <!-- Toast Alert Component -->
     <Toast :toast="toast" />
 
@@ -263,7 +266,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { App as CapApp } from '@capacitor/app';
 
 // Composables
 import { useToast } from './composables/useToast.js';
@@ -273,10 +277,14 @@ import { useCloud } from './composables/useCloud.js';
 import { useMembers } from './composables/useMembers.js';
 import { useShifts } from './composables/useShifts.js';
 import { useActivities } from './composables/useActivities.js';
+import { useHaptics } from './composables/useHaptics.js';
+import { useNetwork } from './composables/useNetwork.js';
+import { useNotifications } from './composables/useNotifications.js';
 import { exportExcelFile } from './utils/fileExport.js';
 
 // Components
 import Toast from './components/common/Toast.vue';
+import NetworkStatusBanner from './components/common/NetworkStatusBanner.vue';
 import AppHeader from './components/common/AppHeader.vue';
 import AppNavigation from './components/common/AppNavigation.vue';
 import LoginGatekeeper from './components/auth/LoginGatekeeper.vue';
@@ -304,6 +312,9 @@ const showMobileMenu = ref(false);
 
 const { toast, showToast } = useToast();
 const { isDarkMode, applyTheme, toggleTheme } = useTheme();
+const { impactLight, notificationWarning } = useHaptics();
+const { isOnline, isCheckingNetwork, initNetworkListener, checkNetworkStatus } = useNetwork();
+const { initPushNotifications, syncAllUpcomingShiftReminders } = useNotifications();
 
 // Composables wiring
 const authModule = useAuth(() => members.value);
@@ -534,9 +545,109 @@ const exportToExcel = async () => {
   await exportExcelFile(workbook, `BaoCao_CaTruc_${selectedMonth.value}.xlsx`, showToast);
 };
 
-// Lifecycle
+// Lifecycle & Native Mobile Event Listeners
+let lastBackPressTime = 0;
+let backListenerHandle = null;
+
+const setupBackButtonListener = async () => {
+  if (typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+    try {
+      backListenerHandle = await CapApp.addListener('backButton', () => {
+        // 1. Close open modals in priority order
+        if (showActivityDetailModal.value) {
+          showActivityDetailModal.value = false;
+          impactLight();
+          return;
+        }
+        if (showLeaveActivityModal.value) {
+          showLeaveActivityModal.value = false;
+          impactLight();
+          return;
+        }
+        if (showMemberModal.value) {
+          showMemberModal.value = false;
+          impactLight();
+          return;
+        }
+        if (showBatchModal.value) {
+          showBatchModal.value = false;
+          impactLight();
+          return;
+        }
+        if (showShiftSettingsModal.value) {
+          showShiftSettingsModal.value = false;
+          impactLight();
+          return;
+        }
+        if (showConfigModal.value) {
+          showConfigModal.value = false;
+          impactLight();
+          return;
+        }
+        if (deleteModal.value && deleteModal.value.show) {
+          deleteModal.value.show = false;
+          impactLight();
+          return;
+        }
+        if (showMobileMenu.value) {
+          showMobileMenu.value = false;
+          impactLight();
+          return;
+        }
+
+        // 2. If on a secondary tab, return to main tab ('activities')
+        if (isLoggedIn.value && currentTab.value !== 'activities') {
+          currentTab.value = 'activities';
+          impactLight();
+          return;
+        }
+
+        // 3. Double-tap Back button within 2s to exit app
+        const now = Date.now();
+        if (now - lastBackPressTime < 2000) {
+          CapApp.exitApp();
+        } else {
+          lastBackPressTime = now;
+          impactLight();
+          showToast('Nhấn BACK lần nữa để thoát ứng dụng', 'info');
+        }
+      });
+    } catch (e) {
+      console.warn('[BackButton] Setup error:', e);
+    }
+  }
+};
+
+const setupNotifications = async () => {
+  await initPushNotifications((action) => {
+    const extra = action?.notification?.data || action?.notification?.extra;
+    if (extra?.type === 'leave_request' && currentUserRole.value === 'admin') {
+      currentTab.value = 'leave';
+    } else if (extra?.type === 'shift_reminder') {
+      currentTab.value = 'entry';
+    } else if (extra?.type === 'activity_reminder') {
+      currentTab.value = 'activities';
+    }
+  });
+};
+
+watch(
+  () => [isLoggedIn.value, loggedInMemberId.value, searchedShifts.value],
+  () => {
+    if (isLoggedIn.value && loggedInMemberId.value) {
+      const userShifts = searchedShifts.value.filter(s => String(s.memberId).toUpperCase() === String(loggedInMemberId.value).toUpperCase());
+      const name = getMemberName(loggedInMemberId.value);
+      syncAllUpcomingShiftReminders(userShifts, name);
+    }
+  },
+  { deep: true }
+);
+
 onMounted(() => {
   applyTheme();
+  initNetworkListener(initCloudRealtime);
+  setupBackButtonListener();
+  setupNotifications();
 
   const tryConnectCloud = () => {
     if (window.FirebaseSDK && !isCloudConnected.value) {
@@ -554,5 +665,11 @@ onMounted(() => {
     }
   }, 2000);
   setTimeout(() => clearInterval(retryInterval), 10000);
+});
+
+onBeforeUnmount(() => {
+  if (backListenerHandle) {
+    try { backListenerHandle.remove(); } catch (e) {}
+  }
 });
 </script>

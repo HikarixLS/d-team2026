@@ -101,7 +101,6 @@ npm install
 ```bash
 npm run dev
 ```
-Trình duyệt mở tại: `http://localhost:3000/`
 
 ### 3. Build Web Production
 
@@ -126,18 +125,6 @@ npm run build
 npm run build:apk
 ```
 *File APK sau khi build nằm tại: `android/app/build/outputs/apk/debug/app-debug.apk` và file xuất bản ở thư mục gốc `HeThongQuanLyDVP.apk`.*
-
----
-
-## 🔑 Tài Khoản Mẫu Đăng Nhập
-
-| Vai Trò | Mã Số Sinh Viên (MSSV) | Mật Khẩu Mặc Định |
-| :--- | :--- | :--- |
-| **Super Admin** | `admin` | `123` (hoặc `admin`) |
-| **Admin Ban Điều Hành** | `42300016` (Đỗ Khánh Duy) | `123` |
-| **Admin Ban Điều Hành** | `C2300023` (Lý Gia Huy) | `123` |
-| **Thành Viên** | `20210001` (Nguyễn Văn An) | *Không yêu cầu mật khẩu* |
-
 ---
 
 ## 📄 Bản Quyền & Giấy Phép

@@ -1,5 +1,7 @@
 import { ref, computed, watch } from 'vue';
 import { useToast } from './useToast.js';
+import { useHaptics } from './useHaptics.js';
+import { useNotifications } from './useNotifications.js';
 import { exportExcelFile } from '../utils/fileExport.js';
 
 const shifts = ref([]);
@@ -41,6 +43,7 @@ const showShiftSettingsModal = ref(false);
 
 export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, deleteModalRef) {
     const { showToast } = useToast();
+    const { scheduleShiftReminder } = useNotifications();
 
     const shiftTypes = computed(() => {
         if (shiftSettings.value && Array.isArray(shiftSettings.value.shiftTypes) && shiftSettings.value.shiftTypes.length > 0) {
@@ -427,11 +430,14 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
             createdAt: new Date().toISOString()
         });
 
+        const memberName = getMemberName(regData.memberId);
+        scheduleShiftReminder(regData, memberName);
+
         if (window.firebaseDb && window.FirebaseSDK) {
             try {
                 const { collection, doc, setDoc } = window.FirebaseSDK;
                 await setDoc(doc(collection(window.firebaseDb, 'registrations'), newId), regData);
-                showToast('Đã đăng ký ca trực thành công!');
+                showToast('Đã đăng ký ca trực thành công! ⏰ Đã bật nhắc nhở');
                 regForm.value.notes = '';
             } catch (e) {
                 registrations.value.unshift(regData);

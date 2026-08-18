@@ -33,6 +33,23 @@
           <p class="text-[10px] text-slate-400">Dán URL Web App đã triển khai từ Google Apps Script để sao lưu ảnh thẻ sinh viên lên Drive</p>
         </div>
 
+        <!-- Native Mobile Testing Section -->
+        <div class="text-xs space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <label class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-mobile-screen-button text-indigo-500"></i> 3. Kiểm Tra Tính Năng Native Mobile:
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" @click="handleTestNotif"
+                    class="p-2 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs">
+              <i class="fa-solid fa-bell text-indigo-500"></i> Thử Thông Báo
+            </button>
+            <button type="button" @click="handleTestHaptic"
+                    class="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs">
+              <i class="fa-solid fa-hand-pointer text-amber-500"></i> Thử Rung Phản Hồi
+            </button>
+          </div>
+        </div>
+
         <div class="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-800">
           <button @click="$emit('reset-default')" class="text-xs text-rose-600 dark:text-rose-400 font-bold hover:underline cursor-pointer">
             Khôi phục mặc định
@@ -53,15 +70,28 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useNotifications } from '../../composables/useNotifications.js';
+import { useHaptics } from '../../composables/useHaptics.js';
 
 defineProps(['show', 'configInput']);
 const emit = defineEmits(['close', 'save', 'reset-default', 'update:configInput']);
+
+const { sendTestNotification } = useNotifications();
+const { notificationSuccess, impactMedium } = useHaptics();
 
 const driveScriptUrlInput = ref(localStorage.getItem('google_drive_script_url') || '');
 
 onMounted(() => {
   driveScriptUrlInput.value = localStorage.getItem('google_drive_script_url') || '';
 });
+
+const handleTestNotif = () => {
+  sendTestNotification('Hệ Thống Quản Lý ĐVP', 'Kiểm tra thông báo và nhắc ca trực hoạt động tốt! 🚀');
+};
+
+const handleTestHaptic = () => {
+  notificationSuccess();
+};
 
 const handleSaveAll = () => {
   if (driveScriptUrlInput.value) {

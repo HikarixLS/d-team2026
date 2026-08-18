@@ -11,7 +11,7 @@
   </nav>
 
   <!-- Sticky Bottom Navigation for Mobile -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-2xl px-1.5 py-1 no-print overflow-x-auto">
+  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-2xl px-1.5 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] no-print overflow-x-auto">
     <div class="flex items-center justify-between min-w-max gap-1 px-1">
       <button v-for="tab in tabs" :key="tab.id" @click="$emit('select-tab', tab.id)"
               class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition cursor-pointer relative shrink-0"

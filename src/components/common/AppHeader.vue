@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-indigo-950 text-white shadow-lg sticky top-0 z-30 min-h-[60px] border-b border-indigo-800/50">
+  <header class="bg-indigo-950 text-white shadow-lg sticky top-0 z-30 min-h-[60px] border-b border-indigo-800/50 pt-[env(safe-area-inset-top,0px)]">
     <div class="w-full px-3 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-2">
       <!-- Title & Branding -->
       <div class="flex items-center gap-2 sm:gap-2.5 cursor-pointer shrink-0">

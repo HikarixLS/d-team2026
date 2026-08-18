@@ -1,5 +1,7 @@
 import { ref, computed } from 'vue';
 import { useToast } from './useToast.js';
+import { useHaptics } from './useHaptics.js';
+import { useNotifications } from './useNotifications.js';
 import { exportExcelFile } from '../utils/fileExport.js';
 
 // Clean up legacy local storage cache so ghost entries never persist
@@ -16,6 +18,8 @@ const activityRegistrations = ref([]);
 
 export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRef) {
     const { showToast } = useToast();
+    const { notificationSuccess, impactMedium } = useHaptics();
+    const { scheduleActivityReminder } = useNotifications();
 
     const toPlainObject = (obj) => JSON.parse(JSON.stringify(obj));
 
