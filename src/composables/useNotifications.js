@@ -1,5 +1,4 @@
 import { ref } from 'vue';
-import { PushNotifications } from '@capacitor/push-notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useHaptics } from './useHaptics.js';
 import { useToast } from './useToast.js';
@@ -8,94 +7,55 @@ const isNativePlatform = () => {
     return typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform();
 };
 
-const fcmToken = ref('');
-const isPushRegistered = ref(false);
 const hasNotificationPermission = ref(false);
+let isListenerRegistered = false;
 
 export function useNotifications() {
     const { notificationSuccess, impactLight } = useHaptics();
     const { showToast } = useToast();
 
-    // 1. Xin quyền & Khởi tạo Push Notifications
-    const initPushNotifications = async (onActionCallback = null, onReceivedCallback = null) => {
+    // 1. Xin quyền & Khởi tạo Notifications an toàn (Không bao giờ gây crash app)
+    const initNotifications = async (onActionCallback = null) => {
         if (!isNativePlatform()) {
-            return { supported: false, message: 'Push notifications only supported on native platform' };
+            return { supported: false, granted: true };
         }
 
         try {
-            let permStatus = await PushNotifications.checkPermissions();
-            if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
-                permStatus = await PushNotifications.requestPermissions();
+            let permStatus = await LocalNotifications.checkPermissions();
+            if (permStatus.display === 'prompt' || permStatus.display === 'prompt-with-rationale') {
+                permStatus = await LocalNotifications.requestPermissions();
             }
 
-            if (permStatus.receive !== 'granted') {
-                hasNotificationPermission.value = false;
-                return { supported: true, granted: false };
-            }
+            hasNotificationPermission.value = permStatus.display === 'granted';
 
-            hasNotificationPermission.value = true;
+            if (!isListenerRegistered) {
+                isListenerRegistered = true;
 
-            // Đăng ký nhận token
-            await PushNotifications.register();
-
-            // Lắng nghe sự kiện đăng ký thành công
-            PushNotifications.addListener('registration', async (token) => {
-                fcmToken.value = token.value;
-                isPushRegistered.value = true;
-                
-                // Lưu token vào Firestore nếu có Firebase
-                if (window.firebaseDb && window.FirebaseSDK) {
-                    try {
-                        const { doc, setDoc } = window.FirebaseSDK;
-                        const savedMemberId = localStorage.getItem('socatruc_member_id') || 'guest';
-                        await setDoc(doc(window.firebaseDb, 'device_tokens', `${savedMemberId}_${token.value.slice(-8)}`), {
-                            token: token.value,
-                            memberId: savedMemberId,
-                            updatedAt: new Date().toISOString(),
-                            platform: 'android'
-                        }, { merge: true });
-                    } catch (e) {
-                        console.warn('[Push] Error saving token to Firestore:', e);
+                // Lắng nghe khi người dùng bấm vào thông báo để chuyển tab
+                LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+                    impactLight();
+                    if (typeof onActionCallback === 'function') {
+                        onActionCallback(action);
                     }
-                }
-            });
+                });
+            }
 
-            // Lắng nghe sự kiện lỗi đăng ký
-            PushNotifications.addListener('registrationError', (error) => {
-                console.warn('[Push] Registration error:', error);
-            });
-
-            // Lắng nghe khi có thông báo đến (Foreground)
-            PushNotifications.addListener('pushNotificationReceived', (notification) => {
-                notificationSuccess();
-                if (typeof onReceivedCallback === 'function') {
-                    onReceivedCallback(notification);
-                } else {
-                    showToast(`🔔 ${notification.title || 'Thông báo mới'}: ${notification.body || ''}`);
-                }
-            });
-
-            // Lắng nghe khi người dùng bấm vào thông báo (Action performed)
-            PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-                impactLight();
-                if (typeof onActionCallback === 'function') {
-                    onActionCallback(action);
-                }
-            });
-
-            return { supported: true, granted: true };
+            return { supported: true, granted: hasNotificationPermission.value };
         } catch (e) {
-            console.warn('[Push] Error initializing push notifications:', e);
+            console.warn('[Notifications] Error requesting permissions:', e);
             return { supported: false, error: e };
         }
     };
 
-    // 2. Local Notifications (Hẹn giờ offline trên thiết bị)
+    // Alias cho tương thích ngược
+    const initPushNotifications = initNotifications;
+
     const requestLocalPermissions = async () => {
         if (!isNativePlatform()) return false;
         try {
             const status = await LocalNotifications.requestPermissions();
-            return status.display === 'granted';
+            hasNotificationPermission.value = status.display === 'granted';
+            return hasNotificationPermission.value;
         } catch (e) {
             return false;
         }
@@ -116,7 +76,8 @@ export function useNotifications() {
         if (!isNativePlatform() || !shift || !shift.date) return false;
 
         try {
-            await requestLocalPermissions();
+            const granted = await requestLocalPermissions();
+            if (!granted) return false;
 
             const dateParts = shift.date.split('-');
             if (dateParts.length < 3) return false;
@@ -172,7 +133,9 @@ export function useNotifications() {
         if (!isNativePlatform() || !activity || !activity.name) return false;
 
         try {
-            await requestLocalPermissions();
+            const granted = await requestLocalPermissions();
+            if (!granted) return false;
+
             const deadline = activity.submitDeadlineDate;
             if (!deadline) return false;
 
@@ -235,7 +198,12 @@ export function useNotifications() {
         }
 
         try {
-            await requestLocalPermissions();
+            const granted = await requestLocalPermissions();
+            if (!granted) {
+                showToast('Bạn chưa cấp quyền thông báo cho ứng dụng!', 'warning');
+                return;
+            }
+
             await LocalNotifications.schedule({
                 notifications: [
                     {
@@ -249,6 +217,7 @@ export function useNotifications() {
                     }
                 ]
             });
+            notificationSuccess();
             showToast('Đã gửi thông báo thử nghiệm thành công! 🚀');
         } catch (e) {
             showToast('Không thể gửi thông báo: ' + (e.message || e), 'error');
@@ -256,9 +225,8 @@ export function useNotifications() {
     };
 
     return {
-        fcmToken,
-        isPushRegistered,
         hasNotificationPermission,
+        initNotifications,
         initPushNotifications,
         requestLocalPermissions,
         scheduleShiftReminder,
