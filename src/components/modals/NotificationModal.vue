@@ -93,6 +93,13 @@
 
           <div class="text-xs space-y-1 text-slate-600 dark:text-slate-300">
             <div class="flex items-center justify-between text-[11px] py-1 border-b border-slate-200 dark:border-slate-700/60">
+              <span class="text-slate-500">Môi Trường:</span>
+              <span class="font-bold text-[10px] px-2 py-0.5 rounded-full"
+                    :class="isNative ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'">
+                {{ isNative ? '📱 Ứng Dụng Android (App)' : '🌐 Phiên Bản Web' }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] py-1 border-b border-slate-200 dark:border-slate-700/60">
               <span class="text-slate-500">Mã Bản Build (Build Code):</span>
               <span class="font-mono font-bold text-slate-800 dark:text-slate-200">{{ buildCode }}</span>
             </div>
@@ -101,9 +108,9 @@
               <span class="font-bold text-slate-800 dark:text-slate-200">{{ releaseDate }}</span>
             </div>
             <div class="flex items-center justify-between text-[11px] py-1">
-              <span class="text-slate-500">Kênh Cập Nhật:</span>
+              <span class="text-slate-500">Cập Nhật OTA:</span>
               <span class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <i class="fa-solid fa-cloud-arrow-down"></i> OTA GitHub / Firestore
+                <i class="fa-solid fa-cloud-arrow-down"></i> {{ isNative ? 'Tự động kiểm tra trên App' : 'Tự động đồng bộ trên Web' }}
               </span>
             </div>
           </div>
@@ -112,11 +119,11 @@
             <button @click="handleCheckUpdate"
                     class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
               <i class="fa-solid fa-arrows-rotate" :class="{ 'animate-spin': isChecking }"></i>
-              Kiểm Tra Bản Cập Nhật Mới
+              {{ isNative ? 'Kiểm Tra Bản Cập Nhật Mới' : 'Kiểm Tra Phiên Bản' }}
             </button>
-            <a :href="downloadUrl" target="_system"
+            <a v-if="!isNative" :href="downloadUrl" target="_system"
                class="py-2 px-3 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
-              <i class="fa-solid fa-download"></i> Tải APK
+              <i class="fa-solid fa-download"></i> Tải APK Cho Android
             </a>
           </div>
         </div>
@@ -148,7 +155,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useNotifications } from '../../composables/useNotifications.js';
-import { useAppUpdater, CURRENT_APP_VERSION, CURRENT_BUILD_CODE, CURRENT_RELEASE_DATE, DEFAULT_APK_DOWNLOAD_URL } from '../../composables/useAppUpdater.js';
+import { useAppUpdater, CURRENT_APP_VERSION, CURRENT_BUILD_CODE, CURRENT_RELEASE_DATE, DEFAULT_APK_DOWNLOAD_URL, isNativePlatform } from '../../composables/useAppUpdater.js';
 
 const props = defineProps({
   show: Boolean,
@@ -163,6 +170,7 @@ const emit = defineEmits(['close', 'open-config']);
 const { hasNotificationPermission, requestLocalPermissions, sendTestNotification, syncAllUpcomingShiftReminders } = useNotifications();
 const { isChecking, checkForUpdate } = useAppUpdater();
 
+const isNative = isNativePlatform();
 const hasPermission = ref(false);
 const currentVersion = CURRENT_APP_VERSION;
 const buildCode = CURRENT_BUILD_CODE;

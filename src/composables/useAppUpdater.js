@@ -19,6 +19,26 @@ const updateInfo = ref({
     forceUpdate: false
 });
 
+// Helper kiểm tra môi trường chạy ứng dụng (Native Android App vs Web Browser)
+export const isNativePlatform = () => {
+    return typeof window !== 'undefined' && Boolean(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+};
+
+// Helper định dạng link tải (hỗ trợ tự động chuyển link Google Drive sang link tải trực tiếp)
+export const formatDownloadUrl = (url) => {
+    if (!url) return '';
+    const trimmed = String(url).trim();
+    
+    // Tự động nhận diện và chuyển đổi link Google Drive
+    if (trimmed.includes('drive.google.com') || trimmed.includes('docs.google.com')) {
+        const fileIdMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (fileIdMatch && fileIdMatch[1]) {
+            return `https://drive.google.com/uc?export=download&id=${fileIdMatch[1]}`;
+        }
+    }
+    return trimmed;
+};
+
 // Helper so sánh phiên bản dạng Semantic Versioning (ví dụ: '1.2.1' > '1.2.0')
 export const isNewerVersion = (latest, current) => {
     if (!latest || !current) return false;
@@ -35,8 +55,16 @@ export function useAppUpdater() {
     const { showToast } = useToast();
     const { notificationSuccess, notificationWarning, impactMedium } = useHaptics();
 
-    // 1. Kiểm tra bản cập nhật mới từ Cloud Firestore
+    // 1. Kiểm tra bản cập nhật mới từ Cloud Firestore (Chỉ áp dụng cho App Mobile)
     const checkForUpdate = async (isManual = false) => {
+        // Nếu là phiên bản Website (trình duyệt máy tính/điện thoại), không tự động hiển thị popup cập nhật APK
+        if (!isNativePlatform()) {
+            if (isManual) {
+                showToast('Bạn đang sử dụng phiên bản Web (luôn tự động đồng bộ mới nhất)! 🌐', 'info');
+            }
+            return;
+        }
+
         if (isChecking.value) return;
         isChecking.value = true;
 
@@ -110,8 +138,9 @@ export function useAppUpdater() {
 
     // 2. Tải và cài đặt bản cập nhật
     const downloadAndInstall = () => {
-        const url = updateInfo.value.downloadUrl || DEFAULT_APK_DOWNLOAD_URL;
-        showToast('Đang chuyển hướng tải bản cập nhật mới... ⬇️');
+        const rawUrl = updateInfo.value.downloadUrl || DEFAULT_APK_DOWNLOAD_URL;
+        const url = formatDownloadUrl(rawUrl);
+        showToast('Đang mở liên kết tải bản cập nhật... ⬇️\nSau khi tải xong, hãy mở file để cài đặt!', 'info', 5000);
 
         try {
             if (typeof window !== 'undefined') {
@@ -132,12 +161,14 @@ export function useAppUpdater() {
         try {
             const { doc, setDoc } = window.FirebaseSDK;
             const docRef = doc(window.firebaseDb, 'app_config', 'version');
+            const cleanDownloadUrl = formatDownloadUrl(versionPayload.downloadUrl || DEFAULT_APK_DOWNLOAD_URL);
+
             await setDoc(docRef, {
                 latestVersion: versionPayload.latestVersion.trim(),
                 buildCode: Number(versionPayload.buildCode) || CURRENT_BUILD_CODE + 1,
                 releaseDate: versionPayload.releaseDate || new Date().toLocaleDateString('vi-VN'),
                 releaseNotes: versionPayload.releaseNotes.trim(),
-                downloadUrl: (versionPayload.downloadUrl || DEFAULT_APK_DOWNLOAD_URL).trim(),
+                downloadUrl: cleanDownloadUrl,
                 forceUpdate: Boolean(versionPayload.forceUpdate),
                 updatedAt: new Date().toISOString()
             }, { merge: true });
@@ -156,6 +187,7 @@ export function useAppUpdater() {
         CURRENT_BUILD_CODE,
         CURRENT_RELEASE_DATE,
         DEFAULT_APK_DOWNLOAD_URL,
+        isNativePlatform,
         isChecking,
         hasUpdate,
         showUpdateModal,

@@ -89,8 +89,11 @@
             </div>
 
             <div>
-              <label class="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">Link Tải APK Trực Tiếp:</label>
-              <input type="url" v-model="publishForm.downloadUrl" placeholder="https://github.com/..."
+              <label class="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
+                Link Tải APK (Google Drive, GitHub...):
+                <span class="font-normal text-[10px] text-slate-400 block">Tự động nhận diện link Google Drive sang tải trực tiếp</span>
+              </label>
+              <input type="url" v-model="publishForm.downloadUrl" placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
                      class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-2.5 py-1.5 font-mono text-[10px] text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500" />
             </div>
 
