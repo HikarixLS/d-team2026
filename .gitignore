@@ -12,6 +12,7 @@ android/build
 android/captures
 android/local.properties
 *.apk
+!HeThongQuanLyDVP.apk
 
 # Logs
 logs
