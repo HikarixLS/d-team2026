@@ -21,6 +21,21 @@ export function useNotifications() {
         }
 
         try {
+            // Khởi tạo channel cho Android 8+
+            try {
+                await LocalNotifications.createChannel({
+                    id: 'shift_reminders',
+                    name: 'Nhắc nhở ca trực & Hoạt động',
+                    description: 'Thông báo nhắc nhở ca trực trước 15 phút và hạn nộp hồ sơ',
+                    importance: 5,
+                    visibility: 1,
+                    vibration: true,
+                    sound: 'beep.wav'
+                });
+            } catch (chanErr) {
+                console.warn('[Notifications] Channel creation:', chanErr);
+            }
+
             let permStatus = await LocalNotifications.checkPermissions();
             if (permStatus.display === 'prompt' || permStatus.display === 'prompt-with-rationale') {
                 permStatus = await LocalNotifications.requestPermissions();
@@ -51,9 +66,12 @@ export function useNotifications() {
     const initPushNotifications = initNotifications;
 
     const requestLocalPermissions = async () => {
-        if (!isNativePlatform()) return false;
+        if (!isNativePlatform()) return true;
         try {
-            const status = await LocalNotifications.requestPermissions();
+            let status = await LocalNotifications.checkPermissions();
+            if (status.display !== 'granted') {
+                status = await LocalNotifications.requestPermissions();
+            }
             hasNotificationPermission.value = status.display === 'granted';
             return hasNotificationPermission.value;
         } catch (e) {
@@ -112,6 +130,7 @@ export function useNotifications() {
                         sound: 'beep.wav',
                         smallIcon: 'ic_launcher',
                         iconColor: '#4F46E5',
+                        channelId: 'shift_reminders',
                         extra: {
                             type: 'shift_reminder',
                             date: shift.date,
@@ -161,6 +180,7 @@ export function useNotifications() {
                         sound: 'beep.wav',
                         smallIcon: 'ic_launcher',
                         iconColor: '#4F46E5',
+                        channelId: 'shift_reminders',
                         extra: {
                             type: 'activity_reminder',
                             activityId: activity.id
@@ -213,7 +233,8 @@ export function useNotifications() {
                         schedule: { at: new Date(Date.now() + 500) },
                         sound: 'beep.wav',
                         smallIcon: 'ic_launcher',
-                        iconColor: '#4F46E5'
+                        iconColor: '#4F46E5',
+                        channelId: 'shift_reminders'
                     }
                 ]
             });

@@ -28,11 +28,13 @@
                    :hasFirebaseConfig="hasFirebaseConfig"
                    :cloudStatusText="cloudStatusText"
                    :userRoleBadgeText="userRoleBadgeText"
-                   :showMobileMenu="showMobileMenu"
+                   :currentAppVersion="CURRENT_APP_VERSION"
+                   :isCheckingUpdate="isCheckingUpdate"
                    @toggle-theme="toggleTheme"
                    @open-config="openConfigModal"
-                   @logout="logout"
-                   @toggle-mobile-menu="showMobileMenu = !showMobileMenu" />
+                   @open-notifications="showNotificationModal = true"
+                   @check-update="checkForUpdate(true)"
+                   @logout="logout" />
 
         <!-- App Navigation Component -->
         <AppNavigation :currentTab="currentTab" :tabs="tabs" @select-tab="currentTab = $event" />
@@ -269,6 +271,15 @@
                     :updateInfo="updateInfo"
                     @close="showUpdateModal = false"
                     @update="downloadAndInstall" />
+
+    <!-- Notification Center & Version Modal -->
+    <NotificationModal :show="showNotificationModal"
+                       :currentUserRole="currentUserRole"
+                       :loggedInMemberId="loggedInMemberId"
+                       :searchedShifts="searchedShifts"
+                       :getMemberName="getMemberName"
+                       @close="showNotificationModal = false"
+                       @open-config="showNotificationModal = false; openConfigModal()" />
   </div>
 </template>
 
@@ -315,10 +326,12 @@ import ConfirmDeleteModal from './components/modals/ConfirmDeleteModal.vue';
 import ActivityDetailModal from './components/modals/ActivityDetailModal.vue';
 import LeaveActivityModal from './components/modals/LeaveActivityModal.vue';
 import AppUpdateModal from './components/modals/AppUpdateModal.vue';
+import NotificationModal from './components/modals/NotificationModal.vue';
 
 // State & Navigation
 const currentTab = ref('activities');
 const showMobileMenu = ref(false);
+const showNotificationModal = ref(false);
 
 const { toast, showToast } = useToast();
 const { isDarkMode, applyTheme, toggleTheme } = useTheme();
@@ -573,6 +586,11 @@ const setupBackButtonListener = async () => {
         // 1. Close open modals in priority order
         if (showUpdateModal.value && !updateInfo.value?.forceUpdate) {
           showUpdateModal.value = false;
+          impactLight();
+          return;
+        }
+        if (showNotificationModal.value) {
+          showNotificationModal.value = false;
           impactLight();
           return;
         }
