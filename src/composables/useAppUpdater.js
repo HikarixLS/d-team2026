@@ -5,7 +5,7 @@ import { useHaptics } from './useHaptics.js';
 export const CURRENT_APP_VERSION = '1.2.0';
 export const CURRENT_BUILD_CODE = 120;
 export const CURRENT_RELEASE_DATE = '18/08/2026';
-export const DEFAULT_APK_DOWNLOAD_URL = 'https://github.com/HikarixLS/d-team2026/raw/main/HeThongQuanLyDVP.apk';
+export const DEFAULT_APK_DOWNLOAD_URL = 'https://drive.google.com/drive/folders/1v2WA8dH8C49x_9iFRYcYhMMawEagZkpa';
 
 const isChecking = ref(false);
 const hasUpdate = ref(false);
@@ -29,7 +29,12 @@ export const formatDownloadUrl = (url) => {
     if (!url) return '';
     const trimmed = String(url).trim();
     
-    // Tự động nhận diện và chuyển đổi link Google Drive
+    // Nếu là Google Drive folder link: giữ nguyên link để mở trực tiếp thư mục Drive
+    if (trimmed.includes('drive.google.com/drive/folders/')) {
+        return trimmed;
+    }
+
+    // Tự động nhận diện và chuyển đổi link Google Drive File sang link tải trực tiếp
     if (trimmed.includes('drive.google.com') || trimmed.includes('docs.google.com')) {
         const fileIdMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
         if (fileIdMatch && fileIdMatch[1]) {
