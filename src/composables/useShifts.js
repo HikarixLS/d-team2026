@@ -1,4 +1,5 @@
 import { ref, computed, watch } from 'vue';
+import * as XLSX from 'xlsx';
 import { useToast } from './useToast.js';
 import { useHaptics } from './useHaptics.js';
 import { useNotifications } from './useNotifications.js';
@@ -664,12 +665,13 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     };
 
     const exportShiftScheduleMatrixExcel = async (targetMonth = null, customRegs = null) => {
-        if (!window.XLSX) {
+        const sheetXLSX = XLSX || (typeof window !== 'undefined' ? window.XLSX : null);
+        if (!sheetXLSX) {
             return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
         }
 
         const monthStr = targetMonth || selectedMonth.value || getMonthStr();
-        const baseList = customRegs || registrations.value;
+        const baseList = (customRegs && customRegs.length > 0) ? customRegs : registrations.value;
         const currentMembers = membersRef ? (typeof membersRef === 'function' ? membersRef() : (membersRef.value || membersRef)) : [];
 
         // Filter registrations for selected month and week if applicable
@@ -782,7 +784,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
             });
         });
 
-        const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
+        const ws = sheetXLSX.utils.aoa_to_sheet(rowsData);
         ws['!merges'] = merges;
 
         // Set column widths matching template
@@ -796,8 +798,8 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         });
         ws['!cols'] = cols;
 
-        const wb = window.XLSX.utils.book_new();
-        window.XLSX.utils.book_append_sheet(wb, ws, "Lịch Ca Làm");
+        const wb = sheetXLSX.utils.book_new();
+        sheetXLSX.utils.book_append_sheet(wb, ws, "Lịch Ca Làm");
         const fileName = `Lich_Ca_Lam_${monthStr}.xlsx`;
         await exportExcelFile(wb, fileName, showToast);
     };

@@ -3,6 +3,11 @@
  * (Capacitor Android/iOS App, Desktop, iOS Safari, Android Chrome, In-App WebViews Zalo/FB).
  */
 
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
+import * as XLSX from 'xlsx';
+
 /**
  * Kiểm tra xem thiết bị hiện tại có phải là thiết bị di động (Mobile / Tablet) hay không
  */
@@ -45,33 +50,27 @@ function blobToBase64(blob) {
 export async function downloadBlobOrFile(blob, fileName, mimeType = 'application/octet-stream', showToast = null) {
     try {
         // 1. Nếu đang chạy trong ứng dụng Capacitor Native (Android APK / iOS App)
-        if (typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+        const isNative = typeof Capacitor !== 'undefined' && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform();
+        if (isNative) {
             try {
-                const fsPkg = '@capacitor/filesystem';
-                const sharePkg = '@capacitor/share';
-                const { Filesystem, Directory } = await import(/* @vite-ignore */ fsPkg).catch(() => ({}));
-                const { Share } = await import(/* @vite-ignore */ sharePkg).catch(() => ({}));
+                const rawBase64 = await blobToBase64(blob);
+                const fileWriteRes = await Filesystem.writeFile({
+                    path: fileName,
+                    data: rawBase64,
+                    directory: Directory.Cache
+                });
 
-                if (Filesystem && Share) {
-                    const rawBase64 = await blobToBase64(blob);
-                    const fileWriteRes = await Filesystem.writeFile({
-                        path: fileName,
-                        data: rawBase64,
-                        directory: Directory.Cache
-                    });
+                await Share.share({
+                    title: fileName,
+                    text: `Xuất file: ${fileName}`,
+                    files: [fileWriteRes.uri],
+                    dialogTitle: `Lưu hoặc Chia sẻ file "${fileName}"`
+                });
 
-                    await Share.share({
-                        title: fileName,
-                        text: `Xuất file: ${fileName}`,
-                        url: fileWriteRes.uri,
-                        dialogTitle: `Lưu hoặc Chia sẻ file "${fileName}"`
-                    });
-
-                    if (showToast) {
-                        showToast(`Đã xuất file "${fileName}" thành công! 📊`, 'success');
-                    }
-                    return true;
+                if (showToast) {
+                    showToast(`Đã xuất file "${fileName}" thành công! 📊`, 'success');
                 }
+                return true;
             } catch (capErr) {
                 if (capErr.name === 'AbortError' || (capErr.message && (capErr.message.includes('cancel') || capErr.message.includes('canceled') || capErr.message.includes('cancelled')))) {
                     return true;
@@ -151,8 +150,8 @@ export async function downloadBlobOrFile(blob, fileName, mimeType = 'application
  */
 export async function exportExcelFile(workbook, fileName, showToast = null) {
     try {
-        const XLSX = window.XLSX;
-        if (!XLSX) {
+        const sheetXLSX = XLSX || (typeof window !== 'undefined' ? window.XLSX : null);
+        if (!sheetXLSX) {
             if (showToast) showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
             return false;
         }
@@ -160,7 +159,7 @@ export async function exportExcelFile(workbook, fileName, showToast = null) {
         const safeFileName = fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`;
 
         // Chuyển workbook thành mảng nhị phân chuẩn (ArrayBuffer)
-        const wbout = XLSX.write(workbook, {
+        const wbout = sheetXLSX.write(workbook, {
             bookType: 'xlsx',
             type: 'array',
             compression: true
@@ -193,29 +192,25 @@ export async function downloadBase64File(base64Data, fileName, showToast = null)
             return false;
         }
 
+        const rawBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+
         // 1. Nếu đang chạy trong ứng dụng Capacitor Native
-        if (typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+        const isNative = typeof Capacitor !== 'undefined' && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform();
+        if (isNative) {
             try {
-                const fsPkg = '@capacitor/filesystem';
-                const sharePkg = '@capacitor/share';
-                const { Filesystem, Directory } = await import(/* @vite-ignore */ fsPkg).catch(() => ({}));
-                const { Share } = await import(/* @vite-ignore */ sharePkg).catch(() => ({}));
-                if (Filesystem && Share) {
-                    const rawBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
-                    const fileWriteRes = await Filesystem.writeFile({
-                        path: fileName,
-                        data: rawBase64,
-                        directory: Directory.Cache
-                    });
-                    await Share.share({
-                        title: fileName,
-                        text: `Tải ảnh: ${fileName}`,
-                        url: fileWriteRes.uri,
-                        dialogTitle: `Lưu hoặc Chia sẻ ảnh "${fileName}"`
-                    });
-                    if (showToast) showToast(`Đã tải ảnh "${fileName}" thành công!`, 'success');
-                    return true;
-                }
+                const fileWriteRes = await Filesystem.writeFile({
+                    path: fileName,
+                    data: rawBase64,
+                    directory: Directory.Cache
+                });
+                await Share.share({
+                    title: fileName,
+                    text: `Tải ảnh: ${fileName}`,
+                    files: [fileWriteRes.uri],
+                    dialogTitle: `Lưu hoặc Chia sẻ ảnh "${fileName}"`
+                });
+                if (showToast) showToast(`Đã tải ảnh "${fileName}" thành công!`, 'success');
+                return true;
             } catch (capErr) {
                 if (capErr.name === 'AbortError' || (capErr.message && (capErr.message.includes('cancel') || capErr.message.includes('canceled') || capErr.message.includes('cancelled')))) {
                     return true;

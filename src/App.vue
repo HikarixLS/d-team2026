@@ -256,7 +256,7 @@
                          :formatDate="formatDate"
                          @close="showActivityDetailModal = false"
                          @admin-checkin="handleAdminCheckInActivity"
-                         @export-excel="exportActivityExcel($event, getActivityStats($event.id), members)" />
+                         @export-excel="exportActivityExcel($event, getActivityStats($event.id), members.value)" />
 
     <LeaveActivityModal :show="showLeaveActivityModal"
                         :activity="selectedActivityForLeave"
@@ -288,6 +288,7 @@ import { useHaptics } from './composables/useHaptics.js';
 import { useNetwork } from './composables/useNetwork.js';
 import { useNotifications } from './composables/useNotifications.js';
 import { useAppUpdater, CURRENT_APP_VERSION } from './composables/useAppUpdater.js';
+import * as XLSX from 'xlsx';
 import { exportExcelFile } from './utils/fileExport.js';
 
 // Components
@@ -521,23 +522,29 @@ watch(
 
 // Excel Export Helper
 const exportToExcel = async () => {
-  if (typeof XLSX === 'undefined') return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
-  if (searchedShifts.value.length === 0) return showToast('Không có dữ liệu ca trực để xuất!', 'error');
+  const sheetXLSX = XLSX || (typeof window !== 'undefined' ? window.XLSX : null);
+  if (!sheetXLSX) return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
 
-  const dataToExport = searchedShifts.value.map((s, idx) => ({
+  const listToExport = (searchedShifts.value && searchedShifts.value.length > 0)
+    ? searchedShifts.value
+    : ((filteredRegistrations.value && filteredRegistrations.value.length > 0) ? filteredRegistrations.value : shifts.value);
+
+  if (!listToExport || listToExport.length === 0) return showToast('Không có dữ liệu ca trực để xuất!', 'error');
+
+  const dataToExport = listToExport.map((s, idx) => ({
     'STT Báo Cáo': idx + 1,
     'MSSV': s.memberId,
     'Họ Và Tên': getMemberName(s.memberId),
     'Ban Hoạt Động': getMemberDept(s.memberId),
     'Ngày Trực': formatDate(s.date),
     'Ca Trực': s.shiftType,
-    'Trang Số Gốc': s.pageNo,
-    'STT Trang Sổ': s.sttNo,
-    'Trạng Thái': s.status,
+    'Trang Số Gốc': s.pageNo || '—',
+    'STT Trang Sổ': s.sttNo || '—',
+    'Trạng Thái': s.status || 'Đã đăng ký',
     'Ghi Chú': s.notes || ''
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+  const worksheet = sheetXLSX.utils.json_to_sheet(dataToExport);
   worksheet['!cols'] = [
     { wch: 14 }, // STT Báo Cáo
     { wch: 14 }, // MSSV
@@ -550,8 +557,8 @@ const exportToExcel = async () => {
     { wch: 14 }, // Trạng Thái
     { wch: 20 }  // Ghi Chú
   ];
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoCaTruc");
+  const workbook = sheetXLSX.utils.book_new();
+  sheetXLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoCaTruc");
   await exportExcelFile(workbook, `BaoCao_CaTruc_${selectedMonth.value}.xlsx`, showToast);
 };
 

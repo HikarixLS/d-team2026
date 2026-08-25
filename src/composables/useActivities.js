@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import * as XLSX from 'xlsx';
 import { useToast } from './useToast.js';
 import { useHaptics } from './useHaptics.js';
 import { useNotifications } from './useNotifications.js';
@@ -270,12 +271,25 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         return `${hours}h${mins}, ${day}/${month}/${year}`;
     };
 
+    const getResolvedMembersList = (membersList) => {
+        if (Array.isArray(membersList)) return membersList;
+        if (membersList && Array.isArray(membersList.value)) return membersList.value;
+        if (typeof membersList === 'function') {
+            const res = membersList();
+            if (Array.isArray(res)) return res;
+        }
+        if (membersRef && Array.isArray(membersRef.value)) return membersRef.value;
+        return [];
+    };
+
     const exportActivityExcel = async (act, stats, membersList = []) => {
-        if (!window.XLSX) {
+        const sheetXLSX = XLSX || (typeof window !== 'undefined' ? window.XLSX : null);
+        if (!sheetXLSX) {
             return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
         }
         if (!act) return;
 
+        const members = getResolvedMembersList(membersList);
         const derived = computeActivityDerivedFields(act);
         const fileName = `${derived.codeId}-${(derived.endDate || '').replace(/-/g, '')} DS DIEM DANH ${act.name}.xlsx`;
 
@@ -303,7 +317,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         checkIns.forEach(p => {
             const mssvStr = String(p.memberId).trim().toUpperCase();
             seenMembers.add(mssvStr);
-            const mObj = (membersList || []).find(m => String(m.id).toUpperCase() === mssvStr);
+            const mObj = members.find(m => String(m.id).toUpperCase() === mssvStr);
             const memberName = p.memberName || mObj?.name || p.memberId;
             const memberDept = mObj?.department || '—';
 
@@ -343,7 +357,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             const mssvStr = String(r.memberId).trim().toUpperCase();
             if (!seenMembers.has(mssvStr)) {
                 seenMembers.add(mssvStr);
-                const mObj = (membersList || []).find(m => String(m.id).toUpperCase() === mssvStr);
+                const mObj = members.find(m => String(m.id).toUpperCase() === mssvStr);
                 const memberName = r.memberName || mObj?.name || r.memberId;
                 const memberDept = mObj?.department || '—';
 
@@ -375,7 +389,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             ]);
         }
 
-        const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
+        const ws = sheetXLSX.utils.aoa_to_sheet(rowsData);
         ws['!cols'] = [
             { wch: 6 },  // STT
             { wch: 14 }, // MSSV
@@ -388,8 +402,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             { wch: 25 }  // Minh Chứng / Ghi Chú
         ];
 
-        const wb = window.XLSX.utils.book_new();
-        window.XLSX.utils.book_append_sheet(wb, ws, "DS Điểm Danh");
+        const wb = sheetXLSX.utils.book_new();
+        sheetXLSX.utils.book_append_sheet(wb, ws, "DS Điểm Danh");
         await exportExcelFile(wb, fileName, showToast);
     };
 
@@ -417,10 +431,12 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
     };
 
     const exportActivityRegistrationMatrixExcel = async (act, membersList = []) => {
-        if (!window.XLSX) {
+        const sheetXLSX = XLSX || (typeof window !== 'undefined' ? window.XLSX : null);
+        if (!sheetXLSX) {
             return showToast('Thư viện XLSX chưa sẵn sàng!', 'error');
         }
 
+        const members = getResolvedMembersList(membersList);
         const derived = computeActivityDerivedFields(act);
         const cleanEndDateStr = (derived.endDate || '').replace(/-/g, '');
         const fileName = `${derived.codeId}-${cleanEndDateStr} DS DANG KY ${act.name}.xlsx`;
@@ -476,7 +492,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             const st = r.shiftType || 'Ca 1';
             const d = r.date;
             if (shiftDateMap[st] && shiftDateMap[st][d]) {
-                const mObj = membersList.find(m => String(m.id).toUpperCase() === String(r.memberId).toUpperCase());
+                const mObj = members.find(m => String(m.id).toUpperCase() === String(r.memberId).toUpperCase());
                 const name = r.memberName || mObj?.name || r.memberId;
                 shiftDateMap[st][d].push({
                     mssv: String(r.memberId).trim().toUpperCase(),
@@ -530,7 +546,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             });
         });
 
-        const ws = window.XLSX.utils.aoa_to_sheet(rowsData);
+        const ws = sheetXLSX.utils.aoa_to_sheet(rowsData);
         ws['!merges'] = merges;
 
         // Set column widths matching Hỗ trợ nhập học.xlsx template
@@ -544,8 +560,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         });
         ws['!cols'] = cols;
 
-        const wb = window.XLSX.utils.book_new();
-        window.XLSX.utils.book_append_sheet(wb, ws, "DS Đăng Ký Ca");
+        const wb = sheetXLSX.utils.book_new();
+        sheetXLSX.utils.book_append_sheet(wb, ws, "DS Đăng Ký Ca");
         await exportExcelFile(wb, fileName, showToast);
     };
 
