@@ -25,8 +25,9 @@ let unsubCheckIns = null;
 let unsubSemesters = null;
 let unsubDepartments = null;
 let unsubShiftSettings = null;
+let unsubActivityRegistrations = null;
 
-export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef, semestersRef, departmentsRef, shiftSettingsRef) {
+export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef, semestersRef, departmentsRef, shiftSettingsRef, activityRegistrationsRef) {
     const { showToast } = useToast();
 
     const cloudStatusText = computed(() => isCloudConnected.value ? '🟢 Cloud' : (hasFirebaseConfig.value ? '🟡 Đang kết nối...' : '🔴 Local Mode'));
@@ -83,6 +84,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         if (unsubSemesters) unsubSemesters();
         if (unsubDepartments) unsubDepartments();
         if (unsubShiftSettings) unsubShiftSettings();
+        if (unsubActivityRegistrations) unsubActivityRegistrations();
 
         if (!db) return;
 
@@ -258,6 +260,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 snapshot.forEach((docSnap) => list.push(docSnap.data()));
                 list.sort((a, b) => new Date(b.date) - new Date(a.date));
                 if (activitiesRef) activitiesRef.value = list;
+                try { localStorage.setItem('local_activities', JSON.stringify(list)); } catch (e) {}
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
@@ -267,6 +270,17 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 snapshot.forEach((docSnap) => list.push(docSnap.data()));
                 list.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 if (activityCheckInsRef) activityCheckInsRef.value = list;
+                try { localStorage.setItem('local_activity_checkins', JSON.stringify(list)); } catch (e) {}
+                isCloudConnected.value = true;
+            }, handleSnapshotError);
+
+            const actRegRefCol = collection(db, 'activity_registrations');
+            unsubActivityRegistrations = onSnapshot(actRegRefCol, (snapshot) => {
+                const list = [];
+                snapshot.forEach((docSnap) => list.push(docSnap.data()));
+                list.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+                if (activityRegistrationsRef) activityRegistrationsRef.value = list;
+                try { localStorage.setItem('local_activity_registrations', JSON.stringify(list)); } catch (e) {}
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 

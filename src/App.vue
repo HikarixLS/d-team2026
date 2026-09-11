@@ -42,7 +42,7 @@
         <!-- Main Content Tabs Body -->
         <main class="flex-grow w-full px-3 sm:px-6 lg:px-8 py-4 pb-24 sm:pb-6 space-y-4">
           <!-- Global Filter Bar (Month & Week selection) -->
-          <div v-if="['entry', 'register', 'dashboard', 'history'].includes(currentTab)"
+          <div v-if="['entry', 'register', 'dashboard', 'history', 'my-shifts'].includes(currentTab)"
                class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 no-print">
             <div class="flex flex-wrap items-center gap-2 text-xs">
               <span class="font-bold text-slate-700 flex items-center gap-1.5">
@@ -139,6 +139,24 @@
                             @open-shift-settings="openShiftSettingsModal"
                             @toggle-registration-open="toggleRegistrationOpen"
                             @export-matrix-excel="exportShiftScheduleMatrixExcel(selectedMonth, filteredRegistrations)" />
+
+          <!-- Tab Mới: Xem lại Ca Đã Đăng Ký (Ca trực tuần & Ca hoạt động) -->
+          <TabMyRegisteredShifts v-show="currentTab === 'my-shifts'"
+                                 :loggedInMemberId="loggedInMemberId"
+                                 :activeMemberName="getMemberName(loggedInMemberId)"
+                                 :activeMemberDept="getMemberDept(loggedInMemberId)"
+                                 :currentUserRole="currentUserRole"
+                                 :registrations="registrations"
+                                 :activityRegistrations="activityRegistrations"
+                                 :activities="activities"
+                                 :activityCheckIns="activityCheckIns"
+                                 :selectedMonth="selectedMonth"
+                                 :formatDate="formatDate"
+                                 :getWeekNameFromDate="getWeekNameFromDate"
+                                 :getMemberName="getMemberName"
+                                 :getMemberDept="getMemberDept"
+                                 @go-tab="currentTab = $event"
+                                 @delete-activity-reg="deleteActivityRegistration" />
 
           <!-- Tab 3: Đơn xin nghỉ phép -->
           <TabLeaveRequests v-show="currentTab === 'leave'"
@@ -310,6 +328,7 @@ import AppNavigation from './components/common/AppNavigation.vue';
 import LoginGatekeeper from './components/auth/LoginGatekeeper.vue';
 import TabShiftEntry from './components/tabs/TabShiftEntry.vue';
 import TabShiftRegister from './components/tabs/TabShiftRegister.vue';
+import TabMyRegisteredShifts from './components/tabs/TabMyRegisteredShifts.vue';
 import TabLeaveRequests from './components/tabs/TabLeaveRequests.vue';
 import TabDashboard from './components/tabs/TabDashboard.vue';
 import TabShiftHistory from './components/tabs/TabShiftHistory.vue';
@@ -374,7 +393,7 @@ const {
   computeActivityDerivedFields, exportActivityExcel, exportActivityRegistrationMatrixExcel, adminActivitySummaryStats
 } = activitiesModule;
 
-const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts, activities, activityCheckIns, semesters, departments, shiftSettings);
+const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts, activities, activityCheckIns, semesters, departments, shiftSettings, activityRegistrations);
 const {
   isCloudConnected, hasFirebaseConfig, showConfigModal, configInput, cloudStatusText,
   openConfigModal, resetConfigToDefault, saveFirebaseConfig, initCloudRealtime
@@ -510,6 +529,12 @@ const tabs = computed(() => {
     },
     { id: 'entry', label: 'Ghi Ca Trực', shortLabel: 'Ghi ca', icon: 'fa-solid fa-pen-to-square' },
     { id: 'register', label: 'Đăng Ký Ca', shortLabel: 'Đăng ký', icon: 'fa-solid fa-calendar-plus' },
+    {
+      id: 'my-shifts',
+      label: 'Ca Đã Đăng Ký',
+      shortLabel: 'Ca của tôi',
+      icon: 'fa-solid fa-clipboard-user'
+    },
     { id: 'leave', label: 'Xin Nghỉ Phép', shortLabel: 'Nghỉ phép', icon: 'fa-solid fa-file-pen', badge: (pendingLeaveCount.value > 0 && isAdmin) ? pendingLeaveCount.value : null }
   ];
 

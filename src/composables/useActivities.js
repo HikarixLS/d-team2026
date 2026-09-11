@@ -5,17 +5,23 @@ import { useHaptics } from './useHaptics.js';
 import { useNotifications } from './useNotifications.js';
 import { exportExcelFile } from '../utils/fileExport.js';
 
-// Clean up legacy local storage cache so ghost entries never persist
+// Local cache initialization for instant offline / reload UX
+let initActivities = [];
+let initCheckIns = [];
+let initRegistrations = [];
 try {
-    localStorage.removeItem('local_activities');
-    localStorage.removeItem('local_activity_checkins');
-    localStorage.removeItem('local_activity_registrations');
+    const a = localStorage.getItem('local_activities');
+    if (a) initActivities = JSON.parse(a);
+    const c = localStorage.getItem('local_activity_checkins');
+    if (c) initCheckIns = JSON.parse(c);
+    const r = localStorage.getItem('local_activity_registrations');
+    if (r) initRegistrations = JSON.parse(r);
 } catch (e) {}
 
-const activities = ref([]);
-const activityCheckIns = ref([]);
+const activities = ref(initActivities);
+const activityCheckIns = ref(initCheckIns);
 const semesters = ref([]);
-const activityRegistrations = ref([]);
+const activityRegistrations = ref(initRegistrations);
 
 export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRef) {
     const { showToast } = useToast();
@@ -32,7 +38,11 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
     };
 
     const persistLocal = () => {
-        // Data is 100% Cloud-managed
+        try {
+            localStorage.setItem('local_activities', JSON.stringify(activities.value));
+            localStorage.setItem('local_activity_checkins', JSON.stringify(activityCheckIns.value));
+            localStorage.setItem('local_activity_registrations', JSON.stringify(activityRegistrations.value));
+        } catch (e) {}
     };
 
     const syncSemestersToCloud = async () => {
@@ -104,6 +114,15 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             try {
                 const { doc, deleteDoc } = window.FirebaseSDK;
                 await deleteDoc(doc(window.firebaseDb, 'activities', actId));
+                // Dọn dẹp sạch các đăng ký ca và điểm danh liên quan trên Cloud
+                const chksToDelete = activityCheckIns.value.filter(c => c.activityId === actId);
+                for (const c of chksToDelete) {
+                    try { await deleteDoc(doc(window.firebaseDb, 'activity_checkins', c.id)); } catch (e) {}
+                }
+                const regsToDelete = activityRegistrations.value.filter(r => r.activityId === actId);
+                for (const r of regsToDelete) {
+                    try { await deleteDoc(doc(window.firebaseDb, 'activity_registrations', r.id)); } catch (e) {}
+                }
             } catch (err) {
                 console.warn('Không thể xóa hoạt động trên Cloud:', err);
             }
@@ -417,9 +436,12 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
     const getDateRangeArray = (startStr, endStr) => {
         if (!startStr) return [];
         const end = endStr || startStr;
+        const p1 = startStr.split('-').map(Number);
+        const p2 = end.split('-').map(Number);
+        if (p1.length < 3 || p2.length < 3) return [startStr];
         const result = [];
-        let curr = new Date(startStr);
-        const last = new Date(end);
+        let curr = new Date(p1[0], p1[1] - 1, p1[2]);
+        const last = new Date(p2[0], p2[1] - 1, p2[2]);
         while (curr <= last) {
             const yyyy = curr.getFullYear();
             const mm = String(curr.getMonth() + 1).padStart(2, '0');
@@ -650,19 +672,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         if (!act) return [];
         const start = act.date || act.startDate || getTodayStr();
         const end = act.endDate || act.date || start;
-        if (start === end) return [start];
-
-        const dates = [];
-        const curr = new Date(start);
-        const last = new Date(end);
-        while (curr <= last) {
-            const yyyy = curr.getFullYear();
-            const mm = String(curr.getMonth() + 1).padStart(2, '0');
-            const dd = String(curr.getDate()).padStart(2, '0');
-            dates.push(`${yyyy}-${mm}-${dd}`);
-            curr.setDate(curr.getDate() + 1);
-        }
-        return dates;
+        return getDateRangeArray(start, end);
     };
 
     const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbymKPkZlGwOwHSW1wiUoyNRKvsNnaevzPXZ-EvXHDa4Nauc5iAjjblCJet7Bg62quLE/exec';

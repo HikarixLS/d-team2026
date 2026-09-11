@@ -159,29 +159,48 @@
 
       <!-- Right: Danh sách ca trực đã đăng ký -->
       <div class="md:col-span-2 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 sm:p-5 space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
           <div>
             <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
               <i class="fa-solid fa-list-check text-sky-600 dark:text-sky-400"></i> Danh Sách Ca Trực Đã Đăng Ký
             </h3>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Hiển thị lịch đăng ký ca trực dự kiến của toàn đội</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Bộ lọc Ca Của Tôi vs Tất Cả -->
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold">
+              <button type="button" @click="filterMode = 'all'"
+                      class="px-2.5 py-1 rounded-lg transition cursor-pointer"
+                      :class="filterMode === 'all' ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'">
+                Tất cả ({{ filteredRegistrations.length }})
+              </button>
+              <button type="button" @click="filterMode = 'mine'"
+                      class="px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1"
+                      :class="filterMode === 'mine' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'">
+                <i class="fa-solid fa-user-check text-[10px]"></i> Ca của tôi ({{ myRegistrationsCount }})
+              </button>
+            </div>
+
             <button @click="$emit('export-matrix-excel')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer" title="Xuất ma trận ca làm theo mẫu Excel">
               <i class="fa-solid fa-file-excel"></i> Xuất Mẫu Ca Làm
             </button>
-            <span class="px-3 py-1 bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-xs font-bold rounded-full">
-              Tổng: {{ filteredRegistrations.length }} Đăng Ký
-            </span>
           </div>
         </div>
 
         <div class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
-          <div v-for="r in filteredRegistrations" :key="r.id"
-               class="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <div v-for="r in displayedRegistrations" :key="r.id"
+               class="p-3.5 rounded-xl border transition flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800"
+               :class="[
+                 r.memberId === loggedInMemberId
+                   ? 'bg-sky-50/80 dark:bg-sky-950/30 border-sky-300 dark:border-sky-800 ring-1 ring-sky-400/30'
+                   : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700'
+               ]">
             <div class="space-y-1">
               <div class="flex items-center gap-2">
-                <span class="font-bold text-slate-800 dark:text-white text-sm">{{ getMemberName(r.memberId) }}</span>
+                <span class="font-bold text-slate-800 dark:text-white text-sm">
+                  {{ getMemberName(r.memberId) }}
+                  <span v-if="r.memberId === loggedInMemberId" class="text-[10px] font-black text-sky-600 dark:text-sky-400 ml-1">(Bạn)</span>
+                </span>
                 <span class="px-2 py-0.5 text-[10px] font-extrabold bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 rounded-md border border-sky-300 dark:border-sky-800">
                   {{ r.shiftType }}
                 </span>
@@ -205,8 +224,8 @@
             </div>
           </div>
 
-          <div v-if="filteredRegistrations.length === 0" class="p-8 text-center text-slate-400 text-xs">
-            Chưa có lịch đăng ký ca trực nào.
+          <div v-if="displayedRegistrations.length === 0" class="p-8 text-center text-slate-400 text-xs">
+            {{ filterMode === 'mine' ? 'Bạn chưa đăng ký ca trực nào trong thời gian này.' : 'Chưa có lịch đăng ký ca trực nào.' }}
           </div>
         </div>
       </div>
@@ -215,7 +234,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps([
   'regForm',
@@ -249,6 +268,22 @@ const dynamicShiftTypes = computed(() => {
     { id: 'Ca 3', name: 'Ca 3', time: '13h00 - 15h20' },
     { id: 'Ca 4', name: 'Ca 4', time: '15h20 - 17h00' }
   ];
+});
+
+const filterMode = ref('all'); // 'all' | 'mine'
+
+const myRegistrationsCount = computed(() => {
+  if (!props.loggedInMemberId || !props.filteredRegistrations) return 0;
+  const myId = String(props.loggedInMemberId).trim().toLowerCase();
+  return props.filteredRegistrations.filter(r => String(r.memberId).trim().toLowerCase() === myId).length;
+});
+
+const displayedRegistrations = computed(() => {
+  if (filterMode.value === 'mine' && props.loggedInMemberId) {
+    const myId = String(props.loggedInMemberId).trim().toLowerCase();
+    return props.filteredRegistrations.filter(r => String(r.memberId).trim().toLowerCase() === myId);
+  }
+  return props.filteredRegistrations;
 });
 
 const getShiftSlotLabel = (shiftName, dateStr) => {

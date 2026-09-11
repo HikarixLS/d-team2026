@@ -92,6 +92,21 @@
           </div>
         </div>
       </div>
+
+      <!-- Total Activity Shifts Registered -->
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-3 col-span-2 md:col-span-1">
+        <div class="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center text-xl shrink-0">
+          <i class="fa-solid fa-flag"></i>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-teal-600 dark:text-teal-400 leading-none">
+            {{ totalMyRegsCount }}
+          </div>
+          <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
+            Ca Đã Đăng Ký
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Monthly Activities List -->
@@ -181,10 +196,15 @@
               <div class="text-[11px] font-bold text-sky-700 dark:text-sky-300 flex items-center gap-1">
                 <i class="fa-solid fa-clipboard-check"></i> Ca hoạt động đã đăng ký:
               </div>
-              <div class="flex flex-wrap gap-1">
+              <div class="flex flex-wrap gap-1.5">
                 <span v-for="r in getUserActivityRegs(act.id)" :key="r.id"
-                      class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-300 flex items-center gap-1">
+                      class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-300 flex items-center gap-1.5 shadow-2xs">
                   <span>✓ {{ formatDate(r.date) }} ({{ r.shiftType }})</span>
+                  <button type="button" @click.stop.prevent="confirmCancelReg(r, act)"
+                          class="hover:text-rose-600 dark:hover:text-rose-400 p-0.5 ml-0.5 cursor-pointer transition"
+                          title="Bấm để hủy đăng ký ca này nếu bạn muốn đổi ca">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
                 </span>
               </div>
             </div>
@@ -399,6 +419,31 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Xác Nhận Hủy Đăng Ký Ca Hoạt Động -->
+    <div v-if="cancelingRegObj" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+      <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 max-w-sm w-full shadow-2xl space-y-4">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center text-2xl mx-auto">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div class="text-center space-y-1">
+          <h3 class="font-extrabold text-slate-900 dark:text-white text-base">Hủy Đăng Ký Ca Này?</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Bạn có chắc muốn hủy đăng ký ca <strong>{{ cancelingRegObj.shiftType }}</strong> ngày <strong>{{ formatDate(cancelingRegObj.date) }}</strong> của hoạt động "<strong>{{ cancelingActName }}</strong>"?
+          </p>
+        </div>
+        <div class="flex items-center gap-2 pt-2">
+          <button @click="cancelingRegObj = null" type="button"
+                  class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs transition cursor-pointer">
+            Không hủy
+          </button>
+          <button @click="executeCancelReg" type="button"
+                  class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition cursor-pointer shadow-md">
+            Xác Nhận Hủy
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -591,6 +636,27 @@ const submitShiftReg = () => {
   });
   selectedActForReg.value = null;
 };
+
+const cancelingRegObj = ref(null);
+const cancelingActName = ref('');
+
+const confirmCancelReg = (r, act) => {
+  cancelingRegObj.value = r;
+  cancelingActName.value = act ? act.name : 'Hoạt động';
+};
+
+const executeCancelReg = () => {
+  if (cancelingRegObj.value) {
+    emit('delete-activity-reg', cancelingRegObj.value.id);
+    cancelingRegObj.value = null;
+  }
+};
+
+const totalMyRegsCount = computed(() => {
+  if (!props.activityRegistrations || !props.loggedInMemberId) return 0;
+  const myId = String(props.loggedInMemberId).trim().toLowerCase();
+  return props.activityRegistrations.filter(r => String(r.memberId).trim().toLowerCase() === myId).length;
+});
 
 const getUserActivityRegs = (actId) => {
   if (!props.activityRegistrations || !props.loggedInMemberId) return [];
