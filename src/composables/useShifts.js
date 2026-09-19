@@ -272,25 +272,32 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         if (!memberId) return showToast('Vui lòng chọn Thành Viên Trực!', 'error');
         if (!date) return showToast('Vui lòng chọn Ngày Trực!', 'error');
 
-        // Rule 1: Must be TODAY DATE ONLY (cannot check-in early for tomorrow or late for past dates)
-        if (date !== todayDate.value) {
-            if (date < todayDate.value) {
-                return showToast(`⚠️ Đã quá hạn điểm danh! Không được điểm danh trễ cho ngày đã qua (${formatDate(date)}).`, 'error');
-            } else {
-                return showToast(`⚠️ Chưa đến ngày trực! Không được điểm danh trước cho ngày tương lai (${formatDate(date)}).`, 'error');
+        const isAdmin = currentUserRoleRef && currentUserRoleRef.value === 'admin';
+
+        // Quy định điểm danh:
+        // - Thành viên thường: Cố định 1 ngày duy nhất (hôm nay) và phải là ca đã đăng ký trước
+        // - Quản trị viên (Admin): Được phép chỉnh tất cả các ngày (điểm danh hộ/bù cho các ngày trước đó)
+        if (!isAdmin) {
+            // Rule 1: Must be TODAY DATE ONLY (cannot check-in early for tomorrow or late for past dates)
+            if (date !== todayDate.value) {
+                if (date < todayDate.value) {
+                    return showToast(`⚠️ Đã quá hạn điểm danh! Không được điểm danh trễ cho ngày đã qua (${formatDate(date)}).`, 'error');
+                } else {
+                    return showToast(`⚠️ Chưa đến ngày trực! Không được điểm danh trước cho ngày tương lai (${formatDate(date)}).`, 'error');
+                }
             }
-        }
 
-        // Rule 2: Must be a shift that was REGISTERED IN ADVANCE by this member!
-        const isRegistered = registrations.value.some(r =>
-            r.memberId && r.memberId.toString().toLowerCase() === memberId.toString().toLowerCase() &&
-            r.date === date &&
-            r.shiftType === shiftType
-        );
+            // Rule 2: Must be a shift that was REGISTERED IN ADVANCE by this member!
+            const isRegistered = registrations.value.some(r =>
+                r.memberId && r.memberId.toString().toLowerCase() === memberId.toString().toLowerCase() &&
+                r.date === date &&
+                r.shiftType === shiftType
+            );
 
-        if (!isRegistered) {
-            const mName = getMemberName(memberId);
-            return showToast(`⚠️ Thành viên ${mName} chưa đăng ký ${shiftType} ngày ${formatDate(date)}! Chỉ được điểm danh cho các ca đã đăng ký trước.`, 'error');
+            if (!isRegistered) {
+                const mName = getMemberName(memberId);
+                return showToast(`⚠️ Thành viên ${mName} chưa đăng ký ${shiftType} ngày ${formatDate(date)}! Chỉ được điểm danh cho các ca đã đăng ký trước.`, 'error');
+            }
         }
 
         if (!pageNo || !sttNo) return showToast('Vui lòng nhập Trang số và STT sổ gốc!', 'error');
@@ -400,8 +407,8 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         const rDate = regForm.value.date;
         const rShift = regForm.value.shiftType;
 
-        // Block registration for past dates
-        if (rDate < todayDate.value) {
+        // Block registration for past dates (thành viên thường không được đăng ký quá khứ)
+        if (rDate < todayDate.value && (!currentUserRoleRef || currentUserRoleRef.value !== 'admin')) {
             return showToast('⚠️ Không thể đăng ký ca trực cho ngày trong quá khứ! Vui lòng chọn từ hôm nay trở đi.', 'error');
         }
 

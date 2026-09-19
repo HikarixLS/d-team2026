@@ -29,12 +29,19 @@
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
               Ngày Trực (Điểm Danh) <span class="text-red-500">*</span>
             </label>
-            <input type="date" v-model="shiftForm.date" :min="todayDate" :max="todayDate" required
-                   class="w-full border border-slate-300 rounded-lg p-2.5 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px] font-bold text-slate-800 bg-amber-50/50">
-            <p class="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-300 mt-1.5 font-bold flex items-center gap-1.5 leading-snug">
+            <input type="date" v-model="shiftForm.date"
+                   :min="currentUserRole === 'admin' ? null : todayDate"
+                   :max="currentUserRole === 'admin' ? null : todayDate"
+                   required
+                   class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[44px] font-bold"
+                   :class="currentUserRole === 'admin' ? 'bg-white dark:bg-slate-900 dark:text-white' : 'bg-amber-50/50 dark:bg-amber-950/20 text-slate-800 dark:text-slate-200'">
+            <p v-if="currentUserRole === 'admin'" class="text-[11px] text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 p-2 rounded-lg border border-indigo-200 dark:border-indigo-800 mt-1.5 font-bold flex items-center gap-1.5 leading-snug">
+              <i class="fa-solid fa-user-shield text-indigo-600 dark:text-indigo-400 shrink-0"></i> Quyền Quản trị viên: Được phép chọn tất cả các ngày (bao gồm các ngày trước đó) để ghi nhận / điểm danh bù cho thành viên.
+            </p>
+            <p v-else class="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2 rounded-lg border border-amber-300 dark:border-amber-800 mt-1.5 font-bold flex items-center gap-1.5 leading-snug">
               <i class="fa-solid fa-lock text-amber-600 shrink-0"></i> Quy định điểm danh: Chỉ được điểm danh trong ngày hôm nay ({{ formatDate(todayDate) }}), chỉ điểm danh cho ca ĐÃ ĐĂNG KÝ TRƯỚC. Không cho phép điểm danh trước hoặc điểm danh trễ.
             </p>
           </div>

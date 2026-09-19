@@ -102,7 +102,7 @@
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
               Ngày Đăng Ký Trực <span class="text-red-500">*</span>
             </label>
-            <input type="date" v-model="regForm.date" :min="todayDate" required
+            <input type="date" v-model="regForm.date" :min="currentUserRole === 'admin' ? null : todayDate" required
                    :disabled="currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false"
                    class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed">
             <div class="flex items-center justify-between mt-1 text-[11px]" v-if="regForm.date">
@@ -111,7 +111,7 @@
                 {{ isRegDateFull ? '🔴 Đã kín toàn bộ ca' : ((!shiftSettings?.maxPerShift || shiftSettings.maxPerShift <= 0) ? '🟢 Không giới hạn' : `🟢 Đã kín ${getTakenShiftsCountForDate(regForm.date)}/${dynamicShiftTypes.length} ca`) }}
               </span>
             </div>
-            <p v-if="regForm.date && regForm.date < todayDate" class="text-[11px] text-rose-600 font-bold mt-1">
+            <p v-if="currentUserRole !== 'admin' && regForm.date && regForm.date < todayDate" class="text-[11px] text-rose-600 font-bold mt-1">
               ⚠️ Không thể chọn ngày trong quá khứ!
             </p>
           </div>
@@ -129,7 +129,7 @@
               Ca Trực Muốn Đăng Ký <span class="text-red-500">*</span>
             </label>
             <select v-model="regForm.shiftType" required
-                    :disabled="(currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) || isRegDateFull || (regForm.date && regForm.date < todayDate)"
+                    :disabled="(currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) || isRegDateFull || (currentUserRole !== 'admin' && regForm.date && regForm.date < todayDate)"
                     class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white dark:bg-slate-900 dark:text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed">
               <option v-for="st in dynamicShiftTypes" :key="st.id || st.name" :value="st.name || st.id" :disabled="isShiftFullOnDate(st.name || st.id, regForm.date)">
                 {{ st.name }} {{ st.time ? '(' + st.time + ')' : '' }} — [{{ getShiftSlotLabel(st.name || st.id, regForm.date) }}] {{ isShiftFullOnDate(st.name || st.id, regForm.date) ? '🔴 [FULL]' : '🟢 [Còn chỗ]' }}
@@ -148,9 +148,9 @@
           </div>
 
           <button type="submit"
-                  :disabled="(currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) || isRegDateFull || (regForm.date && regForm.date < todayDate)"
+                  :disabled="(currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) || isRegDateFull || (currentUserRole !== 'admin' && regForm.date && regForm.date < todayDate)"
                   class="w-full py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2"
-                  :class="((currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) || isRegDateFull || (regForm.date && regForm.date < todayDate)) ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700 text-white cursor-pointer'">
+                  :class="((currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) || isRegDateFull || (currentUserRole !== 'admin' && regForm.date && regForm.date < todayDate)) ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700 text-white cursor-pointer'">
             <i class="fa-solid" :class="(currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) ? 'fa-lock' : (isRegDateFull ? 'fa-ban' : 'fa-paper-plane')"></i>
             {{ (currentUserRole !== 'admin' && shiftSettings?.isRegistrationOpen === false) ? 'Cổng Đăng Ký Đang Tạm Đóng' : (isRegDateFull ? 'Ngày Đã Kín Ca (Full)' : 'Đăng Ký Lịch Trực') }}
           </button>
