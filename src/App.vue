@@ -109,6 +109,8 @@
                          :currentUserRole="currentUserRole"
                          :todayDate="todayDate"
                          :shifts="searchedShifts"
+                         :registrations="registrations"
+                         :loggedInMemberId="loggedInMemberId"
                          :getMemberName="getMemberName"
                          :formatDate="formatDate"
                          @save-shift="saveShift"

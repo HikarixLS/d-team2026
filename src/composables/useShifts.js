@@ -256,9 +256,10 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     });
 
     const resetShiftForm = () => {
+        const isAdmin = currentUserRoleRef && currentUserRoleRef.value === 'admin';
         shiftForm.value = {
-            memberId: activeMember.value ? activeMember.value.id : '',
-            date: getTodayStr(),
+            memberId: (!isAdmin && loggedInMemberIdRef && loggedInMemberIdRef.value) ? loggedInMemberIdRef.value : (activeMember.value ? activeMember.value.id : ''),
+            date: (!isAdmin && todayDate.value) ? todayDate.value : getTodayStr(),
             shiftType: 'Ca 1',
             pageNo: '',
             sttNo: '',
@@ -297,6 +298,16 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
             if (!isRegistered) {
                 const mName = getMemberName(memberId);
                 return showToast(`⚠️ Thành viên ${mName} chưa đăng ký ${shiftType} ngày ${formatDate(date)}! Chỉ được điểm danh cho các ca đã đăng ký trước.`, 'error');
+            }
+
+            // Rule 3: Cannot check in multiple times for the same shift today!
+            const isAlreadyCheckedIn = shifts.value.some(s =>
+                s.memberId && s.memberId.toString().toLowerCase() === memberId.toString().toLowerCase() &&
+                s.date === date &&
+                s.shiftType === shiftType
+            );
+            if (isAlreadyCheckedIn) {
+                return showToast(`⚠️ Ca trực ${shiftType} ngày hôm nay (${formatDate(date)}) đã được bạn điểm danh rồi!`, 'error');
             }
         }
 

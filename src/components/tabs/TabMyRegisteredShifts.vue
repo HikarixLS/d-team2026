@@ -206,9 +206,15 @@
             </div>
           </div>
 
-          <!-- Bottom Action: Xin nghỉ phép nếu bận -->
+          <!-- Bottom Action: Điểm danh nếu hôm nay & Xin nghỉ phép nếu bận -->
           <div class="pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
-            <span class="text-[11px] text-slate-400 font-semibold">Ca trực định kỳ</span>
+            <button v-if="r.date === todayDate"
+                    @click="$emit('go-tab', 'entry')"
+                    class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-extrabold transition flex items-center gap-1 cursor-pointer shadow-xs">
+              <i class="fa-solid fa-bolt"></i> Điểm Danh Ngay
+            </button>
+            <span v-else class="text-[11px] text-slate-400 font-semibold">Ca trực định kỳ</span>
+
             <button v-if="r.date >= todayDate"
                     @click="$emit('go-tab', 'leave')"
                     class="px-2.5 py-1 bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-200 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer"
