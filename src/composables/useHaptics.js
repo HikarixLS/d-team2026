@@ -1,77 +1,19 @@
-import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
-
-const isNative = () => {
-    return typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform();
-};
-
 export function useHaptics() {
-    const impactLight = async () => {
+    const vibrate = (pattern) => {
         try {
-            if (isNative()) {
-                await Haptics.impact({ style: ImpactStyle.Light });
-            } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate(10);
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(pattern);
             }
         } catch (e) {}
     };
 
-    const impactMedium = async () => {
-        try {
-            if (isNative()) {
-                await Haptics.impact({ style: ImpactStyle.Medium });
-            } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate(25);
-            }
-        } catch (e) {}
-    };
-
-    const impactHeavy = async () => {
-        try {
-            if (isNative()) {
-                await Haptics.impact({ style: ImpactStyle.Heavy });
-            } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-        } catch (e) {}
-    };
-
-    const notificationSuccess = async () => {
-        try {
-            if (isNative()) {
-                await Haptics.notification({ type: NotificationType.Success });
-            } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate([15, 30, 20]);
-            }
-        } catch (e) {}
-    };
-
-    const notificationWarning = async () => {
-        try {
-            if (isNative()) {
-                await Haptics.notification({ type: NotificationType.Warning });
-            } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate([30, 40, 30]);
-            }
-        } catch (e) {}
-    };
-
-    const notificationError = async () => {
-        try {
-            if (isNative()) {
-                await Haptics.notification({ type: NotificationType.Error });
-            } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                navigator.vibrate([50, 50, 50]);
-            }
-        } catch (e) {}
-    };
-
-    const selectionChanged = async () => {
-        try {
-            if (isNative()) {
-                await Haptics.selectionChanged();
-            }
-        } catch (e) {}
-    };
+    const impactLight = () => vibrate(10);
+    const impactMedium = () => vibrate(25);
+    const impactHeavy = () => vibrate(50);
+    const notificationSuccess = () => vibrate([15, 30, 20]);
+    const notificationWarning = () => vibrate([30, 40, 30]);
+    const notificationError = () => vibrate([50, 50, 50]);
+    const selectionChanged = () => vibrate(5);
 
     return {
         impactLight,

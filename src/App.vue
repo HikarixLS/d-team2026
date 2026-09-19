@@ -283,13 +283,6 @@
                         @close="showLeaveActivityModal = false"
                         @confirm="handleConfirmLeaveActivity" />
 
-    <!-- App OTA Update Modal -->
-    <AppUpdateModal :show="showUpdateModal"
-                    :currentVersion="CURRENT_APP_VERSION"
-                    :updateInfo="updateInfo"
-                    @close="showUpdateModal = false"
-                    @update="downloadAndInstall" />
-
     <!-- Notification Center & Version Modal -->
     <NotificationModal :show="showNotificationModal"
                        :currentUserRole="currentUserRole"
@@ -302,8 +295,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { App as CapApp } from '@capacitor/app';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 
 // Composables
 import { useToast } from './composables/useToast.js';
@@ -316,7 +308,6 @@ import { useActivities } from './composables/useActivities.js';
 import { useHaptics } from './composables/useHaptics.js';
 import { useNetwork } from './composables/useNetwork.js';
 import { useNotifications } from './composables/useNotifications.js';
-import { useAppUpdater, CURRENT_APP_VERSION } from './composables/useAppUpdater.js';
 import * as XLSX from 'xlsx';
 import { exportExcelFile } from './utils/fileExport.js';
 
@@ -344,7 +335,6 @@ import BatchImportModal from './components/modals/BatchImportModal.vue';
 import ConfirmDeleteModal from './components/modals/ConfirmDeleteModal.vue';
 import ActivityDetailModal from './components/modals/ActivityDetailModal.vue';
 import LeaveActivityModal from './components/modals/LeaveActivityModal.vue';
-import AppUpdateModal from './components/modals/AppUpdateModal.vue';
 import NotificationModal from './components/modals/NotificationModal.vue';
 
 // State & Navigation
@@ -357,7 +347,6 @@ const { isDarkMode, applyTheme, toggleTheme } = useTheme();
 const { impactLight, notificationWarning } = useHaptics();
 const { isOnline, isCheckingNetwork, initNetworkListener, checkNetworkStatus } = useNetwork();
 const { initPushNotifications, syncAllUpcomingShiftReminders } = useNotifications();
-const { isChecking: isCheckingUpdate, hasUpdate, showUpdateModal, updateInfo, checkForUpdate, downloadAndInstall } = useAppUpdater();
 
 // Composables wiring
 const authModule = useAuth(() => members.value);
@@ -600,100 +589,9 @@ const exportToExcel = async () => {
   await exportExcelFile(workbook, `BaoCao_CaTruc_${selectedMonth.value}.xlsx`, showToast);
 };
 
-// Lifecycle & Native Mobile Event Listeners
-let lastBackPressTime = 0;
-let backListenerHandle = null;
-
-const setupBackButtonListener = async () => {
-  if (typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
-    try {
-      backListenerHandle = await CapApp.addListener('backButton', () => {
-        // 1. Close open modals in priority order
-        if (showUpdateModal.value && !updateInfo.value?.forceUpdate) {
-          showUpdateModal.value = false;
-          impactLight();
-          return;
-        }
-        if (showNotificationModal.value) {
-          showNotificationModal.value = false;
-          impactLight();
-          return;
-        }
-        if (showActivityDetailModal.value) {
-          showActivityDetailModal.value = false;
-          impactLight();
-          return;
-        }
-        if (showLeaveActivityModal.value) {
-          showLeaveActivityModal.value = false;
-          impactLight();
-          return;
-        }
-        if (showMemberModal.value) {
-          showMemberModal.value = false;
-          impactLight();
-          return;
-        }
-        if (showBatchModal.value) {
-          showBatchModal.value = false;
-          impactLight();
-          return;
-        }
-        if (showShiftSettingsModal.value) {
-          showShiftSettingsModal.value = false;
-          impactLight();
-          return;
-        }
-        if (showConfigModal.value) {
-          showConfigModal.value = false;
-          impactLight();
-          return;
-        }
-        if (deleteModal.value && deleteModal.value.show) {
-          deleteModal.value.show = false;
-          impactLight();
-          return;
-        }
-        if (showMobileMenu.value) {
-          showMobileMenu.value = false;
-          impactLight();
-          return;
-        }
-
-        // 2. If on a secondary tab, return to main tab ('activities')
-        if (isLoggedIn.value && currentTab.value !== 'activities') {
-          currentTab.value = 'activities';
-          impactLight();
-          return;
-        }
-
-        // 3. Double-tap Back button within 2s to exit app
-        const now = Date.now();
-        if (now - lastBackPressTime < 2000) {
-          CapApp.exitApp();
-        } else {
-          lastBackPressTime = now;
-          impactLight();
-          showToast('Nhấn BACK lần nữa để thoát ứng dụng', 'info');
-        }
-      });
-    } catch (e) {
-      console.warn('[BackButton] Setup error:', e);
-    }
-  }
-};
-
+// Notifications setup
 const setupNotifications = async () => {
-  await initPushNotifications((action) => {
-    const extra = action?.notification?.data || action?.notification?.extra;
-    if (extra?.type === 'leave_request' && currentUserRole.value === 'admin') {
-      currentTab.value = 'leave';
-    } else if (extra?.type === 'shift_reminder') {
-      currentTab.value = 'entry';
-    } else if (extra?.type === 'activity_reminder') {
-      currentTab.value = 'activities';
-    }
-  });
+  await initPushNotifications();
 };
 
 watch(
@@ -711,13 +609,7 @@ watch(
 onMounted(() => {
   applyTheme();
   initNetworkListener(initCloudRealtime);
-  setupBackButtonListener();
   setupNotifications();
-
-  // Auto-check for OTA updates after app launch
-  setTimeout(() => {
-    checkForUpdate(false);
-  }, 2500);
 
   const tryConnectCloud = () => {
     if (window.FirebaseSDK && !isCloudConnected.value) {
@@ -735,11 +627,5 @@ onMounted(() => {
     }
   }, 2000);
   setTimeout(() => clearInterval(retryInterval), 10000);
-});
-
-onBeforeUnmount(() => {
-  if (backListenerHandle) {
-    try { backListenerHandle.remove(); } catch (e) {}
-  }
 });
 </script>

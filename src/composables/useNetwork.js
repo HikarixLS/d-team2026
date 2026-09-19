@@ -1,26 +1,24 @@
-import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { Network } from '@capacitor/network';
+import { ref } from 'vue';
 import { useHaptics } from './useHaptics.js';
 
-const isOnline = ref(true);
-const connectionType = ref('unknown');
+const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
+const connectionType = ref('browser');
 const isCheckingNetwork = ref(false);
 const wasOffline = ref(false);
 
-let networkListenerHandle = null;
+let isListenerSetup = false;
 
 export function useNetwork() {
     const { notificationWarning, notificationSuccess } = useHaptics();
 
-    const updateStatus = (status, onReconnect = null) => {
+    const updateStatus = (online, onReconnect = null) => {
         const previouslyOnline = isOnline.value;
-        isOnline.value = Boolean(status.connected);
-        connectionType.value = status.connectionType || 'unknown';
+        isOnline.value = Boolean(online);
 
-        if (!status.connected) {
+        if (!online) {
             wasOffline.value = true;
             notificationWarning();
-        } else if (!previouslyOnline && status.connected && wasOffline.value) {
+        } else if (!previouslyOnline && online && wasOffline.value) {
             notificationSuccess();
             if (typeof onReconnect === 'function') {
                 try {
@@ -33,40 +31,28 @@ export function useNetwork() {
     };
 
     const checkNetworkStatus = async (onReconnect = null) => {
+        isCheckingNetwork.value = true;
         try {
-            isCheckingNetwork.value = true;
-            const status = await Network.getStatus();
-            updateStatus(status, onReconnect);
-            return status;
-        } catch (e) {
-            const browserOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
-            updateStatus({ connected: browserOnline, connectionType: 'browser' }, onReconnect);
-            return { connected: browserOnline, connectionType: 'browser' };
+            const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
+            updateStatus(online, onReconnect);
+            return { connected: online, connectionType: 'browser' };
         } finally {
             isCheckingNetwork.value = false;
         }
     };
 
-    const initNetworkListener = async (onReconnect = null) => {
-        await checkNetworkStatus(onReconnect);
+    const initNetworkListener = (onReconnect = null) => {
+        checkNetworkStatus(onReconnect);
 
-        try {
-            if (networkListenerHandle) {
-                try { await networkListenerHandle.remove(); } catch (err) {}
-            }
-            networkListenerHandle = await Network.addListener('networkStatusChange', (status) => {
-                updateStatus(status, onReconnect);
-            });
-        } catch (e) {
-            if (typeof window !== 'undefined') {
-                window.addEventListener('online', () => {
-                    updateStatus({ connected: true, connectionType: 'browser' }, onReconnect);
-                });
-                window.addEventListener('offline', () => {
-                    updateStatus({ connected: false, connectionType: 'browser' }, onReconnect);
-                });
-            }
-        }
+        if (isListenerSetup || typeof window === 'undefined') return;
+        isListenerSetup = true;
+
+        window.addEventListener('online', () => {
+            updateStatus(true, onReconnect);
+        });
+        window.addEventListener('offline', () => {
+            updateStatus(false, onReconnect);
+        });
     };
 
     return {

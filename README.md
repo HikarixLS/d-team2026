@@ -1,23 +1,20 @@
 # 🏢 HỆ THỐNG QUẢN LÝ ĐIỆN TỬ - ĐỘI VĂN PHÒNG ĐOÀN - HỘI TDTU
 ### *(Sổ Ca Trực, Quản Lý Hoạt Động & Điểm Danh Minh Chứng)*
 
-Hệ thống quản lý toàn diện dành cho **Đội Văn Phòng Đoàn - Hội TDTU**, hỗ trợ phân công & đăng ký ca trực, quản lý hoạt động & điểm danh minh chứng, theo dõi tiến độ nộp hồ sơ, đánh giá ma trận ca trực theo tuần và xuất báo cáo Excel chuẩn hóa. Dự án hợp nhất hoàn chỉnh giữa nền tảng **Web Application (Vue 3 + Vite)** và ứng dụng di động **Android App (Capacitor)** với đồng bộ thời gian thực qua **Google Firebase Cloud Firestore**.
+Hệ thống quản lý toàn diện dành cho **Đội Văn Phòng Đoàn - Hội TDTU**, hỗ trợ phân công & đăng ký ca trực, quản lý hoạt động & điểm danh minh chứng, theo dõi tiến độ nộp hồ sơ, đánh giá ma trận ca trực theo tuần và xuất báo cáo Excel chuẩn hóa. Dự án xây dựng trên nền tảng **Web Application (Vue 3 + Vite + Tailwind CSS)** với đồng bộ thời gian thực qua **Google Firebase Cloud Firestore**.
 
 ---
 
 ## 🚀 Công Nghệ Sử Dụng (Tech Stack)
 
 ![Vue 3](https://img.shields.io/badge/Vue.js-v3.4-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-v6.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Capacitor](https://img.shields.io/badge/Capacitor-v6.2-119EFF?style=for-the-badge&logo=capacitor&logoColor=white)
-![Android](https://img.shields.io/badge/Android-APK_Build-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-v6.2-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase-Firestore-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-v3.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Chart.js](https://img.shields.io/badge/Chart.js-v4.4-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)
 ![SheetJS](https://img.shields.io/badge/SheetJS-XLSX-217346?style=for-the-badge&logo=microsoftexcel&logoColor=white)
 
 - **Frontend Core**: Vue 3 (Composition API / `<script setup>`), Tailwind CSS, FontAwesome 6, Google Fonts (Inter).
-- **Mobile Native**: Capacitor 6 (`@capacitor/android`, `@capacitor/filesystem`, `@capacitor/share`, `@capacitor/splash-screen`, `@capacitor/status-bar`).
 - **Database & Realtime Sync**: Google Firebase Cloud Firestore (Real-time snapshots, offline persistence, auto-reconnect).
 - **Visualization & Export**: Chart.js 4, SheetJS (XLSX).
 
@@ -43,24 +40,20 @@ Hệ thống quản lý toàn diện dành cho **Đội Văn Phòng Đoàn - H�
 - **Thành viên (User)**: Tối giản giao diện tập trung vào thao tác cá nhân (*Trang Hoạt Động*, *Ghi Ca Trực*, *Đăng Ký Ca*, *Xin Nghỉ Phép*).
 - **Quản trị viên (Admin)**: Toàn quyền truy cập 7 phân hệ quản trị (*Quản Lý Hoạt Động*, *Ghi Ca*, *Đăng Ký*, *Duyệt Nghỉ Phép*, *Thống Kê & Chỉ Tiêu*, *Nhật Ký & Tra Cứu*, *Danh Sách Thành Viên*).
 
-### 5. 📱 Trải Nghiệm Người Dùng & Đa Nền Tảng
-- **Full Width Layout**: Giao diện mở rộng 100% chiều rộng màn hình, không để khoảng trống thừa ở hai bên.
-- **Dark / Light Mode**: Chuyển đổi giao diện sáng/tối bảo vệ mắt.
-- **Xuất File Thông Minh**: Tự động nhận diện nền tảng (Web Browser / Android App) để tải file hoặc mở khay chia sẻ hệ thống (*System Share Sheet*).
+### 5. 💻 Trải Nghiệm Người Dùng & Giao Diện Web
+- **Full Width Responsive Layout**: Giao diện mở rộng tối ưu cho cả máy tính, tablet và điện thoại di động.
+- **Dark / Light Mode**: Chuyển đổi giao diện sáng/tối linh hoạt.
+- **Xuất File & Chia Sẻ**: Xuất báo cáo Excel (.xlsx) chuẩn hóa hoặc chia sẻ trực tiếp qua Web Share API.
 
 ---
 
-## 📁 Cấu Trúc Dự Án Hợp Nhất
+## 📁 Cấu Trúc Dự Án Web
 
 ```text
 VUE/
-├── android/                         # Dự án Native Android (Capacitor Platform)
-│   ├── app/                         # Mã nguồn Java, Resources, Manifest & Gradle Config
-│   └── gradlew.bat                  # Gradle Wrapper để build APK
-├── capacitor.config.json            # Cấu hình Capacitor Native App
 ├── index.html                       # HTML Entry Point & Firebase SDK CDN
-├── package.json                     # Dependencies & Build Scripts hợp nhất
-├── vite.config.js                   # Cấu hình Vite (base: './' tương thích Web & App)
+├── package.json                     # Dependencies & Build Scripts
+├── vite.config.js                   # Cấu hình Vite
 ├── public/                          # Static Assets (Logo, Background, Icons)
 │   ├── logo.jpg
 │   └── app-bg.jpg
@@ -83,7 +76,7 @@ VUE/
     │   ├── modals/                  # ActivityDetailModal, MemberModal, ConfigModal,...
     │   └── tabs/                    # TabDashboard, TabShiftEntry, TabShiftRegister,...
     └── utils/
-        └── fileExport.js            # Xuất Excel đa nền tảng (Web & Android)
+        └── fileExport.js            # Xuất Excel và tải file Web
 ```
 
 ---
@@ -96,7 +89,7 @@ VUE/
 npm install
 ```
 
-### 2. Chạy Môi Trường Phát Triển (Local Web Dev)
+### 2. Chạy Môi Trường Phát Triển (Local Dev)
 
 ```bash
 npm run dev
@@ -108,23 +101,6 @@ npm run dev
 npm run build
 ```
 
-### 4. Đồng Bộ & Mở Dự Án Android
-
-- **Đồng bộ mã nguồn Web sang Android App**:
-  ```bash
-  npm run cap:sync
-  ```
-- **Mở dự án trong Android Studio**:
-  ```bash
-  npm run cap:open
-  ```
-
-### 5. Build File APK Trực Tiếp Bằng Lệnh
-
-```bash
-npm run build:apk
-```
-*File APK sau khi build nằm tại: `android/app/build/outputs/apk/debug/app-debug.apk` và file xuất bản ở thư mục gốc `HeThongQuanLyDVP.apk`.*
 ---
 
 ## 📄 Bản Quyền & Giấy Phép

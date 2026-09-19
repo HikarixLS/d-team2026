@@ -11,10 +11,10 @@
             </div>
             <div>
               <h3 class="font-extrabold text-slate-900 dark:text-white text-base">
-                Thông Báo &amp; Cập Nhật App
+                Thông Báo &amp; Hệ Thống
               </h3>
               <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                Quản lý quyền thông báo đẩy, nhắc nhở ca trực &amp; phiên bản
+                Quản lý quyền thông báo trình duyệt &amp; nhắc nhở ca trực
               </p>
             </div>
           </div>
@@ -23,13 +23,13 @@
           </button>
         </div>
 
-        <!-- Section 1: Thông Báo Đẩy & Nhắc Nhở Ca Trực -->
+        <!-- Section 1: Thông Báo & Nhắc Nhở Ca Trực -->
         <div class="space-y-3 bg-indigo-50/50 dark:bg-indigo-950/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <i class="fa-solid fa-bell-ring text-indigo-600 dark:text-indigo-400"></i>
               <h4 class="font-bold text-xs text-slate-900 dark:text-white uppercase tracking-wider">
-                1. Tính Năng Thông Báo Đẩy
+                1. Tính Năng Thông Báo Trình Duyệt
               </h4>
             </div>
             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider"
@@ -40,7 +40,7 @@
           </div>
 
           <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Ứng dụng tự động lên lịch thông báo cục bộ và thông báo đẩy trên điện thoại:
+            Hệ thống hỗ trợ thông báo trực tiếp trên trình duyệt máy tính và điện thoại:
           </p>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
@@ -48,14 +48,14 @@
               <i class="fa-solid fa-clock text-amber-500 mt-0.5"></i>
               <div>
                 <span class="font-bold text-slate-900 dark:text-white block">Nhắc nhở ca trực:</span>
-                <span class="text-slate-500 dark:text-slate-400">Tự động báo trước 15 phút mỗi khi có ca trực đã đăng ký.</span>
+                <span class="text-slate-500 dark:text-slate-400">Báo trước 15 phút mỗi khi có ca trực đã đăng ký.</span>
               </div>
             </div>
             <div class="flex items-start gap-2 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
               <i class="fa-solid fa-calendar-check text-emerald-500 mt-0.5"></i>
               <div>
                 <span class="font-bold text-slate-900 dark:text-white block">Nhắc nộp hồ sơ:</span>
-                <span class="text-slate-500 dark:text-slate-400">Báo trước 1 ngày lúc 9h sáng khi hoạt động sắp đến hạn.</span>
+                <span class="text-slate-500 dark:text-slate-400">Cảnh báo hạn chót nộp hồ sơ minh chứng hoạt động.</span>
               </div>
             </div>
           </div>
@@ -77,54 +77,37 @@
           </div>
         </div>
 
-        <!-- Section 2: Kiểm Tra Cập Nhật Phiên Bản -->
+        <!-- Section 2: Thông Tin Phiên Bản Website -->
         <div class="space-y-3 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <i class="fa-solid fa-code-compare text-emerald-600 dark:text-emerald-400"></i>
+              <i class="fa-solid fa-globe text-emerald-600 dark:text-emerald-400"></i>
               <h4 class="font-bold text-xs text-slate-900 dark:text-white uppercase tracking-wider">
-                2. Phiên Bản Ứng Dụng &amp; Cập Nhật OTA
+                2. Thông Tin Phiên Bản Website
               </h4>
             </div>
-            <span class="px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+            <span class="px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
               v{{ currentVersion }}
             </span>
           </div>
 
           <div class="text-xs space-y-1 text-slate-600 dark:text-slate-300">
             <div class="flex items-center justify-between text-[11px] py-1 border-b border-slate-200 dark:border-slate-700/60">
-              <span class="text-slate-500">Môi Trường:</span>
-              <span class="font-bold text-[10px] px-2 py-0.5 rounded-full"
-                    :class="isNative ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'">
-                {{ isNative ? '📱 Ứng Dụng Android (App)' : '🌐 Phiên Bản Web' }}
+              <span class="text-slate-500">Nền Tảng:</span>
+              <span class="font-bold text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
+                🌐 Phiên Bản Web (Vue 3 + Vite)
               </span>
             </div>
             <div class="flex items-center justify-between text-[11px] py-1 border-b border-slate-200 dark:border-slate-700/60">
-              <span class="text-slate-500">Mã Bản Build (Build Code):</span>
-              <span class="font-mono font-bold text-slate-800 dark:text-slate-200">{{ buildCode }}</span>
-            </div>
-            <div class="flex items-center justify-between text-[11px] py-1 border-b border-slate-200 dark:border-slate-700/60">
-              <span class="text-slate-500">Ngày Phát Hành:</span>
-              <span class="font-bold text-slate-800 dark:text-slate-200">{{ releaseDate }}</span>
+              <span class="text-slate-500">Đồng Bộ Cloud:</span>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <i class="fa-solid fa-cloud-check"></i> Google Firebase Firestore Realtime
+              </span>
             </div>
             <div class="flex items-center justify-between text-[11px] py-1">
-              <span class="text-slate-500">Cập Nhật OTA:</span>
-              <span class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <i class="fa-solid fa-cloud-arrow-down"></i> {{ isNative ? 'Tự động kiểm tra trên App' : 'Tự động đồng bộ trên Web' }}
-              </span>
+              <span class="text-slate-500">Trạng Thái:</span>
+              <span class="font-bold text-slate-800 dark:text-slate-200">Tự động cập nhật phiên bản mới nhất khi truy cập</span>
             </div>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2 pt-1">
-            <button @click="handleCheckUpdate"
-                    class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
-              <i class="fa-solid fa-arrows-rotate" :class="{ 'animate-spin': isChecking }"></i>
-              {{ isNative ? 'Kiểm Tra Bản Cập Nhật Mới' : 'Kiểm Tra Phiên Bản' }}
-            </button>
-            <a v-if="!isNative" :href="downloadUrl" target="_system"
-               class="py-2 px-3 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
-              <i class="fa-solid fa-download"></i> Tải APK Cho Android
-            </a>
           </div>
         </div>
 
@@ -135,7 +118,7 @@
               <i class="fa-solid fa-crown"></i> Dành Cho Quản Trị Viên:
             </span>
             <button @click="$emit('open-config')" class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer flex items-center gap-1">
-              <i class="fa-solid fa-gear"></i> Mở Cấu Hình Hệ Thống &amp; OTA
+              <i class="fa-solid fa-gear"></i> Mở Cấu Hình Hệ Thống
             </button>
           </div>
         </div>
@@ -155,7 +138,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useNotifications } from '../../composables/useNotifications.js';
-import { useAppUpdater, CURRENT_APP_VERSION, CURRENT_BUILD_CODE, CURRENT_RELEASE_DATE, DEFAULT_APK_DOWNLOAD_URL, isNativePlatform } from '../../composables/useAppUpdater.js';
 
 const props = defineProps({
   show: Boolean,
@@ -165,17 +147,12 @@ const props = defineProps({
   getMemberName: Function
 });
 
-const emit = defineEmits(['close', 'open-config']);
+defineEmits(['close', 'open-config']);
 
 const { hasNotificationPermission, requestLocalPermissions, sendTestNotification, syncAllUpcomingShiftReminders } = useNotifications();
-const { isChecking, checkForUpdate } = useAppUpdater();
 
-const isNative = isNativePlatform();
 const hasPermission = ref(false);
-const currentVersion = CURRENT_APP_VERSION;
-const buildCode = CURRENT_BUILD_CODE;
-const releaseDate = CURRENT_RELEASE_DATE;
-const downloadUrl = DEFAULT_APK_DOWNLOAD_URL;
+const currentVersion = '1.0.0';
 
 const checkCurrentPermission = async () => {
   hasPermission.value = hasNotificationPermission.value;
@@ -193,7 +170,7 @@ const handleRequestPermission = async () => {
 const handleTestNotification = async () => {
   await sendTestNotification(
     '⏰ Hệ Thống Quản Lý ĐVP',
-    'Thông báo nhắc nhở ca trực và hạn hoạt động đang hoạt động rất tốt trên thiết bị của bạn! 🎉'
+    'Thông báo nhắc nhở ca trực và hoạt động đang hoạt động rất tốt trên trình duyệt của bạn! 🎉'
   );
   hasPermission.value = true;
 };
@@ -204,9 +181,5 @@ const handleSyncReminders = () => {
     const name = props.getMemberName ? props.getMemberName(props.loggedInMemberId) : '';
     syncAllUpcomingShiftReminders(userShifts, name);
   }
-};
-
-const handleCheckUpdate = () => {
-  checkForUpdate(true);
 };
 </script>
