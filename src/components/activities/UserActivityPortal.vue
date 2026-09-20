@@ -200,11 +200,6 @@
                 <span v-for="r in getUserActivityRegs(act.id)" :key="r.id"
                       class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-300 flex items-center gap-1.5 shadow-2xs">
                   <span>✓ {{ formatDate(r.date) }} ({{ r.shiftType }})</span>
-                  <button type="button" @click.stop.prevent="confirmCancelReg(r, act)"
-                          class="hover:text-rose-600 dark:hover:text-rose-400 p-0.5 ml-0.5 cursor-pointer transition"
-                          title="Bấm để hủy đăng ký ca này nếu bạn muốn đổi ca">
-                    <i class="fa-solid fa-xmark"></i>
-                  </button>
                 </span>
               </div>
             </div>

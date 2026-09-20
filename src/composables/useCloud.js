@@ -204,6 +204,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 snapshot.forEach((docSnap) => list.push(docSnap.data()));
                 list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 if (leaveRequestsRef) leaveRequestsRef.value = list;
+                try { localStorage.setItem('local_leave_requests', JSON.stringify(list)); } catch (e) {}
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 

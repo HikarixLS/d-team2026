@@ -7,7 +7,7 @@
           <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
             <i class="fa-solid fa-file-pen text-amber-600"></i> Nộp Đơn Xin Nghỉ Phép
           </h3>
-          <p class="text-xs text-slate-500 mt-0.5">Chỉ được xin nghỉ đối với các ca trực bạn đã đăng ký trước đó</p>
+          <p class="text-xs text-slate-500 mt-0.5">Chỉ được xin nghỉ đối với các ca trực hoặc hoạt động bạn đã đăng ký trước đó</p>
         </div>
 
         <form @submit.prevent="$emit('save-leave-request')" class="space-y-3.5">
@@ -27,16 +27,16 @@
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Chọn Ca Trực Đã Đăng Ký Xin Nghỉ <span class="text-red-500">*</span></label>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Chọn Ca Trực / Hoạt Động Đã Đăng Ký Xin Nghỉ <span class="text-red-500">*</span></label>
             <select v-model="leaveForm.selectedRegId" required @change="$emit('reg-select')"
                     class="w-full border border-slate-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-medium">
-              <option value="" disabled>{{ availableRegisteredShifts.length > 0 ? '-- Chọn ca trực đã đăng ký để xin nghỉ --' : '-- Chưa có ca trực nào đã đăng ký sắp tới --' }}</option>
+              <option value="" disabled>{{ availableRegisteredShifts.length > 0 ? '-- Chọn ca trực / hoạt động đã đăng ký để xin nghỉ --' : '-- Chưa có ca trực / hoạt động nào đã đăng ký sắp tới --' }}</option>
               <option v-for="r in availableRegisteredShifts" :key="r.id" :value="r.id">
-                🗓️ Ngày {{ formatDate(r.date) }} • {{ r.shiftType }} {{ r.notes ? `(${r.notes})` : '' }}
+                {{ r.isActivity ? '🎯' : '🗓️' }} Ngày {{ formatDate(r.date) }} • {{ r.shiftType }} {{ r.notes ? `(${r.notes})` : '' }}
               </option>
             </select>
             <p v-if="availableRegisteredShifts.length === 0" class="text-[11px] text-rose-600 mt-1.5 flex items-center gap-1 font-semibold">
-              <i class="fa-solid fa-triangle-exclamation"></i> Thành viên chưa có lịch đăng ký ca trực sắp tới để xin nghỉ phép.
+              <i class="fa-solid fa-triangle-exclamation"></i> Thành viên chưa có lịch đăng ký ca trực hoặc hoạt động sắp tới để xin nghỉ phép.
             </p>
           </div>
 
@@ -89,9 +89,12 @@
                 <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                   <span>{{ l.memberName || getMemberName(l.memberId) }}</span>
                   <span class="text-xs font-semibold text-indigo-600">[{{ l.memberId }}]</span>
+                  <span v-if="l.isActivity" class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300">
+                    🎯 Hoạt Động
+                  </span>
                 </h4>
                 <p class="text-xs text-slate-500 font-medium mt-0.5">
-                  🏛️ {{ l.department || getMemberDept(l.memberId) }} • 🗓️ Nghỉ ca: <b class="text-slate-700">{{ l.shiftType }} (Ngày {{ formatDate(l.shiftDate) }})</b>
+                  🏛️ {{ l.department || getMemberDept(l.memberId) }} • <span v-if="l.isActivity" class="font-bold text-sky-700">🎯 Nghỉ:</span><span v-else>🗓️ Nghỉ ca:</span> <b class="text-slate-700">{{ l.shiftType }} (Ngày {{ formatDate(l.shiftDate) }})</b>
                 </p>
               </div>
 

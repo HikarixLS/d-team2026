@@ -176,7 +176,7 @@
                             @save-leave-request="saveLeaveRequest"
                             @member-change="onLeaveMemberChange"
                             @reg-select="onLeaveRegSelect"
-                            @update-leave-status="updateLeaveStatus" />
+                            @update-leave-status="handleUpdateLeaveStatus" />
 
           <!-- Tab 4: Thống kê Dashboard & Biểu đồ -->
           <TabDashboard v-show="currentTab === 'dashboard'"
@@ -370,7 +370,15 @@ const {
   openBatchModal, saveBatchMembers, pushAllMembersToCloud, deleteModal
 } = membersModule;
 
-const shiftsModule = useShifts(members, currentUserRole, loggedInMemberId, deleteModal);
+const activitiesModule = useActivities(members, loggedInMemberId, currentUserRole);
+const {
+  activities, activityCheckIns, semesters, activityRegistrations, addSemester, deleteSemester, toggleTrainingPointsSubmitted,
+  updateActivitySubmitDate, createActivity, deleteActivity, registerActivityShift, deleteActivityRegistration, getActivityDates,
+  checkInActivity, requestLeaveActivity, getUserCheckInRecord, getActivityStats,
+  computeActivityDerivedFields, exportActivityExcel, exportActivityRegistrationMatrixExcel, adminActivitySummaryStats
+} = activitiesModule;
+
+const shiftsModule = useShifts(members, currentUserRole, loggedInMemberId, deleteModal, activityRegistrations, activities);
 const {
   shifts, registrations, leaveRequests, shiftSettings, shiftTypes, shiftTypeNames,
   showShiftSettingsModal, openShiftSettingsModal, saveShiftSettings, toggleRegistrationOpen, resetShiftSettingsToDefault,
@@ -383,14 +391,6 @@ const {
   updateLeaveStatus, historyFilter, searchedShifts, filteredRegistrations, confirmDeleteRegistration,
   exportShiftScheduleMatrixExcel
 } = shiftsModule;
-
-const activitiesModule = useActivities(members, loggedInMemberId, currentUserRole);
-const {
-  activities, activityCheckIns, semesters, activityRegistrations, addSemester, deleteSemester, toggleTrainingPointsSubmitted,
-  updateActivitySubmitDate, createActivity, deleteActivity, registerActivityShift, deleteActivityRegistration, getActivityDates,
-  checkInActivity, requestLeaveActivity, getUserCheckInRecord, getActivityStats,
-  computeActivityDerivedFields, exportActivityExcel, exportActivityRegistrationMatrixExcel, adminActivitySummaryStats
-} = activitiesModule;
 
 const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts, activities, activityCheckIns, semesters, departments, shiftSettings, activityRegistrations);
 const {
@@ -423,11 +423,136 @@ const openLeaveActivityModal = (act) => {
   showLeaveActivityModal.value = true;
 };
 
-const handleConfirmLeaveActivity = (reason) => {
+const handleConfirmLeaveActivity = async (reason) => {
   if (selectedActivityForLeave.value) {
-    requestLeaveActivity(selectedActivityForLeave.value.id, reason);
+    const act = selectedActivityForLeave.value;
+    await requestLeaveActivity(act.id, reason);
+
+    const memberId = loggedInMemberId.value || '';
+    const canonicalId = String(memberId).trim().toUpperCase();
+    const memberObj = members.value.find(m => String(m.id).toUpperCase() === canonicalId);
+    const memberName = memberObj ? memberObj.name : memberId;
+    const memberDept = memberObj ? (memberObj.department || '') : '';
+
+    const newId = 'l_act_' + act.id + '_' + canonicalId;
+    const leaveData = {
+      id: newId,
+      regId: `act_${act.id}_${canonicalId}`,
+      activityId: act.id,
+      activityName: act.name,
+      isActivity: true,
+      memberId: canonicalId,
+      memberName: memberName,
+      department: memberDept,
+      shiftDate: act.date || new Date().toISOString().slice(0, 10),
+      shiftType: `Hoạt động: ${act.name}`,
+      reason: reason.trim(),
+      status: 'Chờ duyệt',
+      createdAt: new Date().toISOString()
+    };
+
+    const existingIdx = leaveRequests.value.findIndex(l => l.id === newId || (l.activityId === act.id && String(l.memberId).toUpperCase() === canonicalId));
+    if (existingIdx >= 0) {
+      leaveRequests.value[existingIdx] = { ...leaveRequests.value[existingIdx], ...leaveData };
+    } else {
+      leaveRequests.value.unshift(leaveData);
+    }
+    try {
+      localStorage.setItem('local_leave_requests', JSON.stringify(leaveRequests.value));
+    } catch (e) {}
+
+    if (window.firebaseDb && window.FirebaseSDK) {
+      try {
+        const { collection, doc, setDoc } = window.FirebaseSDK;
+        await setDoc(doc(collection(window.firebaseDb, 'leave_requests'), newId), leaveData);
+      } catch (e) {
+        console.warn("Lỗi lưu leave_requests lên cloud:", e);
+      }
+    }
   }
 };
+
+const handleUpdateLeaveStatus = async (l, newStatus) => {
+  await updateLeaveStatus(l, newStatus);
+  if (l.isActivity || l.activityId) {
+    const actId = l.activityId;
+    const mId = String(l.memberId).trim().toUpperCase();
+    const chk = activityCheckIns.value.find(
+      c => c.activityId === actId && String(c.memberId).trim().toUpperCase() === mId
+    );
+    if (chk) {
+      if (newStatus === 'Đã duyệt') {
+        chk.status = 'leave';
+        chk.leaveApproved = true;
+        if (window.FirebaseSDK && window.firebaseDb) {
+          try {
+            const { doc, setDoc } = window.FirebaseSDK;
+            await setDoc(doc(window.firebaseDb, 'activity_checkins', chk.id), chk, { merge: true });
+          } catch (e) {}
+        }
+      } else if (newStatus === 'Từ chối') {
+        activityCheckIns.value = activityCheckIns.value.filter(c => c.id !== chk.id);
+        if (window.FirebaseSDK && window.firebaseDb) {
+          try {
+            const { doc, deleteDoc } = window.FirebaseSDK;
+            await deleteDoc(doc(window.firebaseDb, 'activity_checkins', chk.id));
+          } catch (e) {}
+        }
+      }
+      try {
+        localStorage.setItem('local_activity_checkins', JSON.stringify(activityCheckIns.value));
+      } catch (e) {}
+    }
+  }
+};
+
+// Sync any existing activity leave check-ins (activityCheckIns status === 'leave') into leaveRequests for Admin
+watch(
+  () => [activityCheckIns.value, activities.value],
+  () => {
+    if (!activityCheckIns.value || !Array.isArray(activityCheckIns.value)) return;
+    const leaveCheckIns = activityCheckIns.value.filter(c => c.status === 'leave');
+    let hasNew = false;
+    leaveCheckIns.forEach(chk => {
+      const act = activities.value.find(a => a.id === chk.activityId);
+      const actName = act ? act.name : 'Hoạt động';
+      const mId = String(chk.memberId || '').trim().toUpperCase();
+      const mObj = members.value.find(m => String(m.id).toUpperCase() === mId);
+      const mName = chk.memberName || mObj?.name || mId;
+      const mDept = mObj?.department || '';
+      const existing = leaveRequests.value.find(l =>
+        (l.activityId === chk.activityId || l.id.includes(chk.activityId)) &&
+        String(l.memberId).toUpperCase() === mId
+      );
+      if (!existing) {
+        const newId = 'l_act_' + chk.activityId + '_' + mId;
+        const leaveData = {
+          id: newId,
+          regId: `act_${chk.activityId}_${mId}`,
+          activityId: chk.activityId,
+          activityName: actName,
+          isActivity: true,
+          memberId: mId,
+          memberName: mName,
+          department: mDept,
+          shiftDate: act?.date || new Date().toISOString().slice(0, 10),
+          shiftType: `Hoạt động: ${actName}`,
+          reason: chk.leaveReason || 'Xin nghỉ hoạt động',
+          status: chk.leaveApproved ? 'Đã duyệt' : 'Chờ duyệt',
+          createdAt: chk.timestamp || new Date().toISOString()
+        };
+        leaveRequests.value.push(leaveData);
+        hasNew = true;
+      }
+    });
+    if (hasNew) {
+      try {
+        localStorage.setItem('local_leave_requests', JSON.stringify(leaveRequests.value));
+      } catch (e) {}
+    }
+  },
+  { immediate: true, deep: true }
+);
 
 const handleAdminCheckInActivity = ({ activityId, memberId }) => {
   checkInActivity(activityId, memberId);

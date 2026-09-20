@@ -7,7 +7,19 @@ import { exportExcelFile } from '../utils/fileExport.js';
 
 const shifts = ref([]);
 const registrations = ref([]);
-const leaveRequests = ref([]);
+
+const getSavedLeaveRequests = () => {
+    try {
+        const saved = localStorage.getItem('local_leave_requests');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) return parsed;
+        }
+    } catch (e) {}
+    return [];
+};
+
+const leaveRequests = ref(getSavedLeaveRequests());
 
 const DEFAULT_SHIFT_SETTINGS = {
     isRegistrationOpen: true, // true = Cho phép thành viên đăng ký, false = Tạm đóng cổng đăng ký
@@ -42,7 +54,7 @@ const getSavedShiftSettings = () => {
 const shiftSettings = ref(getSavedShiftSettings());
 const showShiftSettingsModal = ref(false);
 
-export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, deleteModalRef) {
+export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, deleteModalRef, activityRegistrationsRef = null, activitiesRef = null) {
     const { showToast } = useToast();
     const { scheduleShiftReminder } = useNotifications();
 
@@ -476,7 +488,39 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     const availableRegisteredShifts = computed(() => {
         let mId = leaveForm.value.memberId || (activeMember.value ? activeMember.value.id : '');
         if (!mId) return [];
-        return registrations.value.filter(r => r.memberId === mId && r.date >= todayDate.value);
+        const canonicalId = String(mId).trim().toUpperCase();
+
+        const regularShifts = registrations.value
+            .filter(r => String(r.memberId).trim().toUpperCase() === canonicalId && r.date >= todayDate.value)
+            .map(r => ({
+                id: r.id,
+                date: r.date,
+                shiftType: r.shiftType,
+                notes: r.notes || '',
+                isActivity: false
+            }));
+
+        let actShifts = [];
+        if (activityRegistrationsRef && activityRegistrationsRef.value) {
+            actShifts = activityRegistrationsRef.value
+                .filter(r => String(r.memberId).trim().toUpperCase() === canonicalId && r.date >= todayDate.value)
+                .map(r => {
+                    const act = activitiesRef?.value?.find(a => a.id === r.activityId);
+                    const actName = act ? act.name : 'Hoạt động';
+                    return {
+                        id: r.id,
+                        activityId: r.activityId,
+                        activityName: actName,
+                        date: r.date,
+                        shiftType: `Hoạt động: ${actName} (${r.shiftType})`,
+                        rawShiftType: r.shiftType,
+                        notes: r.notes || '',
+                        isActivity: true
+                    };
+                });
+        }
+
+        return [...regularShifts, ...actShifts];
     });
 
     const onLeaveMemberChange = () => {
@@ -502,10 +546,18 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         if (!leaveForm.value.selectedRegId || !leaveForm.value.shiftDate) return showToast('Vui lòng chọn ca trực đã đăng ký để xin nghỉ!', 'error');
         if (!leaveForm.value.reason.trim()) return showToast('Vui lòng nhập Lý Do Xin Nghỉ!', 'error');
 
+        const foundReg = availableRegisteredShifts.value.find(r => r.id === leaveForm.value.selectedRegId);
+        const isActivity = Boolean(foundReg?.isActivity);
+        const actId = foundReg?.activityId || null;
+        const actName = foundReg?.activityName || '';
+
         const newId = 'l_' + Date.now();
         const leaveData = toPlainObject({
             id: newId,
             regId: leaveForm.value.selectedRegId,
+            activityId: actId,
+            activityName: actName,
+            isActivity: isActivity,
             memberId: leaveForm.value.memberId,
             memberName: getMemberName(leaveForm.value.memberId),
             department: leaveForm.value.department || getMemberDept(leaveForm.value.memberId),
@@ -516,17 +568,24 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
             createdAt: new Date().toISOString()
         });
 
+        // Always update local reactive state immediately
+        const existingIdx = leaveRequests.value.findIndex(l => l.id === newId);
+        if (existingIdx === -1) {
+            leaveRequests.value.unshift(leaveData);
+        }
+        try {
+            localStorage.setItem('local_leave_requests', JSON.stringify(leaveRequests.value));
+        } catch (e) {}
+
         if (window.firebaseDb && window.FirebaseSDK) {
             try {
                 const { collection, doc, setDoc } = window.FirebaseSDK;
                 await setDoc(doc(collection(window.firebaseDb, 'leave_requests'), newId), leaveData);
                 showToast('Đã nộp đơn xin nghỉ phép! Đang chờ Admin duyệt.');
             } catch (e) {
-                leaveRequests.value.unshift(leaveData);
                 showToast('Đã nộp đơn xin nghỉ phép!');
             }
         } else {
-            leaveRequests.value.unshift(leaveData);
             showToast('Đã nộp đơn xin nghỉ phép!');
         }
 
@@ -541,7 +600,7 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
         l.status = newStatus;
 
         const targetRegId = l.regId || l.selectedRegId;
-        if ((newStatus === 'Đã duyệt' || newStatus === 'Đồng ý') && targetRegId) {
+        if ((newStatus === 'Đã duyệt' || newStatus === 'Đồng ý') && targetRegId && !l.isActivity) {
             registrations.value = registrations.value.filter(r => r.id !== targetRegId);
             if (window.firebaseDb && window.FirebaseSDK) {
                 try {
@@ -550,6 +609,10 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
                 } catch (e) { }
             }
         }
+
+        try {
+            localStorage.setItem('local_leave_requests', JSON.stringify(leaveRequests.value));
+        } catch (e) {}
 
         if (window.firebaseDb && window.FirebaseSDK) {
             try {
@@ -565,7 +628,8 @@ export function useShifts(membersRef, currentUserRoleRef, loggedInMemberIdRef, d
     const filteredLeaveRequests = computed(() => {
         let list = leaveRequests.value;
         if (currentUserRoleRef.value === 'member') {
-            list = list.filter(l => l.memberId === loggedInMemberIdRef.value);
+            const myId = String(loggedInMemberIdRef.value || '').trim().toUpperCase();
+            list = list.filter(l => String(l.memberId || '').trim().toUpperCase() === myId);
         }
         if (leaveStatusFilter.value !== 'all') {
             list = list.filter(l => l.status === leaveStatusFilter.value);
