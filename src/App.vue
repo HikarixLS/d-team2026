@@ -28,12 +28,10 @@
                    :hasFirebaseConfig="hasFirebaseConfig"
                    :cloudStatusText="cloudStatusText"
                    :userRoleBadgeText="userRoleBadgeText"
-                   :currentAppVersion="CURRENT_APP_VERSION"
-                   :isCheckingUpdate="isCheckingUpdate"
+                   :unreadNotificationCount="unreadNotificationCount"
                    @toggle-theme="toggleTheme"
                    @open-config="openConfigModal"
                    @open-notifications="showNotificationModal = true"
-                   @check-update="checkForUpdate(true)"
                    @logout="logout" />
 
         <!-- App Navigation Component -->
@@ -285,14 +283,21 @@
                         @close="showLeaveActivityModal = false"
                         @confirm="handleConfirmLeaveActivity" />
 
-    <!-- Notification Center & Version Modal -->
+    <!-- Notification Center Modal -->
     <NotificationModal :show="showNotificationModal"
                        :currentUserRole="currentUserRole"
                        :loggedInMemberId="loggedInMemberId"
-                       :searchedShifts="searchedShifts"
+                       :registrations="registrations"
+                       :shifts="searchedShifts"
+                       :leaveRequests="leaveRequests"
+                       :activities="activities"
+                       :pendingLeaveCount="pendingLeaveCount"
+                       :todayDate="todayDate"
+                       :formatDate="formatDate"
                        :getMemberName="getMemberName"
                        @close="showNotificationModal = false"
-                       @open-config="showNotificationModal = false; openConfigModal()" />
+                       @open-config="showNotificationModal = false; openConfigModal()"
+                       @go-tab="currentTab = $event" />
   </div>
 </template>
 
@@ -507,6 +512,38 @@ const getLeaveStatusBadgeText = (status) => status === 'Chờ duyệt' ? '⏳ Ch
 const formatCreatedAt = (dt) => dt ? new Date(dt).toLocaleString('vi-VN') : 'vừa xong';
 const pieChartTitle = computed(() => currentUserRole.value === 'admin' ? 'Biểu Đồ Tròn: Phân Bổ Thành Viên Theo Chỉ Tiêu (10 Ca/Tháng)' : 'Biểu Đồ Tròn: Tiến Độ Ca Trực Cá Nhân (10 Ca/Tháng)');
 const historySubtitle = computed(() => currentUserRole.value === 'admin' ? 'Danh sách toàn bộ ca trực ghi nhận từ sổ gốc' : 'Nhật ký các ca trực cá nhân của tôi');
+
+// Số lượng thông báo chưa xem trên chuông thông báo
+const unreadNotificationCount = computed(() => {
+  if (currentUserRole.value === 'admin') {
+    return pendingLeaveCount.value || 0;
+  }
+  const myId = String(loggedInMemberId.value || '').trim().toLowerCase();
+  if (!myId || !registrations.value) return 0;
+
+  const today = todayDate.value;
+  const todayRegs = registrations.value.filter(r =>
+    String(r.memberId).trim().toLowerCase() === myId &&
+    r.date === today
+  );
+
+  let uncompletedShifts = 0;
+  for (const reg of todayRegs) {
+    const isCheckedIn = (searchedShifts.value || []).some(s =>
+      String(s.memberId).trim().toLowerCase() === myId &&
+      s.date === today &&
+      s.shiftType === reg.shiftType
+    );
+    if (!isCheckedIn) uncompletedShifts++;
+  }
+
+  const myPendingLeaves = (leaveRequests.value || []).filter(l =>
+    String(l.memberId).trim().toLowerCase() === myId &&
+    l.status === 'Chờ duyệt'
+  ).length;
+
+  return uncompletedShifts + myPendingLeaves;
+});
 
 // Navigation Tabs Config (Roles Separation)
 const tabs = computed(() => {

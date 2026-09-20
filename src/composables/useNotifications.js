@@ -6,44 +6,94 @@ const hasNotificationPermission = ref(
     typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
 );
 
+let swRegistration = null;
+
+// Khởi tạo đăng ký Service Worker cho Web Notifications (đặc biệt hỗ trợ Android Chrome)
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => {
+                swRegistration = reg;
+            })
+            .catch(err => {
+                console.warn('[SW] Registration failed:', err);
+            });
+    });
+}
+
 export function useNotifications() {
     const { notificationSuccess, impactLight } = useHaptics();
     const { showToast } = useToast();
 
-    // 1. Xin quyền & Khởi tạo Notifications an toàn cho Web
-    const initNotifications = async () => {
-        if (typeof window === 'undefined' || !('Notification' in window)) {
-            return { supported: false, granted: false };
+    // 1. Kiểm tra & cập nhật trạng thái quyền
+    const checkPermissionState = () => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            hasNotificationPermission.value = Notification.permission === 'granted';
+            return Notification.permission;
         }
-
-        try {
-            if (Notification.permission === 'default') {
-                const perm = await Notification.requestPermission();
-                hasNotificationPermission.value = perm === 'granted';
-            } else {
-                hasNotificationPermission.value = Notification.permission === 'granted';
-            }
-            return { supported: true, granted: hasNotificationPermission.value };
-        } catch (e) {
-            console.warn('[Notifications] Error requesting permissions:', e);
-            return { supported: false, error: e };
-        }
+        return 'unsupported';
     };
 
-    const initPushNotifications = initNotifications;
-
+    // 2. Yêu cầu cấp quyền thông báo trình duyệt
     const requestLocalPermissions = async () => {
-        if (typeof window === 'undefined' || !('Notification' in window)) return false;
+        if (typeof window === 'undefined' || !('Notification' in window)) {
+            showToast('Trình duyệt này không hỗ trợ thông báo đẩy Web!', 'warning');
+            return false;
+        }
+
         try {
             const perm = await Notification.requestPermission();
             hasNotificationPermission.value = perm === 'granted';
+
+            if (perm === 'granted') {
+                showToast('Đã bật quyền thông báo thành công! 🎉');
+                notificationSuccess();
+            } else if (perm === 'denied') {
+                showToast('Quyền thông báo đã bị từ chối trong cài đặt trình duyệt!', 'error');
+            }
             return hasNotificationPermission.value;
         } catch (e) {
+            console.warn('[Notifications] Error requesting permission:', e);
             return false;
         }
     };
 
-    // Helper chuyển đổi giờ ca trực thành giờ bắt đầu (HH:mm)
+    // 3. Hiển thị thông báo trên Web (Tự động thích ứng Mobile Android & Desktop)
+    const showWebNotification = async (title, options = {}) => {
+        const notifOptions = {
+            icon: '/logo.jpg',
+            badge: '/logo.jpg',
+            vibrate: [200, 100, 200],
+            ...options
+        };
+
+        // Phương án 1: Dùng Service Worker (BẮT BUỘC trên Chrome Android)
+        if ('serviceWorker' in navigator) {
+            try {
+                let reg = swRegistration || await navigator.serviceWorker.ready;
+                if (reg && reg.showNotification) {
+                    await reg.showNotification(title, notifOptions);
+                    return true;
+                }
+            } catch (e) {
+                console.warn('[Notifications] SW showNotification error:', e);
+            }
+        }
+
+        // Phương án 2: Dùng new Notification() chuẩn (dành cho Desktop Chrome, Firefox, Safari)
+        if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+                new Notification(title, notifOptions);
+                return true;
+            } catch (e) {
+                console.warn('[Notifications] new Notification error:', e);
+            }
+        }
+
+        return false;
+    };
+
+    // 4. Helper chuyển đổi giờ ca trực thành giờ bắt đầu (HH:mm)
     const getShiftStartTime = (shiftType) => {
         const type = String(shiftType || '').toLowerCase();
         if (type.includes('1')) return { hour: 7, minute: 30 };
@@ -53,7 +103,7 @@ export function useNotifications() {
         return { hour: 7, minute: 30 };
     };
 
-    // Lên lịch nhắc nhở cho 1 ca trực cụ thể (trước 15 phút) qua Web Notification
+    // 5. Lên lịch nhắc nhở cho 1 ca trực cụ thể (trước 15 phút) qua Web Notification
     const scheduleShiftReminder = async (shift, memberName = '') => {
         if (!shift || !shift.date) return false;
         if (typeof window === 'undefined' || !('Notification' in window)) return false;
@@ -74,12 +124,11 @@ export function useNotifications() {
             const delay = notifyTime.getTime() - now.getTime();
 
             if (delay > 0 && delay < 24 * 60 * 60 * 1000) {
-                // Nếu trong vòng 24h, đặt setTimeout nhắc nhở trong phiên duyệt web
-                setTimeout(() => {
+                setTimeout(async () => {
                     if (Notification.permission === 'granted') {
-                        new Notification(`⏰ Nhắc nhở ca trực: ${shift.shiftType || 'Ca trực'}`, {
-                            body: `Chào ${memberName || 'bạn'}, bạn có lịch trực ${shift.shiftType || ''} lúc ${String(hour).padStart(2, '0')}h${String(minute).padStart(2, '0')}. Vui lòng chuẩn bị có mặt đúng giờ! 🚀`,
-                            icon: '/logo.jpg'
+                        await showWebNotification(`⏰ Nhắc nhở: ${shift.shiftType || 'Ca trực'}`, {
+                            body: `Chào ${memberName || 'bạn'}, ca trực ${shift.shiftType || ''} sắp bắt đầu lúc ${String(hour).padStart(2, '0')}h${String(minute).padStart(2, '0')}. Chuẩn bị có mặt bạn nhé! 🚀`,
+                            tag: `shift-${shift.id || shift.date}`
                         });
                     }
                 }, delay);
@@ -87,18 +136,12 @@ export function useNotifications() {
             }
             return false;
         } catch (e) {
-            console.warn('[Notifications] Error scheduling shift reminder:', e);
+            console.warn('[Notifications] Error scheduling reminder:', e);
             return false;
         }
     };
 
-    // Lên lịch nhắc nhở hạn nộp hồ sơ hoạt động
-    const scheduleActivityReminder = async (activity) => {
-        if (!activity || !activity.name || !activity.submitDeadlineDate) return false;
-        return true;
-    };
-
-    // Đồng bộ toàn bộ lịch nhắc nhở ca trực
+    // 6. Đồng bộ toàn bộ lịch nhắc nhở ca trực
     const syncAllUpcomingShiftReminders = async (userShifts = [], memberName = '') => {
         if (!Array.isArray(userShifts) || userShifts.length === 0) return;
         const todayStr = new Date().toISOString().split('T')[0];
@@ -106,36 +149,36 @@ export function useNotifications() {
         for (const shift of upcoming) {
             await scheduleShiftReminder(shift, memberName);
         }
+        showToast(`Đã đồng bộ nhắc nhở cho ${upcoming.length} ca trực sắp tới!`);
     };
 
-    // Gửi thông báo thử nghiệm
-    const sendTestNotification = async (title = 'Hệ Thống Quản Lý ĐVP', body = 'Thông báo Web hoạt động tốt! 🎉') => {
+    // 7. Gửi thông báo thử nghiệm
+    const sendTestNotification = async (title = '⏰ Hệ Thống Quản Lý ĐVP', body = 'Thông báo Web đang hoạt động rất tốt trên thiết bị của bạn! 🎉') => {
         if (typeof window !== 'undefined' && 'Notification' in window) {
-            if (Notification.permission === 'granted') {
-                new Notification(title, { body, icon: '/logo.jpg' });
-                notificationSuccess();
-                showToast('Đã gửi thông báo thử nghiệm thành công! 🚀');
-                return;
-            } else if (Notification.permission !== 'denied') {
-                const perm = await Notification.requestPermission();
-                if (perm === 'granted') {
-                    new Notification(title, { body, icon: '/logo.jpg' });
-                    notificationSuccess();
-                    showToast('Đã gửi thông báo thử nghiệm thành công! 🚀');
+            if (Notification.permission !== 'granted') {
+                const granted = await requestLocalPermissions();
+                if (!granted) {
+                    showToast(`🔔 [Xem trước]: ${title} - ${body}`, 'info');
                     return;
                 }
             }
+
+            const sent = await showWebNotification(title, { body });
+            if (sent) {
+                notificationSuccess();
+                showToast('Đã gửi thông báo thành công đến thiết bị của bạn! 🚀');
+                return;
+            }
         }
-        showToast(`🔔 ${title}: ${body}`);
+        showToast(`🔔 [Thông báo]: ${title} - ${body}`, 'info');
     };
 
     return {
         hasNotificationPermission,
-        initNotifications,
-        initPushNotifications,
+        checkPermissionState,
         requestLocalPermissions,
+        showWebNotification,
         scheduleShiftReminder,
-        scheduleActivityReminder,
         syncAllUpcomingShiftReminders,
         sendTestNotification
     };

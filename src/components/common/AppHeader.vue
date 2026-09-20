@@ -21,14 +21,11 @@
                 class="relative flex items-center justify-center bg-indigo-900/80 hover:bg-indigo-800 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold border border-indigo-700/50 transition cursor-pointer text-indigo-200 hover:text-white shadow-xs" 
                 title="Trung tâm Thông Báo &amp; Nhắc Ca">
           <i class="fa-solid fa-bell text-amber-300"></i>
-        </button>
-
-        <!-- Nút Kiểm Tra Cập Nhật Phiên Bản -->
-        <button @click="$emit('check-update')" 
-                class="flex items-center gap-1 bg-indigo-900/80 hover:bg-indigo-800 px-2 sm:px-2.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold border border-indigo-700/50 transition cursor-pointer text-indigo-200 hover:text-white shadow-xs" 
-                title="Kiểm tra Cập nhật Phiên bản">
-          <i class="fa-solid fa-arrows-rotate text-emerald-300" :class="{ 'animate-spin': isCheckingUpdate }"></i>
-          <span class="font-mono">v{{ currentAppVersion }}</span>
+          <!-- Badge đếm thông báo nếu có -->
+          <span v-if="unreadNotificationCount > 0"
+                class="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center border-2 border-indigo-950 animate-pulse shadow-sm">
+            {{ unreadNotificationCount > 9 ? '9+' : unreadNotificationCount }}
+          </span>
         </button>
 
         <!-- Chuyển Đổi Dark / Light Mode -->
@@ -74,12 +71,11 @@ defineProps({
   hasFirebaseConfig: Boolean,
   cloudStatusText: String,
   userRoleBadgeText: String,
-  currentAppVersion: {
-    type: String,
-    default: '1.2.0'
-  },
-  isCheckingUpdate: Boolean
+  unreadNotificationCount: {
+    type: Number,
+    default: 0
+  }
 });
 
-defineEmits(['toggle-theme', 'open-config', 'open-notifications', 'check-update', 'logout']);
+defineEmits(['toggle-theme', 'open-config', 'open-notifications', 'logout']);
 </script>
