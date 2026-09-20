@@ -38,7 +38,7 @@
         <AppNavigation :currentTab="currentTab" :tabs="tabs" @select-tab="currentTab = $event" />
 
         <!-- Main Content Tabs Body -->
-        <main class="flex-grow w-full px-3 sm:px-6 lg:px-8 py-4 pb-36 sm:pb-8 space-y-4">
+        <main ref="mainContentRef" class="flex-grow w-full px-3 sm:px-6 lg:px-8 py-4 pb-36 sm:pb-8 space-y-4">
           <!-- Global Filter Bar (Month & Week selection) -->
           <div v-if="['entry', 'register', 'dashboard', 'history', 'my-shifts'].includes(currentTab)"
                class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 no-print">
@@ -317,6 +317,7 @@ import { useNetwork } from './composables/useNetwork.js';
 import { useNotifications } from './composables/useNotifications.js';
 import * as XLSX from 'xlsx';
 import { exportExcelFile } from './utils/fileExport.js';
+import { useAnime } from './composables/useAnime.js';
 
 // Components
 import Toast from './components/common/Toast.vue';
@@ -348,12 +349,14 @@ import NotificationModal from './components/modals/NotificationModal.vue';
 const currentTab = ref('activities');
 const showMobileMenu = ref(false);
 const showNotificationModal = ref(false);
+const mainContentRef = ref(null);
 
 const { toast, showToast } = useToast();
 const { isDarkMode, applyTheme, toggleTheme } = useTheme();
 const { impactLight, notificationWarning } = useHaptics();
 const { isOnline, isCheckingNetwork, initNetworkListener, checkNetworkStatus } = useNetwork();
 const { initPushNotifications, syncAllUpcomingShiftReminders } = useNotifications();
+const { animateTabEnter } = useAnime();
 
 // Composables wiring
 const authModule = useAuth(() => members.value);
@@ -644,6 +647,14 @@ watch(
   },
   { deep: true }
 );
+
+watch(currentTab, () => {
+  nextTick(() => {
+    if (mainContentRef.value) {
+      animateTabEnter(mainContentRef.value);
+    }
+  });
+});
 
 onMounted(() => {
   applyTheme();

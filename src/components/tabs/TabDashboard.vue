@@ -2,30 +2,30 @@
   <div class="space-y-4 sm:space-y-6">
     <!-- Stat Cards Overview -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+      <div class="dashboard-card bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{{ currentUserRole === 'admin' ? 'Tổng Ca Trực Toàn Đội' : 'Ca Trực Cá Nhân' }}</p>
-          <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ currentUserRole === 'admin' ? filteredShifts.length : personalShiftsCount }} <span class="text-xs font-medium text-slate-400">ca</span></p>
+          <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ displayStats.shifts }} <span class="text-xs font-medium text-slate-400">ca</span></p>
         </div>
         <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300 flex items-center justify-center text-xl font-bold border border-indigo-100 dark:border-indigo-900">
           <i class="fa-solid fa-clipboard-list"></i>
         </div>
       </div>
 
-      <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+      <div class="dashboard-card bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{{ currentUserRole === 'admin' ? 'Tổng Ca Đăng Ký Toàn Đội' : 'Ca Đăng Ký Cá Nhân' }}</p>
-          <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ currentUserRole === 'admin' ? registrations.length : personalRegistrationsCount }} <span class="text-xs font-medium text-slate-400">ca</span></p>
+          <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ displayStats.registrations }} <span class="text-xs font-medium text-slate-400">ca</span></p>
         </div>
         <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-950 dark:text-sky-300 flex items-center justify-center text-xl font-bold border border-sky-100 dark:border-sky-900">
           <i class="fa-solid fa-calendar-check"></i>
         </div>
       </div>
 
-      <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+      <div class="dashboard-card bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{{ currentUserRole === 'admin' ? 'Tỷ Lệ Đạt Chỉ Tiêu' : 'Tiến Độ Cá Nhân' }}</p>
-          <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ currentUserRole === 'admin' ? targetPassRate + '%' : (personalProgressPercent + '%') }}</p>
+          <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ displayStats.passRate }}%</p>
           <p class="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5" v-if="currentUserRole === 'admin'">{{ membersPassingTargetCount }}/{{ members.length }} thành viên đạt chỉ tiêu</p>
         </div>
         <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center text-xl font-bold border border-emerald-100 dark:border-emerald-900">
@@ -33,10 +33,10 @@
         </div>
       </div>
 
-      <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+      <div class="dashboard-card bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{{ currentUserRole === 'admin' ? 'Đơn Xin Nghỉ Phép Toàn Đội' : 'Đơn Nghỉ Phép Cá Nhân' }}</p>
-          <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ currentUserRole === 'admin' ? leaveRequests.length : personalLeaveRequests.length }} <span class="text-xs font-medium text-slate-400">đơn</span></p>
+          <p class="text-2xl font-black text-slate-800 dark:text-white mt-1">{{ displayStats.leave }} <span class="text-xs font-medium text-slate-400">đơn</span></p>
         </div>
         <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-300 flex items-center justify-center text-xl font-bold border border-amber-100 dark:border-amber-900">
           <i class="fa-solid fa-envelope-open-text"></i>
@@ -166,8 +166,18 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick, reactive } from 'vue';
 import Chart from 'chart.js/auto';
+import { useAnime } from '../../composables/useAnime.js';
+
+const { animateStagger, animateCounter } = useAnime();
+
+const displayStats = reactive({
+  shifts: 0,
+  registrations: 0,
+  passRate: 0,
+  leave: 0
+});
 
 const props = defineProps([
   'currentTab',
@@ -440,8 +450,22 @@ const renderCharts = () => {
   });
 };
 
+// Target stats calculations for animation
+const targetShifts = computed(() => props.currentUserRole === 'admin' ? (props.filteredShifts?.length || 0) : (props.personalShiftsCount || 0));
+const targetRegs = computed(() => props.currentUserRole === 'admin' ? (props.registrations?.length || 0) : (props.personalRegistrationsCount || 0));
+const targetRate = computed(() => props.currentUserRole === 'admin' ? (Number(props.targetPassRate) || 0) : (Number(props.personalProgressPercent) || 0));
+const targetLeave = computed(() => props.currentUserRole === 'admin' ? (props.leaveRequests?.length || 0) : (props.personalLeaveRequests?.length || 0));
+
+watch(targetShifts, (val) => animateCounter(displayStats, 'shifts', val), { immediate: true });
+watch(targetRegs, (val) => animateCounter(displayStats, 'registrations', val), { immediate: true });
+watch(targetRate, (val) => animateCounter(displayStats, 'passRate', val), { immediate: true });
+watch(targetLeave, (val) => animateCounter(displayStats, 'leave', val), { immediate: true });
+
 onMounted(() => {
   renderCharts();
+  nextTick(() => {
+    animateStagger('.dashboard-card', { duration: 450, staggerDelay: 60 });
+  });
 });
 
 onBeforeUnmount(() => {
@@ -461,6 +485,7 @@ watch(
     if (props.currentTab === 'dashboard') {
       nextTick(() => {
         setTimeout(renderCharts, 50);
+        animateStagger('.dashboard-card', { duration: 400, staggerDelay: 50 });
       });
     }
   },

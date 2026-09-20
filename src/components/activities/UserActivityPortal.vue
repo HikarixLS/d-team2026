@@ -7,7 +7,7 @@
           <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-400/20 text-sky-300 text-xs font-black mb-2 border border-sky-400/30">
             <i class="fa-solid fa-user-graduate"></i> Không Gian Thành Viên
           </div>
-          <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Cổng Hoạt Động Cá Nhân</h2>
+          <h2 ref="heroTitleRef" class="text-xl sm:text-2xl font-black text-white tracking-tight">Cổng Hoạt Động Cá Nhân</h2>
           <p class="text-xs sm:text-sm text-sky-200 mt-1">
             Tổng hợp hoạt động tháng {{ selectedMonthText }} • Bấm điểm danh đúng ngày hoặc gửi đơn xin nghỉ hoạt động.
           </p>
@@ -40,7 +40,7 @@
         </div>
         <div>
           <div class="text-2xl font-black text-slate-800 dark:text-white leading-none">
-            {{ monthlyActivities.length }}
+            {{ displayCounts.monthly }}
           </div>
           <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
             Hoạt Động Tháng
@@ -55,7 +55,7 @@
         </div>
         <div>
           <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-none">
-            {{ userAttendedCount }}
+            {{ displayCounts.attended }}
           </div>
           <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
             Đã Tham Gia
@@ -70,7 +70,7 @@
         </div>
         <div>
           <div class="text-2xl font-black text-amber-600 dark:text-amber-400 leading-none">
-            {{ userLeaveCount }}
+            {{ displayCounts.leave }}
           </div>
           <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
             Đã Xin Nghỉ
@@ -85,7 +85,7 @@
         </div>
         <div>
           <div class="text-2xl font-black text-sky-600 dark:text-sky-400 leading-none">
-            {{ participationRate }}%
+            {{ displayCounts.rate }}%
           </div>
           <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
             Tỷ Lệ Chuyên Cần
@@ -100,7 +100,7 @@
         </div>
         <div>
           <div class="text-2xl font-black text-teal-600 dark:text-teal-400 leading-none">
-            {{ totalMyRegsCount }}
+            {{ displayCounts.regs }}
           </div>
           <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
             Ca Đã Đăng Ký
@@ -137,7 +137,7 @@
       <!-- Activities Grid -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="act in monthlyActivities" :key="act.id"
-             class="bg-slate-50/70 dark:bg-slate-800/40 rounded-3xl p-5 border border-slate-200/70 dark:border-slate-800 hover:border-indigo-300 transition flex flex-col justify-between space-y-4">
+             class="activity-card bg-slate-50/70 dark:bg-slate-800/40 rounded-3xl p-5 border border-slate-200/70 dark:border-slate-800 hover:border-indigo-300 transition flex flex-col justify-between space-y-4">
           <!-- Top Info -->
           <div>
             <div class="flex items-center justify-between mb-2">
@@ -308,7 +308,7 @@
 
     <!-- Modal Chụp Hình / Tải Ảnh Minh Chứng Thẻ SV & Google Drive Sync -->
     <div v-if="showCheckInProofModal && selectedActForCheckIn" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
-      <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 max-w-lg w-full shadow-2xl space-y-4 my-auto">
+      <div ref="proofModalRef" class="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 max-w-lg w-full shadow-2xl space-y-4 my-auto">
         <!-- Header -->
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div class="flex items-center gap-2.5">
@@ -448,8 +448,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue';
+import { ref, computed, onBeforeUnmount, onMounted, watch, nextTick, reactive } from 'vue';
 import { downloadBase64File } from '../../utils/fileExport.js';
+import { useAnime } from '../../composables/useAnime.js';
+
+const { animateStagger, animateCounter, animateModalEnter, animateScramble } = useAnime();
+
+const heroTitleRef = ref(null);
+const proofModalRef = ref(null);
+
+const displayCounts = reactive({
+  monthly: 0,
+  attended: 0,
+  leave: 0,
+  rate: 0,
+  regs: 0
+});
 
 const props = defineProps({
   activities: Array,
@@ -785,4 +799,34 @@ const getCheckInButtonTitle = (act) => {
   if (act.date > todayDate.value) return `Chưa đến ngày diễn ra (${props.formatDate(act.date)}). Không thể điểm danh trước!`;
   return `Đã quá hạn điểm danh ngày ${props.formatDate(act.date)}. Vui lòng liên hệ Admin để điểm danh bù.`;
 };
+
+// Anime.js v4 Reactivity & Lifecycle Hooks
+watch(() => monthlyActivities.value.length, (newVal) => animateCounter(displayCounts, 'monthly', newVal), { immediate: true });
+watch(userAttendedCount, (newVal) => animateCounter(displayCounts, 'attended', newVal), { immediate: true });
+watch(userLeaveCount, (newVal) => animateCounter(displayCounts, 'leave', newVal), { immediate: true });
+watch(participationRate, (newVal) => animateCounter(displayCounts, 'rate', newVal), { immediate: true });
+watch(totalMyRegsCount, (newVal) => animateCounter(displayCounts, 'regs', newVal), { immediate: true });
+
+watch(monthlyActivities, () => {
+  nextTick(() => {
+    animateStagger('.activity-card', { duration: 400, staggerDelay: 45 });
+  });
+}, { deep: true });
+
+watch(showCheckInProofModal, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      if (proofModalRef.value) animateModalEnter(proofModalRef.value);
+    });
+  }
+});
+
+onMounted(() => {
+  if (heroTitleRef.value) {
+    animateScramble(heroTitleRef.value, 'Cổng Hoạt Động Cá Nhân', { duration: 1100 });
+  }
+  nextTick(() => {
+    animateStagger('.activity-card', { duration: 450, staggerDelay: 50 });
+  });
+});
 </script>

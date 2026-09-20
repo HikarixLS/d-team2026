@@ -1,7 +1,7 @@
 <template>
   <Transition name="modal-fade">
     <div v-if="show" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800 my-auto max-h-[90vh] overflow-y-auto text-slate-800 dark:text-slate-100 relative">
+      <div ref="modalCardRef" class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800 my-auto max-h-[90vh] overflow-y-auto text-slate-800 dark:text-slate-100 relative">
         
         <!-- Header -->
         <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -38,7 +38,7 @@
           <!-- Alert Items List -->
           <div v-if="activeAlerts.length > 0" class="space-y-2 max-h-56 overflow-y-auto pr-1">
             <div v-for="(alert, idx) in activeAlerts" :key="idx"
-                 class="p-3 rounded-2xl border transition flex items-start justify-between gap-3 text-xs"
+                 class="alert-item p-3 rounded-2xl border transition flex items-start justify-between gap-3 text-xs"
                  :class="alert.bgClass">
               <div class="flex items-start gap-2.5">
                 <div class="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5" :class="alert.iconBgClass">
@@ -143,8 +143,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useNotifications } from '../../composables/useNotifications.js';
+import { useAnime } from '../../composables/useAnime.js';
+
+const { animateModalEnter, animateStagger } = useAnime();
+const modalCardRef = ref(null);
 
 const props = defineProps({
   show: Boolean,
@@ -193,6 +197,17 @@ const checkCurrentPermission = () => {
 
 onMounted(() => {
   checkCurrentPermission();
+});
+
+watch(() => props.show, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      if (modalCardRef.value) {
+        animateModalEnter(modalCardRef.value);
+      }
+      animateStagger('.alert-item', { duration: 400, staggerDelay: 60 });
+    });
+  }
 });
 
 const handleRequestPermission = async () => {
