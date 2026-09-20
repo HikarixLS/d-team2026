@@ -38,7 +38,7 @@
         <AppNavigation :currentTab="currentTab" :tabs="tabs" @select-tab="currentTab = $event" />
 
         <!-- Main Content Tabs Body -->
-        <main class="flex-grow w-full px-3 sm:px-6 lg:px-8 py-4 pb-24 sm:pb-6 space-y-4">
+        <main class="flex-grow w-full px-3 sm:px-6 lg:px-8 py-4 pb-36 sm:pb-8 space-y-4">
           <!-- Global Filter Bar (Month & Week selection) -->
           <div v-if="['entry', 'register', 'dashboard', 'history', 'my-shifts'].includes(currentTab)"
                class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 no-print">
