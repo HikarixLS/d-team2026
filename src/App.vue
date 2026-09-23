@@ -592,8 +592,8 @@ watch(
   { immediate: true, deep: true }
 );
 
-const handleAdminCheckInActivity = ({ activityId, memberId }) => {
-  checkInActivity(activityId, memberId);
+const handleAdminCheckInActivity = ({ activityId, memberId, shiftInfo }) => {
+  checkInActivity(activityId, memberId, null, null, null, shiftInfo);
 };
 
 const handleUserActivityCheckIn = (payload) => {

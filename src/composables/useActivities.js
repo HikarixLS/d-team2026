@@ -711,7 +711,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
     };
 
     // Check-in Activity with strict date permission, proof image, formatted timestamp & Admin check-in on behalf
-    const checkInActivity = async (activityId, targetMemberId = null, proofImage = null, proofFileName = null, proofFolderDate = null) => {
+    const checkInActivity = async (activityId, targetMemberId = null, proofImage = null, proofFileName = null, proofFolderDate = null, shiftInfo = null) => {
         const memberId = targetMemberId || (loggedInMemberIdRef ? loggedInMemberIdRef.value : '');
         const isAdminOperation = Boolean(targetMemberId) || (currentUserRoleRef && (currentUserRoleRef.value === 'admin' || currentUserRoleRef === 'admin'));
 
@@ -749,6 +749,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         );
 
         const formattedNow = formatCheckInTime(new Date());
+        const shiftDesc = shiftInfo?.shiftType ? ` (${shiftInfo.shiftType}${shiftInfo.date ? ' - ' + formatDate(shiftInfo.date) : ''})` : '';
 
         if (existing) {
             if (existing.status === 'present' && !isAdminOperation) {
@@ -758,6 +759,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             existing.timestamp = new Date().toISOString();
             existing.formattedTime = formattedNow;
             existing.leaveReason = '';
+            if (shiftInfo?.shiftType) existing.shiftType = shiftInfo.shiftType;
+            if (shiftInfo?.date) existing.shiftDate = shiftInfo.date;
             if (proofImage) existing.proofImage = proofImage;
             if (proofFileName) existing.proofFileName = proofFileName;
             if (proofFolderDate) existing.proofFolderDate = proofFolderDate;
@@ -768,7 +771,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
                 uploadProofToGoogleDrive(proofImage, proofFileName, proofFolderDate, act.name);
             }
             return showToast(isAdminOperation 
-                ? `Quản trị viên đã điểm danh hộ/bù cho "${memberName}" [${memberId}]! 👑`
+                ? `Quản trị viên đã điểm danh hộ/bù cho "${memberName}" [${memberId}]${shiftDesc}! 👑`
                 : `Đã chuyển trạng thái sang: Điểm Danh thành công cho "${memberName}" lúc ${formattedNow}! ✅`
             );
         }
@@ -778,6 +781,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             activityId,
             memberId,
             memberName,
+            shiftType: shiftInfo?.shiftType || '',
+            shiftDate: shiftInfo?.date || '',
             timestamp: new Date().toISOString(),
             status: 'present',
             leaveReason: '',
@@ -795,7 +800,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         }
 
         showToast(isAdminOperation 
-            ? `Quản trị viên đã điểm danh hộ/bù thành công cho "${memberName}"! 👑`
+            ? `Quản trị viên đã điểm danh hộ/bù thành công cho "${memberName}"${shiftDesc}! 👑`
             : `Điểm danh hoạt động thành công! 🎉 (${memberName})`
         );
     };
