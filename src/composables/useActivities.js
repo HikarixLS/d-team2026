@@ -805,7 +805,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         );
     };
 
-    const requestLeaveActivity = async (activityId, leaveReason) => {
+    const requestLeaveActivity = async (activityId, leaveReason, leaveShifts = []) => {
         const memberId = loggedInMemberIdRef ? loggedInMemberIdRef.value : '';
         if (!memberId) {
             return showToast('Bạn chưa đăng nhập MSSV!', 'error');
@@ -824,6 +824,7 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
         if (existing) {
             existing.status = 'leave';
             existing.leaveReason = leaveReason.trim();
+            existing.leaveShifts = leaveShifts;
             existing.timestamp = new Date().toISOString();
             persistLocal();
             await syncCheckInToCloud(existing);
@@ -837,7 +838,8 @@ export function useActivities(membersRef, loggedInMemberIdRef, currentUserRoleRe
             memberName,
             timestamp: new Date().toISOString(),
             status: 'leave',
-            leaveReason: leaveReason.trim()
+            leaveReason: leaveReason.trim(),
+            leaveShifts: leaveShifts
         };
 
         activityCheckIns.value.unshift(newChk);

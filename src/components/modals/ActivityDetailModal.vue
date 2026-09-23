@@ -22,7 +22,9 @@
 
         <!-- Stats Quick Bar -->
         <div class="grid grid-cols-2 gap-3 py-2.5 my-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl px-4 border border-slate-100 dark:border-slate-800">
-          <div class="flex items-center gap-3">
+          <div @click="activeListTab = activeListTab === 'present' ? 'all' : 'present'"
+               class="flex items-center gap-3 cursor-pointer p-1.5 rounded-xl transition hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30"
+               :class="activeListTab === 'present' ? 'ring-2 ring-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/50' : ''">
             <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-lg">
               <i class="fa-solid fa-user-check"></i>
             </div>
@@ -31,7 +33,9 @@
               <div class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Đã điểm danh</div>
             </div>
           </div>
-          <div class="flex items-center gap-3">
+          <div @click="activeListTab = activeListTab === 'leave' ? 'all' : 'leave'"
+               class="flex items-center gap-3 cursor-pointer p-1.5 rounded-xl transition hover:bg-amber-50/50 dark:hover:bg-amber-950/30"
+               :class="activeListTab === 'leave' ? 'ring-2 ring-amber-500 bg-amber-50/80 dark:bg-amber-950/50' : ''">
             <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-lg">
               <i class="fa-solid fa-user-xmark"></i>
             </div>
@@ -104,6 +108,10 @@
                         class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
                     {{ getMemberRegisteredShiftsCount(m.id) }} ca đăng ký
                   </span>
+                  <span v-if="isMemberAnyLeave(m.id)"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300">
+                    ⚠️ Có ca vắng
+                  </span>
                   <span v-if="isMemberAnyCheckedIn(m.id)"
                         class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                     ✓ Đã điểm danh
@@ -149,7 +157,7 @@
               </div>
 
               <!-- Case A: Member registered for specific shifts -->
-              <div v-if="memberRegisteredShifts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div v-if="memberRegisteredShifts.length > 0" class="grid grid-cols-2 gap-2">
                 <div v-for="s in memberRegisteredShifts" :key="s.id"
                      @click="selectedShift = s"
                      class="p-2.5 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between"
@@ -166,6 +174,12 @@
                     </div>
                     <div v-if="s.notes" class="text-[10px] text-slate-400 italic mt-0.5">
                       "{{ s.notes }}"
+                    </div>
+                    <!-- Badge if member was absent / requested leave for this shift -->
+                    <div v-if="isMemberShiftAbsent(selectedAdminMember.id, s)" class="mt-1">
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        ⚠️ Đã xin nghỉ ca này
+                      </span>
                     </div>
                   </div>
 
@@ -203,10 +217,34 @@
           </div>
         </div>
 
-        <!-- Detail Lists Tabs -->
+        <!-- Detail Lists Filter Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold shrink-0 mb-2 border-b border-slate-100 dark:border-slate-800">
+          <button type="button" @click="activeListTab = 'all'"
+                  class="px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0"
+                  :class="activeListTab === 'all' ? 'bg-indigo-600 text-white shadow-2xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'">
+            Tất Cả
+          </button>
+          <button type="button" @click="activeListTab = 'present'"
+                  class="px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0"
+                  :class="activeListTab === 'present' ? 'bg-emerald-600 text-white shadow-2xs font-black' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'">
+            ✓ Có Mặt ({{ stats?.presentList?.length || 0 }})
+          </button>
+          <button type="button" @click="activeListTab = 'leave'"
+                  class="px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0"
+                  :class="activeListTab === 'leave' ? 'bg-amber-500 text-slate-950 shadow-2xs font-black' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100'">
+            ⚠️ Xin Nghỉ ({{ stats?.leaveList?.length || 0 }})
+          </button>
+          <button type="button" @click="activeListTab = 'regs'"
+                  class="px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0"
+                  :class="activeListTab === 'regs' ? 'bg-sky-600 text-white shadow-2xs font-black' : 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 hover:bg-sky-100'">
+            🗓️ Đăng Ký ({{ stats?.regsList?.length || 0 }})
+          </button>
+        </div>
+
+        <!-- Detail Lists Content -->
         <div class="flex-grow overflow-y-auto pr-1 space-y-5 sm:space-y-6">
           <!-- Present List -->
-          <div>
+          <div v-if="activeListTab === 'all' || activeListTab === 'present'">
             <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
               <i class="fa-solid fa-circle-check text-emerald-500"></i> Danh sách thành viên điểm danh ({{ stats?.presentList?.length || 0 }})
             </h4>
@@ -252,8 +290,8 @@
             </div>
           </div>
 
-          <!-- Leave Requests List -->
-          <div>
+          <!-- Leave Requests List (Có hiển thị các ca vắng chia 2 cột) -->
+          <div v-if="activeListTab === 'all' || activeListTab === 'leave'">
             <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <i class="fa-solid fa-envelope-open-text text-amber-500"></i> Danh sách xin nghỉ ({{ stats?.leaveList?.length || 0 }})
             </h4>
@@ -263,10 +301,10 @@
             </div>
 
             <div v-else class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
-              <div v-for="item in stats.leaveList" :key="item.id" class="p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <div v-for="item in stats.leaveList" :key="item.id" class="p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 space-y-2">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 font-black text-xs flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 font-black text-xs flex items-center justify-center shrink-0">
                       {{ item.memberName ? item.memberName.charAt(0).toUpperCase() : 'U' }}
                     </div>
                     <div>
@@ -281,15 +319,50 @@
                     <div class="text-[10px] text-slate-400 mt-0.5">{{ formatTime(item.timestamp) }}</div>
                   </div>
                 </div>
-                <div v-if="item.leaveReason" class="mt-2 text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-2 rounded-xl border border-amber-200/50">
+
+                <div v-if="item.leaveReason" class="text-xs bg-amber-50/70 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-2 rounded-xl border border-amber-200/50">
                   <span class="font-bold">Lý do:</span> {{ item.leaveReason }}
+                </div>
+
+                <!-- Những ca vắng của thành viên chia làm 2 cột -->
+                <div v-if="getMemberAbsentShifts(item).length > 0" class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <div class="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 mb-1.5 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5">
+                      <i class="fa-solid fa-calendar-xmark text-amber-500"></i> Ca vắng / xin nghỉ ({{ getMemberAbsentShifts(item).length }} ca):
+                    </span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300">
+                      Chia 2 cột
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <div v-for="(shift, sIdx) in getMemberAbsentShifts(item)" :key="sIdx"
+                         class="p-2 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 flex items-center justify-between gap-1 shadow-2xs">
+                      <div class="min-w-0 flex-1">
+                        <div class="font-black text-amber-950 dark:text-amber-200 text-xs flex items-center gap-1 truncate">
+                          <i class="fa-solid fa-clock text-amber-600 text-[10px] shrink-0"></i>
+                          <span class="truncate">{{ shift.shiftType }}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-semibold flex items-center gap-1">
+                          <i class="fa-solid fa-calendar-day text-[9px] text-amber-500 shrink-0"></i>
+                          <span>{{ shift.formattedDate || (formatDate ? formatDate(shift.date) : shift.date) }}</span>
+                        </div>
+                        <div v-if="shift.notes" class="text-[9px] text-slate-400 italic mt-0.5 truncate">
+                          "{{ shift.notes }}"
+                        </div>
+                      </div>
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 shrink-0">
+                        Vắng
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Registered Shifts List -->
-          <div>
+          <div v-if="activeListTab === 'all' || activeListTab === 'regs'">
             <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <i class="fa-solid fa-clipboard-check text-sky-500"></i> Danh sách thành viên đăng ký theo Ngày/Ca ({{ stats?.regsList?.length || 0 }})
             </h4>
@@ -309,6 +382,9 @@
                       <span>{{ item.memberName }}</span>
                       <span v-if="isShiftCheckedIn(item)" class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                         ✓ Đã Có Mặt
+                      </span>
+                      <span v-else-if="isMemberShiftAbsent(item.memberId, item)" class="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        ⚠️ Đã Xin Nghỉ
                       </span>
                     </div>
                     <div class="text-[11px] text-slate-400 font-medium">MSSV: {{ item.memberId }}</div>
@@ -409,12 +485,120 @@ const props = defineProps({
   activity: Object,
   stats: Object,
   members: Array,
+  leaveRequests: {
+    type: Array,
+    default: () => []
+  },
+  activityRegistrations: {
+    type: Array,
+    default: () => []
+  },
   formatDate: Function
 });
 
 const emit = defineEmits(['close', 'admin-checkin', 'export-excel']);
 
 const googleDriveFolderUrl = 'https://drive.google.com/drive/folders/1zbUHwDzxXVfYK_kTIdQvVZXYJ2sVMBsd';
+
+const activeListTab = ref('all');
+
+// Helper to get all absent shifts for a member who has leave request / marked absent
+const getMemberAbsentShifts = (item) => {
+  if (!item) return [];
+  const mId = String(item.memberId || '').trim().toUpperCase();
+  const actId = props.activity?.id;
+
+  // 1. Direct leaveShifts on the check-in record
+  if (Array.isArray(item.leaveShifts) && item.leaveShifts.length > 0) {
+    return item.leaveShifts;
+  }
+
+  // 2. Direct shiftType and shiftDate on item
+  if (item.shiftType && item.shiftType !== 'leave') {
+    return [{
+      shiftType: item.shiftType,
+      date: item.shiftDate || props.activity?.date,
+      formattedDate: props.formatDate ? props.formatDate(item.shiftDate || props.activity?.date) : ''
+    }];
+  }
+
+  // 3. Search in props.leaveRequests
+  const lr = (props.leaveRequests || []).find(l => {
+    const isActMatch = (actId && l.activityId === actId) || (props.activity?.name && l.activityName === props.activity?.name);
+    const isMemMatch = String(l.memberId || '').trim().toUpperCase() === mId;
+    return isActMatch && isMemMatch;
+  });
+
+  if (lr) {
+    if (Array.isArray(lr.selectedShifts) && lr.selectedShifts.length > 0) {
+      return lr.selectedShifts;
+    }
+    if (lr.shiftType) {
+      const match = lr.shiftType.match(/\((.*?)\)/);
+      const content = match ? match[1] : lr.shiftType;
+      const parts = content.split(/,\s*/);
+      const parsed = [];
+      for (const p of parts) {
+        const cleaned = p.trim();
+        if (cleaned && !cleaned.toLowerCase().startsWith('hoạt động:')) {
+          const dateMatch = cleaned.match(/ngày\s+(\d{1,2}\/\d{1,2}\/\d{4})/i) || cleaned.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+          const shiftName = cleaned.replace(/ngày\s+\d{1,2}\/\d{1,2}\/\d{4}/i, '').replace(/\(\d{1,2}\/\d{1,2}\/\d{4}\)/, '').trim();
+          parsed.push({
+            shiftType: shiftName || cleaned,
+            date: lr.shiftDate || props.activity?.date,
+            formattedDate: dateMatch ? dateMatch[1] : (props.formatDate ? props.formatDate(lr.shiftDate || props.activity?.date) : '')
+          });
+        }
+      }
+      if (parsed.length > 0) return parsed;
+    }
+  }
+
+  // 4. Check if member has registrations in activityRegistrations / stats.regsList
+  const allRegs = (props.activityRegistrations && props.activityRegistrations.length > 0)
+    ? props.activityRegistrations
+    : (props.stats?.regsList || []);
+  const regs = allRegs.filter(
+    r => (actId && r.activityId === actId) && String(r.memberId || '').trim().toUpperCase() === mId
+  );
+  if (regs.length > 0) {
+    return regs.map(r => ({
+      id: r.id,
+      shiftType: r.shiftType,
+      date: r.date,
+      notes: r.notes,
+      formattedDate: props.formatDate ? props.formatDate(r.date) : r.date
+    }));
+  }
+
+  // 5. Fallback: Toàn bộ hoạt động
+  return [{
+    shiftType: 'Toàn bộ ca hoạt động',
+    date: props.activity?.date,
+    formattedDate: props.formatDate ? props.formatDate(props.activity?.date) : props.activity?.date
+  }];
+};
+
+// Check if member has any leave
+const isMemberAnyLeave = (memberId) => {
+  if (!props.stats?.leaveList || !memberId) return false;
+  const mId = String(memberId).trim().toUpperCase();
+  return props.stats.leaveList.some(l => String(l.memberId).trim().toUpperCase() === mId);
+};
+
+// Check if a specific shift of a member was requested leave for
+const isMemberShiftAbsent = (memberId, shift) => {
+  if (!memberId || !shift) return false;
+  const mId = String(memberId).trim().toUpperCase();
+  const leaveItem = (props.stats?.leaveList || []).find(l => String(l.memberId).trim().toUpperCase() === mId);
+  if (!leaveItem) return false;
+  const absentShifts = getMemberAbsentShifts(leaveItem);
+  return absentShifts.some(as => {
+    if (as.id && shift.id && as.id === shift.id) return true;
+    if (as.shiftType && shift.shiftType && as.shiftType.trim().toLowerCase() === shift.shiftType.trim().toLowerCase()) return true;
+    return false;
+  });
+};
 
 // Search & Member Selection State for Admin Check-in
 const memberSearchQuery = ref('');

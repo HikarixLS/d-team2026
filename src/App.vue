@@ -273,6 +273,8 @@
                          :activity="selectedActivityForDetail"
                          :stats="selectedActivityForDetail ? getActivityStats(selectedActivityForDetail.id) : {}"
                          :members="members"
+                         :leaveRequests="leaveRequests"
+                         :activityRegistrations="activityRegistrations"
                          :formatDate="formatDate"
                          @close="showActivityDetailModal = false"
                          @admin-checkin="handleAdminCheckInActivity"
@@ -441,7 +443,7 @@ const handleConfirmLeaveActivity = async (payload) => {
     const selectedShiftIds = (typeof payload === 'object' && Array.isArray(payload.selectedShiftIds)) ? payload.selectedShiftIds : [];
     const selectedShifts = (typeof payload === 'object' && Array.isArray(payload.selectedShifts)) ? payload.selectedShifts : [];
 
-    await requestLeaveActivity(act.id, reason);
+    await requestLeaveActivity(act.id, reason, selectedShifts);
 
     const memberId = loggedInMemberId.value || '';
     const canonicalId = String(memberId).trim().toUpperCase();
@@ -463,6 +465,7 @@ const handleConfirmLeaveActivity = async (payload) => {
       activityName: act.name,
       isActivity: true,
       selectedShiftIds: selectedShiftIds,
+      selectedShifts: selectedShifts,
       memberId: canonicalId,
       memberName: memberName,
       department: memberDept,
