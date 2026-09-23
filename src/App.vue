@@ -280,6 +280,8 @@
 
     <LeaveActivityModal :show="showLeaveActivityModal"
                         :activity="selectedActivityForLeave"
+                        :registeredShifts="userRegisteredShiftsForLeave"
+                        :formatDate="formatDate"
                         @close="showLeaveActivityModal = false"
                         @confirm="handleConfirmLeaveActivity" />
 
@@ -423,9 +425,22 @@ const openLeaveActivityModal = (act) => {
   showLeaveActivityModal.value = true;
 };
 
-const handleConfirmLeaveActivity = async (reason) => {
+const userRegisteredShiftsForLeave = computed(() => {
+  if (!selectedActivityForLeave.value || !activityRegistrations.value || !loggedInMemberId.value) return [];
+  const myId = String(loggedInMemberId.value).trim().toUpperCase();
+  const actId = selectedActivityForLeave.value.id;
+  return activityRegistrations.value.filter(
+    r => r.activityId === actId && String(r.memberId).trim().toUpperCase() === myId
+  );
+});
+
+const handleConfirmLeaveActivity = async (payload) => {
   if (selectedActivityForLeave.value) {
     const act = selectedActivityForLeave.value;
+    const reason = typeof payload === 'object' ? payload.reason : payload;
+    const selectedShiftIds = (typeof payload === 'object' && Array.isArray(payload.selectedShiftIds)) ? payload.selectedShiftIds : [];
+    const selectedShifts = (typeof payload === 'object' && Array.isArray(payload.selectedShifts)) ? payload.selectedShifts : [];
+
     await requestLeaveActivity(act.id, reason);
 
     const memberId = loggedInMemberId.value || '';
@@ -434,6 +449,12 @@ const handleConfirmLeaveActivity = async (reason) => {
     const memberName = memberObj ? memberObj.name : memberId;
     const memberDept = memberObj ? (memberObj.department || '') : '';
 
+    let shiftDesc = `Hoạt động: ${act.name}`;
+    if (selectedShifts.length > 0) {
+      const shiftDetails = selectedShifts.map(s => `${s.shiftType} ngày ${formatDate(s.date)}`).join(', ');
+      shiftDesc = `Hoạt động: ${act.name} (${shiftDetails})`;
+    }
+
     const newId = 'l_act_' + act.id + '_' + canonicalId;
     const leaveData = {
       id: newId,
@@ -441,11 +462,12 @@ const handleConfirmLeaveActivity = async (reason) => {
       activityId: act.id,
       activityName: act.name,
       isActivity: true,
+      selectedShiftIds: selectedShiftIds,
       memberId: canonicalId,
       memberName: memberName,
       department: memberDept,
-      shiftDate: act.date || new Date().toISOString().slice(0, 10),
-      shiftType: `Hoạt động: ${act.name}`,
+      shiftDate: (selectedShifts.length > 0 ? selectedShifts[0].date : act.date) || new Date().toISOString().slice(0, 10),
+      shiftType: shiftDesc,
       reason: reason.trim(),
       status: 'Chờ duyệt',
       createdAt: new Date().toISOString()
@@ -489,6 +511,22 @@ const handleUpdateLeaveStatus = async (l, newStatus) => {
             const { doc, setDoc } = window.FirebaseSDK;
             await setDoc(doc(window.firebaseDb, 'activity_checkins', chk.id), chk, { merge: true });
           } catch (e) {}
+        }
+
+        // Also delete approved leave shifts from activityRegistrations
+        if (l.selectedShiftIds && Array.isArray(l.selectedShiftIds) && l.selectedShiftIds.length > 0) {
+          activityRegistrations.value = activityRegistrations.value.filter(
+            r => !l.selectedShiftIds.includes(r.id)
+          );
+          try { localStorage.setItem('local_activity_registrations', JSON.stringify(activityRegistrations.value)); } catch (e) {}
+          if (window.FirebaseSDK && window.firebaseDb) {
+            try {
+              const { doc, deleteDoc } = window.FirebaseSDK;
+              for (const rId of l.selectedShiftIds) {
+                deleteDoc(doc(window.firebaseDb, 'activity_registrations', rId)).catch(() => {});
+              }
+            } catch (e) {}
+          }
         }
       } else if (newStatus === 'Từ chối') {
         activityCheckIns.value = activityCheckIns.value.filter(c => c.id !== chk.id);
@@ -683,7 +721,7 @@ const tabs = computed(() => {
       shortLabel: 'Hoạt động',
       icon: 'fa-solid fa-calendar-check'
     },
-    { id: 'entry', label: 'Ghi Ca Trực', shortLabel: 'Ghi ca', icon: 'fa-solid fa-pen-to-square' },
+    { id: 'entry', label: 'Điểm Danh Ca Trực', shortLabel: 'Điểm danh', icon: 'fa-solid fa-pen-to-square' },
     { id: 'register', label: 'Đăng Ký Ca', shortLabel: 'Đăng ký', icon: 'fa-solid fa-calendar-plus' },
     {
       id: 'my-shifts',

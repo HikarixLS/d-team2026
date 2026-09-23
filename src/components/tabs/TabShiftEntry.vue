@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4 sm:mb-6">
         <div>
           <h2 class="text-base sm:text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            <i class="fa-solid fa-pen-to-square text-indigo-600 dark:text-indigo-400"></i> Ghi Nhận Ca Trực Đã Hoàn Thành (Sổ Gốc)
+            <i class="fa-solid fa-pen-to-square text-indigo-600 dark:text-indigo-400"></i> Điểm Danh Ca Trực Đã Hoàn Thành (Sổ Gốc)
           </h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ghi nhận thông tin trực từ sổ giấy vào hệ thống để theo dõi chỉ tiêu ca trực</p>
         </div>

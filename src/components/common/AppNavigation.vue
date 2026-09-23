@@ -25,8 +25,10 @@
     </div>
 
     <!-- Trường hợp Quản trị viên (> 5 tabs): Cuộn ngang mượt mà -->
-    <div v-else class="flex items-center justify-start gap-1 overflow-x-auto px-1 no-scrollbar min-w-max">
-      <button v-for="tab in tabs" :key="tab.id" @click="$emit('select-tab', tab.id)"
+    <div v-else class="w-full flex items-center gap-1.5 overflow-x-auto px-2 py-0.5 scroll-smooth overscroll-x-contain" style="-webkit-overflow-scrolling: touch;">
+      <button v-for="tab in tabs" :key="tab.id"
+              :ref="el => setTabRef(tab.id, el)"
+              @click="handleSelectTab(tab.id)"
               class="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition cursor-pointer relative shrink-0 active:scale-95"
               :class="currentTab === tab.id ? 'bg-indigo-600 text-white font-extrabold shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'">
         <i :class="[tab.icon, 'text-xs mb-0.5']"></i>
@@ -38,6 +40,38 @@
 </template>
 
 <script setup>
-defineProps(['currentTab', 'tabs']);
-defineEmits(['select-tab']);
+import { ref, watch, nextTick } from 'vue';
+
+const props = defineProps(['currentTab', 'tabs']);
+const emit = defineEmits(['select-tab']);
+
+const tabElementMap = new Map();
+
+const setTabRef = (id, el) => {
+  if (el) {
+    tabElementMap.set(id, el);
+  } else {
+    tabElementMap.delete(id);
+  }
+};
+
+const scrollToActiveTab = (tabId) => {
+  nextTick(() => {
+    const el = tabElementMap.get(tabId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  });
+};
+
+const handleSelectTab = (id) => {
+  emit('select-tab', id);
+  scrollToActiveTab(id);
+};
+
+watch(() => props.currentTab, (newTab) => {
+  if (newTab) {
+    scrollToActiveTab(newTab);
+  }
+}, { immediate: true });
 </script>
