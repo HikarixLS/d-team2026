@@ -1,12 +1,16 @@
 import { ref, computed } from 'vue';
 import { useToast } from './useToast.js';
 
-// Purge old stale local members cache so data always loads 100% fresh from Cloud Firestore
+let initMembers = [];
 try {
-    localStorage.removeItem('local_members');
+    const saved = localStorage.getItem('local_members');
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) initMembers = parsed;
+    }
 } catch (e) {}
 
-const members = ref([]);
+const members = ref(initMembers);
 const departments = ref([]);
 
 const memberFilterSearch = ref('');

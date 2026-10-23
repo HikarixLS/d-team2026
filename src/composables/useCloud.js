@@ -26,6 +26,8 @@ let unsubSemesters = null;
 let unsubDepartments = null;
 let unsubShiftSettings = null;
 let unsubActivityRegistrations = null;
+let isInitializingCloud = false;
+let hasInitializedListeners = false;
 
 export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsRef, adminAccounts, activitiesRef, activityCheckInsRef, semestersRef, departmentsRef, shiftSettingsRef, activityRegistrationsRef) {
     const { showToast } = useToast();
@@ -43,7 +45,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         localStorage.setItem('firebase_config', JSON.stringify(DEFAULT_FIREBASE_CONFIG));
         showToast('⚡ Đã tự động nạp & lưu cấu hình mặc định!');
         showConfigModal.value = false;
-        await initCloudRealtime();
+        await initCloudRealtime(true);
     };
 
     const saveFirebaseConfig = async () => {
@@ -55,18 +57,23 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             hasFirebaseConfig.value = true;
             showToast('Đã lưu cấu hình Firebase Cloud thành công! 🚀');
             showConfigModal.value = false;
-            await initCloudRealtime();
+            await initCloudRealtime(true);
         } catch (err) {
             showToast('Lỗi cú pháp JSON cấu hình: ' + err.message, 'error');
         }
     };
 
-    const initCloudRealtime = async () => {
+    const initCloudRealtime = async (force = false) => {
+        if (isInitializingCloud) return;
+        if (hasInitializedListeners && isCloudConnected.value && !force) return;
+
+        isInitializingCloud = true;
         const saved = localStorage.getItem('firebase_config');
         const config = saved ? JSON.parse(saved) : DEFAULT_FIREBASE_CONFIG;
         if (!config || !config.apiKey) {
             hasFirebaseConfig.value = false;
             isCloudConnected.value = false;
+            isInitializingCloud = false;
             return;
         }
 
@@ -74,19 +81,22 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         const { collection, onSnapshot, signInAnonymously, doc, setDoc } = window.FirebaseSDK;
         const db = window.firebaseDb;
 
-        if (unsubMembers) unsubMembers();
-        if (unsubShifts) unsubShifts();
-        if (unsubRegistrations) unsubRegistrations();
-        if (unsubLeaveRequests) unsubLeaveRequests();
-        if (unsubAdmins) unsubAdmins();
-        if (unsubActivities) unsubActivities();
-        if (unsubCheckIns) unsubCheckIns();
-        if (unsubSemesters) unsubSemesters();
-        if (unsubDepartments) unsubDepartments();
-        if (unsubShiftSettings) unsubShiftSettings();
-        if (unsubActivityRegistrations) unsubActivityRegistrations();
+        if (unsubMembers) { unsubMembers(); unsubMembers = null; }
+        if (unsubShifts) { unsubShifts(); unsubShifts = null; }
+        if (unsubRegistrations) { unsubRegistrations(); unsubRegistrations = null; }
+        if (unsubLeaveRequests) { unsubLeaveRequests(); unsubLeaveRequests = null; }
+        if (unsubAdmins) { unsubAdmins(); unsubAdmins = null; }
+        if (unsubActivities) { unsubActivities(); unsubActivities = null; }
+        if (unsubCheckIns) { unsubCheckIns(); unsubCheckIns = null; }
+        if (unsubSemesters) { unsubSemesters(); unsubSemesters = null; }
+        if (unsubDepartments) { unsubDepartments(); unsubDepartments = null; }
+        if (unsubShiftSettings) { unsubShiftSettings(); unsubShiftSettings = null; }
+        if (unsubActivityRegistrations) { unsubActivityRegistrations(); unsubActivityRegistrations = null; }
 
-        if (!db) return;
+        if (!db) {
+            isInitializingCloud = false;
+            return;
+        }
 
         if (window.firebaseAuth && signInAnonymously) {
             try {
@@ -99,17 +109,8 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         const handleSnapshotError = (err) => {
             console.warn("Firestore listener state:", err.code || err.message);
             isCloudConnected.value = false;
+            isInitializingCloud = false;
         };
-
-        try {
-            // Clean up leftover documents in old 'admins' collection if present
-            if (window.FirebaseSDK.getDocs && window.FirebaseSDK.deleteDoc) {
-                const { getDocs, deleteDoc } = window.FirebaseSDK;
-                getDocs(collection(db, 'admins')).then(snap => {
-                    snap.forEach(docSnap => deleteDoc(docSnap.ref).catch(() => {}));
-                }).catch(() => {});
-            }
-        } catch (e) {}
 
         const extractNameFromData = (data, canonicalId) => {
             if (!data || typeof data !== 'object') return canonicalId;
@@ -219,20 +220,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     const admName = admData.name || admData.fullName || admData.hoTen;
 
                     if (admName && admName !== canonicalId && !admName.startsWith('Thành viên [')) {
-                        // Heal members collection on Firestore so members/id matches admin_accounts
-                        try {
-                            const { doc, setDoc } = window.FirebaseSDK;
-                            setDoc(doc(db, 'members', canonicalId), {
-                                id: canonicalId,
-                                mssv: canonicalId,
-                                name: admName,
-                                department: admData.department || 'Ban Điều hành',
-                                role: 'admin',
-                                targetShifts: 10
-                            }, { merge: true }).catch(() => {});
-                        } catch (e) {}
-
-                        // Sync in memory members list
+                        // Sync in memory members list (removed setDoc to prevent write storm)
                         if (membersRef && Array.isArray(membersRef.value)) {
                             const foundIndex = membersRef.value.findIndex(m => m && String(m.id || m.mssv).trim().toUpperCase() === canonicalId);
                             if (foundIndex !== -1) {
@@ -332,9 +320,12 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     }
                 }
             }, (err) => {});
+            hasInitializedListeners = true;
+            isInitializingCloud = false;
         } catch (e) {
             console.warn("Lỗi kết nối Cloud:", e);
             isCloudConnected.value = false;
+            isInitializingCloud = false;
         }
     };
 

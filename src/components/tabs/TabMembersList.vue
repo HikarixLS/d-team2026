@@ -24,9 +24,13 @@
     <div class="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-center w-full md:w-auto flex-grow">
         <div class="relative">
-          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
           <input type="text" :value="memberFilterSearch" @input="$emit('update:memberFilterSearch', $event.target.value)" placeholder="Tìm theo tên hoặc MSSV..."
-                 class="w-full border border-slate-300 rounded-xl pl-9 pr-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 min-h-[38px]">
+                 class="w-full border border-slate-300 rounded-xl pl-9 pr-8 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 min-h-[38px]">
+          <button v-if="memberFilterSearch" @click="$emit('update:memberFilterSearch', '')" type="button"
+                  class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer">
+            <i class="fa-solid fa-circle-xmark text-xs"></i>
+          </button>
         </div>
 
         <select :value="memberFilterDept" @change="$emit('update:memberFilterDept', $event.target.value)"

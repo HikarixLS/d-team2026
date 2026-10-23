@@ -237,6 +237,7 @@
           </div>
 
           <!-- Detail Lists Filter Tabs (Sticky below header for effortless switching) -->
+          <!-- Detail Lists Filter Tabs (Sticky below header for effortless switching) -->
           <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs py-1.5 -mx-4 px-4 sm:-mx-5 sm:px-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto text-xs font-bold scrollbar-none overscroll-x-contain">
             <button type="button" @click="activeListTab = 'all'"
                     class="px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0"
@@ -260,20 +261,40 @@
             </button>
           </div>
 
+          <!-- Member Search Bar in Detail Lists -->
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </span>
+            <input type="text" v-model="detailListSearchQuery"
+                   placeholder="Tìm thành viên theo Tên, MSSV, Ca trực, Ghi chú..."
+                   class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+            <button v-if="detailListSearchQuery" @click="detailListSearchQuery = ''" type="button"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+              <i class="fa-solid fa-circle-xmark text-xs"></i>
+            </button>
+          </div>
+
           <!-- Detail Lists Content -->
           <div class="space-y-4">
             <!-- 1. Present List -->
             <div v-if="activeListTab === 'all' || activeListTab === 'present'" class="space-y-2">
-              <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="fa-solid fa-circle-check text-emerald-500"></i> Danh sách thành viên điểm danh ({{ stats?.presentList?.length || 0 }})
+              <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-check text-emerald-500"></i> Danh sách thành viên điểm danh
+                </span>
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">
+                  <span v-if="detailListSearchQuery" class="text-indigo-600 dark:text-indigo-400 font-black">{{ filteredPresentList.length }} / </span>
+                  {{ stats?.presentList?.length || 0 }}
+                </span>
               </h4>
 
-              <div v-if="!stats?.presentList?.length" class="text-center py-6 text-xs text-slate-400 font-medium italic bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-                Chưa có lượt điểm danh nào.
+              <div v-if="!filteredPresentList.length" class="text-center py-6 text-xs text-slate-400 font-medium italic bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                {{ detailListSearchQuery ? 'Không tìm thấy thành viên điểm danh khớp từ khóa.' : 'Chưa có lượt điểm danh nào.' }}
               </div>
 
               <div v-else class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
-                <div v-for="item in stats.presentList" :key="item.id" class="p-2.5 sm:p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 space-y-1.5">
+                <div v-for="item in filteredPresentList" :key="item.id" class="p-2.5 sm:p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 space-y-1.5">
                   <!-- Row 1: Member Info + Proof Image Button + Status Badge -->
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -324,16 +345,22 @@
 
             <!-- 2. Leave Requests List (Có hiển thị các ca vắng chia 2 cột) -->
             <div v-if="activeListTab === 'all' || activeListTab === 'leave'" class="space-y-2">
-              <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="fa-solid fa-envelope-open-text text-amber-500"></i> Danh sách xin nghỉ ({{ stats?.leaveList?.length || 0 }})
+              <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-envelope-open-text text-amber-500"></i> Danh sách xin nghỉ
+                </span>
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">
+                  <span v-if="detailListSearchQuery" class="text-indigo-600 dark:text-indigo-400 font-black">{{ filteredLeaveList.length }} / </span>
+                  {{ stats?.leaveList?.length || 0 }}
+                </span>
               </h4>
 
-              <div v-if="!stats?.leaveList?.length" class="text-center py-6 text-xs text-slate-400 font-medium italic bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-                Chưa có thành viên nào gửi đơn xin nghỉ.
+              <div v-if="!filteredLeaveList.length" class="text-center py-6 text-xs text-slate-400 font-medium italic bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                {{ detailListSearchQuery ? 'Không tìm thấy đơn xin nghỉ khớp từ khóa.' : 'Chưa có thành viên nào gửi đơn xin nghỉ.' }}
               </div>
 
               <div v-else class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
-                <div v-for="item in stats.leaveList" :key="item.id" class="p-2.5 sm:p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 space-y-1.5">
+                <div v-for="item in filteredLeaveList" :key="item.id" class="p-2.5 sm:p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 space-y-1.5">
                   <!-- Row 1: Member Info + Status Badge -->
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -393,16 +420,22 @@
 
             <!-- 3. Registered Shifts List -->
             <div v-if="activeListTab === 'all' || activeListTab === 'regs'" class="space-y-2">
-              <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="fa-solid fa-clipboard-check text-sky-500"></i> Danh sách thành viên đăng ký theo Ngày/Ca ({{ stats?.regsList?.length || 0 }})
+              <h4 class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-clipboard-check text-sky-500"></i> Danh sách thành viên đăng ký theo Ngày/Ca
+                </span>
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">
+                  <span v-if="detailListSearchQuery" class="text-indigo-600 dark:text-indigo-400 font-black">{{ filteredRegsList.length }} / </span>
+                  {{ stats?.regsList?.length || 0 }}
+                </span>
               </h4>
 
-              <div v-if="!stats?.regsList?.length" class="text-center py-6 text-xs text-slate-400 font-medium italic bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-                Chưa có lượt đăng ký ca nào cho hoạt động này.
+              <div v-if="!filteredRegsList.length" class="text-center py-6 text-xs text-slate-400 font-medium italic bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                {{ detailListSearchQuery ? 'Không tìm thấy lượt đăng ký khớp từ khóa.' : 'Chưa có lượt đăng ký ca nào cho hoạt động này.' }}
               </div>
 
               <div v-else class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
-                <div v-for="item in stats.regsList" :key="item.id" class="p-2.5 sm:p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 space-y-1.5">
+                <div v-for="item in filteredRegsList" :key="item.id" class="p-2.5 sm:p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 space-y-1.5">
                   <!-- Row 1: Member Info + Status Badge -->
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -748,11 +781,51 @@ const isShiftCheckedIn = (item) => {
   });
 };
 
+const detailListSearchQuery = ref('');
+
+const filteredPresentList = computed(() => {
+  const list = props.stats?.presentList || [];
+  const q = detailListSearchQuery.value.trim().toLowerCase();
+  if (!q) return list;
+  return list.filter(item => {
+    const name = (item.memberName || '').toLowerCase();
+    const id = String(item.memberId || '').toLowerCase();
+    const shift = (item.shiftType || '').toLowerCase();
+    return name.includes(q) || id.includes(q) || shift.includes(q);
+  });
+});
+
+const filteredLeaveList = computed(() => {
+  const list = props.stats?.leaveList || [];
+  const q = detailListSearchQuery.value.trim().toLowerCase();
+  if (!q) return list;
+  return list.filter(item => {
+    const name = (item.memberName || '').toLowerCase();
+    const id = String(item.memberId || '').toLowerCase();
+    const reason = (item.leaveReason || '').toLowerCase();
+    return name.includes(q) || id.includes(q) || reason.includes(q);
+  });
+});
+
+const filteredRegsList = computed(() => {
+  const list = props.stats?.regsList || [];
+  const q = detailListSearchQuery.value.trim().toLowerCase();
+  if (!q) return list;
+  return list.filter(item => {
+    const name = (item.memberName || '').toLowerCase();
+    const id = String(item.memberId || '').toLowerCase();
+    const shift = (item.shiftType || '').toLowerCase();
+    const notes = (item.notes || '').toLowerCase();
+    return name.includes(q) || id.includes(q) || shift.includes(q) || notes.includes(q);
+  });
+});
+
 watch(() => props.show, (newVal) => {
   if (!newVal) {
     selectedAdminMember.value = null;
     selectedShift.value = null;
     memberSearchQuery.value = '';
+    detailListSearchQuery.value = '';
     isCheckInFormOpen.value = true;
   }
 });

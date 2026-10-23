@@ -43,12 +43,24 @@
         };
     </script>
 
-    <!-- Firebase SDK v10 (Async Load into Window) -->
+    <!-- Firebase SDK v10 (Async Load into Window with Offline IndexedDB Cache) -->
     <script>
         (async function() {
             try {
                 const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
-                const { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, getDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                const {
+                    getFirestore,
+                    initializeFirestore,
+                    persistentLocalCache,
+                    persistentMultipleTabManager,
+                    collection,
+                    doc,
+                    setDoc,
+                    deleteDoc,
+                    onSnapshot,
+                    getDocs,
+                    getDoc
+                } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
                 const { getAuth, signInAnonymously } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
 
                 window.FirebaseSDK = {
@@ -56,6 +68,9 @@
                     getApps,
                     getApp,
                     getFirestore,
+                    initializeFirestore,
+                    persistentLocalCache,
+                    persistentMultipleTabManager,
                     collection,
                     doc,
                     setDoc,
@@ -69,7 +84,19 @@
 
                 const apps = getApps();
                 window.firebaseApp = apps.length ? getApp() : initializeApp(window.firebaseConfig);
-                window.firebaseDb = getFirestore(window.firebaseApp);
+
+                let firestoreDb = null;
+                try {
+                    firestoreDb = initializeFirestore(window.firebaseApp, {
+                        localCache: persistentLocalCache({
+                            tabManager: persistentMultipleTabManager()
+                        })
+                    });
+                } catch (e) {
+                    firestoreDb = getFirestore(window.firebaseApp);
+                }
+                window.firebaseDb = firestoreDb;
+
                 window.firebaseAuth = getAuth(window.firebaseApp);
                 signInAnonymously(window.firebaseAuth).catch(err => console.warn("Anonymous auth note:", err.message));
                 window.dispatchEvent(new Event('firebase-sdk-ready'));

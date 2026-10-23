@@ -13,11 +13,32 @@
         <form @submit.prevent="$emit('save-leave-request')" class="space-y-3.5">
           <div>
             <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Thành Viên Xin Nghỉ <span class="text-red-500">*</span></label>
-            <select v-model="leaveForm.memberId" required :disabled="currentUserRole !== 'admin'" @change="$emit('member-change')"
-                    class="w-full border border-slate-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-medium">
-              <option value="" disabled>-- Chọn thành viên --</option>
-              <option v-for="m in members" :key="m.id" :value="m.id">[{{ m.id }}] {{ m.name }} ({{ m.department || 'Ban chưa đặt' }})</option>
-            </select>
+            <!-- Admin: Searchable Member Select -->
+            <div v-if="currentUserRole === 'admin'" class="space-y-1.5">
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 pointer-events-none">
+                  <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
+                </span>
+                <input type="text" v-model="adminMemberSearch" placeholder="Lọc thành viên theo tên/MSSV..."
+                       class="w-full border border-slate-200 rounded-lg pl-8 pr-7 py-1.5 text-xs bg-slate-50 text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 placeholder-slate-400">
+                <button v-if="adminMemberSearch" @click="adminMemberSearch = ''" type="button"
+                        class="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer">
+                  <i class="fa-solid fa-circle-xmark text-[11px]"></i>
+                </button>
+              </div>
+              <select v-model="leaveForm.memberId" required @change="$emit('member-change')"
+                      class="w-full border border-slate-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-medium">
+                <option value="" disabled>-- Chọn thành viên ({{ filteredAdminMembers.length }}) --</option>
+                <option v-for="m in filteredAdminMembers" :key="m.id" :value="m.id">
+                  [{{ m.id }}] {{ m.name }} ({{ m.department || 'Ban chưa đặt' }})
+                </option>
+              </select>
+            </div>
+            <!-- Member: Read-only display -->
+            <div v-else class="w-full border border-slate-200 rounded-lg p-2.5 bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-between">
+              <span>[{{ leaveForm.memberId }}] {{ getMemberName(leaveForm.memberId) }}</span>
+              <span class="text-[10px] text-amber-700 font-extrabold bg-amber-100 px-2 py-0.5 rounded-md">Thành viên</span>
+            </div>
           </div>
 
           <div>
@@ -69,27 +90,42 @@
           </span>
         </div>
 
-        <!-- Filter Status Tabs -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold">
-          <button @click="$emit('update:leaveStatusFilter', 'all')" class="px-3 py-1.5 rounded-xl transition cursor-pointer"
-                  :class="leaveStatusFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">Tất Cả</button>
-          <button @click="$emit('update:leaveStatusFilter', 'Chờ duyệt')" class="px-3 py-1.5 rounded-xl transition cursor-pointer"
-                  :class="leaveStatusFilter === 'Chờ duyệt' ? 'bg-amber-500 text-slate-950 font-black' : 'bg-amber-50 text-amber-800 hover:bg-amber-100'">⏳ Chờ Duyệt</button>
-          <button @click="$emit('update:leaveStatusFilter', 'Đã duyệt')" class="px-3 py-1.5 rounded-xl transition cursor-pointer"
-                  :class="leaveStatusFilter === 'Đã duyệt' ? 'bg-emerald-600 text-white font-black' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'">✅ Đã Duyệt</button>
-          <button @click="$emit('update:leaveStatusFilter', 'Từ chối')" class="px-3 py-1.5 rounded-xl transition cursor-pointer"
-                  :class="leaveStatusFilter === 'Từ chối' ? 'bg-rose-600 text-white font-black' : 'bg-rose-50 text-rose-800 hover:bg-rose-100'">✕ Từ Chối</button>
+        <!-- Filter Status Tabs & Member Search Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold">
+            <button @click="$emit('update:leaveStatusFilter', 'all')" class="px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0"
+                    :class="leaveStatusFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">Tất Cả</button>
+            <button @click="$emit('update:leaveStatusFilter', 'Chờ duyệt')" class="px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0"
+                    :class="leaveStatusFilter === 'Chờ duyệt' ? 'bg-amber-500 text-slate-950 font-black' : 'bg-amber-50 text-amber-800 hover:bg-amber-100'">⏳ Chờ Duyệt</button>
+            <button @click="$emit('update:leaveStatusFilter', 'Đã duyệt')" class="px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0"
+                    :class="leaveStatusFilter === 'Đã duyệt' ? 'bg-emerald-600 text-white font-black' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'">✅ Đã Duyệt</button>
+            <button @click="$emit('update:leaveStatusFilter', 'Từ chối')" class="px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0"
+                    :class="leaveStatusFilter === 'Từ chối' ? 'bg-rose-600 text-white font-black' : 'bg-rose-50 text-rose-800 hover:bg-rose-100'">✕ Từ Chối</button>
+          </div>
+
+          <div class="relative w-full sm:w-64">
+            <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 pointer-events-none">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </span>
+            <input type="text" v-model="memberSearchKeyword"
+                   placeholder="Tìm theo tên thành viên, MSSV..."
+                   class="w-full border border-slate-200 rounded-xl pl-8 pr-7 py-1.5 text-xs bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium placeholder-slate-400">
+            <button v-if="memberSearchKeyword" @click="memberSearchKeyword = ''" type="button"
+                    class="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer">
+              <i class="fa-solid fa-circle-xmark text-xs"></i>
+            </button>
+          </div>
         </div>
 
         <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-          <div v-for="l in filteredLeaveRequests" :key="l.id"
+          <div v-for="l in displayedLeaveRequests" :key="l.id"
                class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 hover:bg-slate-100/80 transition">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                   <span>{{ l.memberName || getMemberName(l.memberId) }}</span>
                   <span class="text-xs font-semibold text-indigo-600">[{{ l.memberId }}]</span>
-                  <span v-if="l.isActivity" class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300">
+                  <span v-if="l.isActivity" class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-sky-100 text-sky-800 border border-sky-300">
                     🎯 Hoạt Động
                   </span>
                 </h4>
@@ -121,8 +157,8 @@
             </div>
           </div>
 
-          <div v-if="filteredLeaveRequests.length === 0" class="p-8 text-center text-slate-400 text-xs">
-            Chưa có đơn xin nghỉ phép nào.
+          <div v-if="displayedLeaveRequests.length === 0" class="p-8 text-center text-slate-400 text-xs">
+            {{ memberSearchKeyword ? 'Không tìm thấy đơn xin nghỉ phép nào phù hợp.' : 'Chưa có đơn xin nghỉ phép nào.' }}
           </div>
         </div>
       </div>
@@ -131,7 +167,9 @@
 </template>
 
 <script setup>
-defineProps([
+import { ref, computed } from 'vue';
+
+const props = defineProps([
   'leaveForm',
   'members',
   'currentUserRole',
@@ -153,4 +191,33 @@ defineEmits([
   'update:leaveStatusFilter',
   'update-leave-status'
 ]);
+
+const adminMemberSearch = ref('');
+const memberSearchKeyword = ref('');
+
+const filteredAdminMembers = computed(() => {
+  if (!props.members || !Array.isArray(props.members)) return [];
+  const q = (adminMemberSearch.value || '').trim().toLowerCase();
+  if (!q) return props.members;
+  return props.members.filter(m => {
+    const name = String(m.name || '').toLowerCase();
+    const id = String(m.id || m.mssv || '').toLowerCase();
+    const dept = String(m.department || '').toLowerCase();
+    return name.includes(q) || id.includes(q) || dept.includes(q);
+  });
+});
+
+const displayedLeaveRequests = computed(() => {
+  const list = props.filteredLeaveRequests || [];
+  const q = (memberSearchKeyword.value || '').trim().toLowerCase();
+  if (!q) return list;
+  return list.filter(l => {
+    const name = String(l.memberName || props.getMemberName(l.memberId) || '').toLowerCase();
+    const id = String(l.memberId || '').toLowerCase();
+    const dept = String(l.department || props.getMemberDept(l.memberId) || '').toLowerCase();
+    const reason = String(l.reason || '').toLowerCase();
+    const shift = String(l.shiftType || '').toLowerCase();
+    return name.includes(q) || id.includes(q) || dept.includes(q) || reason.includes(q) || shift.includes(q);
+  });
+});
 </script>

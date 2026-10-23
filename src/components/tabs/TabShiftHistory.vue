@@ -59,9 +59,18 @@
           </div>
         </div>
 
-        <div v-if="viewMode === 'list'" class="flex-1 min-w-[240px] grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input type="text" v-model="historyFilter.keyword" placeholder="Tìm tên, MSSV, trang số, STT..."
-                 class="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-slate-900 dark:text-white">
+        <div class="flex-1 min-w-[260px] grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 pointer-events-none">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </span>
+            <input type="text" v-model="historyFilter.keyword" placeholder="Tìm thành viên theo tên, MSSV, trang sổ..."
+                   class="w-full border border-slate-300 dark:border-slate-700 rounded-lg pl-8 pr-7 py-1.5 text-xs bg-white dark:bg-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <button v-if="historyFilter.keyword" @click="historyFilter.keyword = ''" type="button"
+                    class="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+              <i class="fa-solid fa-circle-xmark text-xs"></i>
+            </button>
+          </div>
           <select v-model="historyFilter.shiftType" class="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-slate-900 dark:text-white">
             <option value="">-- Tất cả ca --</option>
             <option v-for="st in effectiveShiftTypes" :key="st" :value="st">{{ st }}</option>
@@ -75,6 +84,9 @@
 
       <!-- VIEW 1: MATRIX SPREADSHEET VIEW (MATCHING USER TEMPLATE IMAGE) -->
       <div v-if="viewMode === 'matrix'" class="space-y-2">
+        <div v-if="historyFilter?.keyword" class="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 p-2 rounded-xl border border-amber-200 dark:border-amber-900/60">
+          <i class="fa-solid fa-highlighter"></i> Đang làm nổi bật các ca trực của thành viên khớp với: <u>"{{ historyFilter.keyword }}"</u>
+        </div>
         <div class="overflow-x-auto max-h-[680px] border border-slate-400 rounded-xl shadow-xs">
           <table class="w-full text-left border-collapse text-xs select-text">
             <thead>
@@ -122,12 +134,20 @@
 
                   <!-- Data Cells for each Date: MSSV & HỌ VÀ TÊN -->
                   <template v-for="d in matrixDates" :key="st + '_' + idx + '_' + d">
-                    <td class="border border-slate-400 px-2 py-1 font-mono font-bold text-center whitespace-nowrap text-xs"
-                        :class="getStudentAt(st, d, idx - 1) ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300' : 'bg-white/40 dark:bg-slate-900/20 text-slate-300'">
+                    <td class="border border-slate-400 px-2 py-1 font-mono font-bold text-center whitespace-nowrap text-xs transition"
+                        :class="[
+                          isStudentMatched(getStudentAt(st, d, idx - 1))
+                            ? 'bg-amber-200 dark:bg-amber-900/90 text-amber-950 dark:text-amber-100 ring-2 ring-amber-500 font-black shadow-xs'
+                            : (getStudentAt(st, d, idx - 1) ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300' : 'bg-white/40 dark:bg-slate-900/20 text-slate-300')
+                        ]">
                       {{ getStudentAt(st, d, idx - 1)?.mssv || '' }}
                     </td>
-                    <td class="border border-slate-400 px-3 py-1 font-extrabold whitespace-nowrap text-xs"
-                        :class="getStudentAt(st, d, idx - 1) ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white' : 'bg-white/40 dark:bg-slate-900/20 text-slate-300'">
+                    <td class="border border-slate-400 px-3 py-1 font-extrabold whitespace-nowrap text-xs transition"
+                        :class="[
+                          isStudentMatched(getStudentAt(st, d, idx - 1))
+                            ? 'bg-amber-200 dark:bg-amber-900/90 text-amber-950 dark:text-amber-100 ring-2 ring-amber-500 font-black shadow-xs'
+                            : (getStudentAt(st, d, idx - 1) ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white' : 'bg-white/40 dark:bg-slate-900/20 text-slate-300')
+                        ]">
                       {{ getStudentAt(st, d, idx - 1)?.name || '' }}
                     </td>
                   </template>
@@ -303,6 +323,14 @@ const getStudentAt = (st, d, index) => {
   const list = matrixMap.value[st]?.[d];
   if (!list || !list[index]) return null;
   return list[index];
+};
+
+const isStudentMatched = (student) => {
+  if (!student) return false;
+  const kw = (props.historyFilter?.keyword || '').trim().toLowerCase();
+  if (!kw) return false;
+  return (student.mssv && student.mssv.toLowerCase().includes(kw)) ||
+         (student.name && student.name.toLowerCase().includes(kw));
 };
 
 const getBlockRowCount = (st) => {

@@ -824,24 +824,28 @@ watch(currentTab, () => {
 
 onMounted(() => {
   applyTheme();
-  initNetworkListener(initCloudRealtime);
   setupNotifications();
 
   const tryConnectCloud = () => {
-    if (window.FirebaseSDK && !isCloudConnected.value) {
+    if (window.FirebaseSDK && window.firebaseDb) {
       initCloudRealtime();
     }
   };
-  tryConnectCloud();
-  window.addEventListener('firebase-sdk-ready', tryConnectCloud);
 
-  const retryInterval = setInterval(() => {
-    if (isCloudConnected.value) {
-      clearInterval(retryInterval);
-    } else {
+  if (window.FirebaseSDK && window.firebaseDb) {
+    tryConnectCloud();
+  } else {
+    window.addEventListener('firebase-sdk-ready', tryConnectCloud, { once: true });
+    const fallbackTimer = setTimeout(() => {
       tryConnectCloud();
+    }, 1500);
+    window.addEventListener('firebase-sdk-ready', () => clearTimeout(fallbackTimer), { once: true });
+  }
+
+  initNetworkListener(() => {
+    if (!isCloudConnected.value) {
+      initCloudRealtime(true);
     }
-  }, 2000);
-  setTimeout(() => clearInterval(retryInterval), 10000);
+  });
 });
 </script>

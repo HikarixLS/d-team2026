@@ -49,15 +49,27 @@
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
               Thành Viên Trực <span class="text-red-500">*</span>
             </label>
-            <!-- Admin: Select member -->
-            <select v-if="currentUserRole === 'admin'"
-                    v-model="shiftForm.memberId" required
-                    class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-slate-900 dark:text-white min-h-[44px]">
-              <option value="" disabled>-- Chọn thành viên theo MSSV/Họ tên --</option>
-              <option v-for="m in members" :key="m.id" :value="m.id">
-                [{{ m.id }}] {{ m.name }} - {{ m.department || 'Ban chưa đặt' }}
-              </option>
-            </select>
+            <!-- Admin: Select member with quick search -->
+            <div v-if="currentUserRole === 'admin'" class="space-y-1.5">
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                  <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                </span>
+                <input type="text" v-model="memberSearch" placeholder="Lọc nhanh thành viên theo MSSV hoặc Họ tên..."
+                       class="w-full border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder-slate-400">
+                <button v-if="memberSearch" @click="memberSearch = ''" type="button"
+                        class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer">
+                  <i class="fa-solid fa-circle-xmark text-xs"></i>
+                </button>
+              </div>
+              <select v-model="shiftForm.memberId" required
+                      class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white dark:bg-slate-900 dark:text-white min-h-[44px]">
+                <option value="" disabled>-- Chọn thành viên ({{ filteredMembers.length }}) --</option>
+                <option v-for="m in filteredMembers" :key="m.id" :value="m.id">
+                  [{{ m.id }}] {{ m.name }} - {{ m.department || 'Ban chưa đặt' }}
+                </option>
+              </select>
+            </div>
             <!-- Member: Display current member info (Cannot change) -->
             <div v-else class="w-full border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-slate-50 dark:bg-slate-800 flex items-center justify-between min-h-[44px]">
               <span class="text-sm font-bold text-slate-800 dark:text-white">
@@ -180,15 +192,28 @@
 
     <!-- Recent Shifts Preview List -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 sm:p-5">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
           <i class="fa-solid fa-clock-rotate-left text-indigo-600 dark:text-indigo-400"></i> Ca Trực Mới Ghi Nhận
         </h3>
-        <button @click="$emit('go-tab', 'history')" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer">Xem tất cả</button>
+        <div class="flex items-center gap-2">
+          <div class="relative w-full sm:w-56">
+            <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 pointer-events-none">
+              <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
+            </span>
+            <input type="text" v-model="recentSearch" placeholder="Lọc tên, MSSV ca mới..."
+                   class="w-full border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-7 py-1 text-xs bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder-slate-400">
+            <button v-if="recentSearch" @click="recentSearch = ''" type="button"
+                    class="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer">
+              <i class="fa-solid fa-circle-xmark text-[11px]"></i>
+            </button>
+          </div>
+          <button @click="$emit('go-tab', 'history')" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer shrink-0">Xem tất cả</button>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-        <div v-for="s in shifts.slice(0, 6)" :key="s.id" class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+        <div v-for="s in displayedRecentShifts" :key="s.id" class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
           <div class="flex items-center justify-between font-bold text-slate-800 dark:text-white">
             <span>{{ getMemberName(s.memberId) }}</span>
             <span class="px-2 py-0.5 text-[10px] rounded-md font-extrabold"
@@ -204,12 +229,15 @@
           </div>
         </div>
       </div>
+      <div v-if="displayedRecentShifts.length === 0" class="text-center py-4 text-xs text-slate-400">
+        Không có ca trực nào phù hợp với tìm kiếm.
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps([
   'shiftForm',
@@ -225,6 +253,33 @@ const props = defineProps([
 ]);
 
 defineEmits(['save-shift', 'reset-form', 'go-tab']);
+
+const memberSearch = ref('');
+const recentSearch = ref('');
+
+const filteredMembers = computed(() => {
+  if (!props.members || !Array.isArray(props.members)) return [];
+  const q = (memberSearch.value || '').trim().toLowerCase();
+  if (!q) return props.members;
+  return props.members.filter(m => {
+    const name = String(m.name || '').toLowerCase();
+    const id = String(m.id || m.mssv || '').toLowerCase();
+    const dept = String(m.department || '').toLowerCase();
+    return name.includes(q) || id.includes(q) || dept.includes(q);
+  });
+});
+
+const displayedRecentShifts = computed(() => {
+  const allShifts = props.shifts || [];
+  const q = (recentSearch.value || '').trim().toLowerCase();
+  if (!q) return allShifts.slice(0, 6);
+  return allShifts.filter(s => {
+    const name = String(props.getMemberName(s.memberId) || '').toLowerCase();
+    const id = String(s.memberId || '').toLowerCase();
+    const shift = String(s.shiftType || '').toLowerCase();
+    return name.includes(q) || id.includes(q) || shift.includes(q);
+  }).slice(0, 6);
+});
 
 const dynamicShiftTypes = computed(() => {
   if (props.shiftTypes && Array.isArray(props.shiftTypes) && props.shiftTypes.length > 0) {

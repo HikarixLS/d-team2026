@@ -126,6 +126,20 @@
         </button>
       </div>
 
+      <!-- Search Input -->
+      <div class="relative flex-1 min-w-[200px] max-w-xs">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </span>
+        <input type="text" v-model="searchKeyword"
+               placeholder="Tìm theo ca, ngày, hoạt động..."
+               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-7 py-1.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500">
+        <button v-if="searchKeyword" @click="searchKeyword = ''" type="button"
+                class="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+          <i class="fa-solid fa-circle-xmark text-xs"></i>
+        </button>
+      </div>
+
       <!-- Quick Action Buttons -->
       <div class="flex items-center gap-2">
         <button @click="$emit('go-tab', 'register')"
@@ -395,6 +409,7 @@ const props = defineProps({
 const emit = defineEmits(['go-tab', 'delete-activity-reg']);
 
 const activeFilterType = ref('all'); // 'all' | 'duty' | 'activity' | 'upcoming' | 'today'
+const searchKeyword = ref('');
 const cancelingRegObj = ref(null);
 
 const todayDate = computed(() => {
@@ -437,7 +452,7 @@ const todayShiftsCount = computed(() => {
   return dCount + aCount;
 });
 
-// Filtered Duty Shifts according to activeFilterType
+// Filtered Duty Shifts according to activeFilterType and searchKeyword
 const displayedDutyShifts = computed(() => {
   let list = myDutyShifts.value;
   const t = todayDate.value;
@@ -446,10 +461,20 @@ const displayedDutyShifts = computed(() => {
   } else if (activeFilterType.value === 'today') {
     list = list.filter(s => s.date === t);
   }
+  const kw = searchKeyword.value.trim().toLowerCase();
+  if (kw) {
+    list = list.filter(s => {
+      const shift = (s.shiftType || '').toLowerCase();
+      const date = (s.date || '').toLowerCase();
+      const notes = (s.notes || '').toLowerCase();
+      const formatted = props.formatDate ? props.formatDate(s.date).toLowerCase() : '';
+      return shift.includes(kw) || date.includes(kw) || notes.includes(kw) || formatted.includes(kw);
+    });
+  }
   return list;
 });
 
-// Filtered Activity Shifts according to activeFilterType
+// Filtered Activity Shifts according to activeFilterType and searchKeyword
 const displayedActivityShifts = computed(() => {
   let list = myActivityShifts.value;
   const t = todayDate.value;
@@ -457,6 +482,18 @@ const displayedActivityShifts = computed(() => {
     list = list.filter(s => s.date >= t);
   } else if (activeFilterType.value === 'today') {
     list = list.filter(s => s.date === t);
+  }
+  const kw = searchKeyword.value.trim().toLowerCase();
+  if (kw) {
+    list = list.filter(s => {
+      const actName = getActivityName(s.activityId).toLowerCase();
+      const actLoc = getActivityLocation(s.activityId).toLowerCase();
+      const shift = (s.shiftType || '').toLowerCase();
+      const date = (s.date || '').toLowerCase();
+      const notes = (s.notes || '').toLowerCase();
+      const formatted = props.formatDate ? props.formatDate(s.date).toLowerCase() : '';
+      return actName.includes(kw) || actLoc.includes(kw) || shift.includes(kw) || date.includes(kw) || notes.includes(kw) || formatted.includes(kw);
+    });
   }
   return list;
 });

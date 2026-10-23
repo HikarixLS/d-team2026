@@ -79,11 +79,17 @@
           </p>
         </div>
         <div class="relative w-full md:w-64">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+          </span>
           <input type="text"
                  v-model="matrixSearch"
-                 placeholder="Tìm tên thành viên..."
-                 class="w-full pl-3 pr-8 py-1.5 sm:py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium placeholder-slate-400">
-          <i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 sm:top-3 text-xs text-slate-400 pointer-events-none"></i>
+                 placeholder="Tìm theo tên, MSSV, Ban..."
+                 class="w-full pl-8 pr-7 py-1.5 sm:py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium placeholder-slate-400">
+          <button v-if="matrixSearch" @click="matrixSearch = ''" type="button"
+                  class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+            <i class="fa-solid fa-circle-xmark text-xs"></i>
+          </button>
         </div>
       </div>
 

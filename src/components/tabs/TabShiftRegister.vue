@@ -73,14 +73,27 @@
               Thành Viên Đăng Ký <span class="text-red-500">*</span>
             </label>
 
-            <!-- Admin view: Select Member Dropdown -->
-            <select v-if="currentUserRole === 'admin'" v-model="regForm.memberId" required
-                    class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white dark:bg-slate-900 dark:text-white font-medium">
-              <option value="" disabled>-- Chọn thành viên --</option>
-              <option v-for="m in members" :key="m.id" :value="m.id">
-                [{{ m.id }}] {{ m.name }} ({{ m.department || 'Ban chưa đặt' }})
-              </option>
-            </select>
+            <!-- Admin view: Select Member Dropdown with Quick Search -->
+            <div v-if="currentUserRole === 'admin'" class="space-y-1.5">
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 pointer-events-none">
+                  <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
+                </span>
+                <input type="text" v-model="adminMemberSearch" placeholder="Lọc thành viên theo tên/MSSV..."
+                       class="w-full border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 placeholder-slate-400">
+                <button v-if="adminMemberSearch" @click="adminMemberSearch = ''" type="button"
+                        class="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600">
+                  <i class="fa-solid fa-circle-xmark text-[11px]"></i>
+                </button>
+              </div>
+              <select v-model="regForm.memberId" required
+                      class="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white dark:bg-slate-900 dark:text-white font-medium">
+                <option value="" disabled>-- Chọn thành viên ({{ filteredAdminMembers.length }}) --</option>
+                <option v-for="m in filteredAdminMembers" :key="m.id" :value="m.id">
+                  [{{ m.id }}] {{ m.name }} ({{ m.department || 'Ban chưa đặt' }})
+                </option>
+              </select>
+            </div>
 
             <!-- Member view: Auto-filled Logged In Member Card -->
             <div v-else class="p-3 bg-sky-50/80 dark:bg-sky-950/40 rounded-xl border border-sky-200/80 dark:border-sky-900/60 flex items-center gap-3">
@@ -187,6 +200,20 @@
           </div>
         </div>
 
+        <!-- Thanh Tìm Kiếm Thành Viên Trong Danh Sách Đăng Ký -->
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+          </span>
+          <input type="text" v-model="memberSearchKeyword"
+                 placeholder="Tìm theo tên thành viên hoặc MSSV trong danh sách đăng ký..."
+                 class="w-full border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-8 py-2 text-xs bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium placeholder-slate-400">
+          <button v-if="memberSearchKeyword" @click="memberSearchKeyword = ''" type="button"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+            <i class="fa-solid fa-circle-xmark text-xs"></i>
+          </button>
+        </div>
+
         <div class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
           <div v-for="r in displayedRegistrations" :key="r.id"
                class="p-3.5 rounded-xl border transition flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -271,6 +298,20 @@ const dynamicShiftTypes = computed(() => {
 });
 
 const filterMode = ref('all'); // 'all' | 'mine'
+const memberSearchKeyword = ref('');
+const adminMemberSearch = ref('');
+
+const filteredAdminMembers = computed(() => {
+  if (!props.members || !Array.isArray(props.members)) return [];
+  const q = (adminMemberSearch.value || '').trim().toLowerCase();
+  if (!q) return props.members;
+  return props.members.filter(m => {
+    const name = String(m.name || '').toLowerCase();
+    const id = String(m.id || m.mssv || '').toLowerCase();
+    const dept = String(m.department || '').toLowerCase();
+    return name.includes(q) || id.includes(q) || dept.includes(q);
+  });
+});
 
 const myRegistrationsCount = computed(() => {
   if (!props.loggedInMemberId || !props.filteredRegistrations) return 0;
@@ -279,11 +320,23 @@ const myRegistrationsCount = computed(() => {
 });
 
 const displayedRegistrations = computed(() => {
+  let list = props.filteredRegistrations || [];
   if (filterMode.value === 'mine' && props.loggedInMemberId) {
     const myId = String(props.loggedInMemberId).trim().toLowerCase();
-    return props.filteredRegistrations.filter(r => String(r.memberId).trim().toLowerCase() === myId);
+    list = list.filter(r => String(r.memberId).trim().toLowerCase() === myId);
   }
-  return props.filteredRegistrations;
+  const q = (memberSearchKeyword.value || '').trim().toLowerCase();
+  if (q) {
+    list = list.filter(r => {
+      const name = String(props.getMemberName(r.memberId) || '').toLowerCase();
+      const id = String(r.memberId || '').toLowerCase();
+      const dept = String(props.getMemberDept(r.memberId) || '').toLowerCase();
+      const notes = String(r.notes || '').toLowerCase();
+      const shift = String(r.shiftType || '').toLowerCase();
+      return name.includes(q) || id.includes(q) || dept.includes(q) || notes.includes(q) || shift.includes(q);
+    });
+  }
+  return list;
 });
 
 const getShiftSlotLabel = (shiftName, dateStr) => {
