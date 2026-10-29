@@ -63,9 +63,21 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         }
     };
 
+    let hasWarnedQuota = false;
+
+    // Lấy ngày đầu tiên của tháng trước (cửa sổ 60 ngày gần nhất) để tối ưu lượt đọc Firestore
+    const getActiveWindowMinDate = () => {
+        const now = new Date();
+        const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const y = prevMonth.getFullYear();
+        const m = String(prevMonth.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}-01`;
+    };
+
     const initCloudRealtime = async (force = false) => {
         if (isInitializingCloud) return;
-        if (hasInitializedListeners && isCloudConnected.value && !force) return;
+        // Nếu đã khởi tạo listener và không ép buộc (force), giữ nguyên kết nối để Firebase SDK tự duy trì token stream, tránh re-read toàn bộ CSDL
+        if (hasInitializedListeners && !force) return;
 
         isInitializingCloud = true;
         const saved = localStorage.getItem('firebase_config');
@@ -78,20 +90,24 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         }
 
         const app = window.initFirebaseApp ? window.initFirebaseApp(config) : null;
-        const { collection, onSnapshot, signInAnonymously, doc, setDoc } = window.FirebaseSDK;
+        const { collection, onSnapshot, signInAnonymously, doc, setDoc, query, where, getDocs } = window.FirebaseSDK;
         const db = window.firebaseDb;
 
-        if (unsubMembers) { unsubMembers(); unsubMembers = null; }
-        if (unsubShifts) { unsubShifts(); unsubShifts = null; }
-        if (unsubRegistrations) { unsubRegistrations(); unsubRegistrations = null; }
-        if (unsubLeaveRequests) { unsubLeaveRequests(); unsubLeaveRequests = null; }
-        if (unsubAdmins) { unsubAdmins(); unsubAdmins = null; }
-        if (unsubActivities) { unsubActivities(); unsubActivities = null; }
-        if (unsubCheckIns) { unsubCheckIns(); unsubCheckIns = null; }
-        if (unsubSemesters) { unsubSemesters(); unsubSemesters = null; }
-        if (unsubDepartments) { unsubDepartments(); unsubDepartments = null; }
-        if (unsubShiftSettings) { unsubShiftSettings(); unsubShiftSettings = null; }
-        if (unsubActivityRegistrations) { unsubActivityRegistrations(); unsubActivityRegistrations = null; }
+        // Chỉ hủy listener khi người dùng chủ động yêu cầu đổi cấu hình hoặc nạp lại (force)
+        if (force) {
+            if (unsubMembers) { unsubMembers(); unsubMembers = null; }
+            if (unsubShifts) { unsubShifts(); unsubShifts = null; }
+            if (unsubRegistrations) { unsubRegistrations(); unsubRegistrations = null; }
+            if (unsubLeaveRequests) { unsubLeaveRequests(); unsubLeaveRequests = null; }
+            if (unsubAdmins) { unsubAdmins(); unsubAdmins = null; }
+            if (unsubActivities) { unsubActivities(); unsubActivities = null; }
+            if (unsubCheckIns) { unsubCheckIns(); unsubCheckIns = null; }
+            if (unsubSemesters) { unsubSemesters(); unsubSemesters = null; }
+            if (unsubDepartments) { unsubDepartments(); unsubDepartments = null; }
+            if (unsubShiftSettings) { unsubShiftSettings(); unsubShiftSettings = null; }
+            if (unsubActivityRegistrations) { unsubActivityRegistrations(); unsubActivityRegistrations = null; }
+            hasInitializedListeners = false;
+        }
 
         if (!db) {
             isInitializingCloud = false;
@@ -110,6 +126,12 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
             console.warn("Firestore listener state:", err.code || err.message);
             isCloudConnected.value = false;
             isInitializingCloud = false;
+            if (err && (err.code === 'resource-exhausted' || (err.message && err.message.includes('Quota exceeded')))) {
+                if (!hasWarnedQuota) {
+                    hasWarnedQuota = true;
+                    showToast('⚠️ Firestore tạm đạt giới hạn đọc hôm nay (Free Quota). App đang dùng dữ liệu lưu tạm offline!', 'warning');
+                }
+            }
         };
 
         const extractNameFromData = (data, canonicalId) => {
@@ -146,6 +168,9 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         };
 
         try {
+            const minDate = getActiveWindowMinDate();
+
+            // 1. Members: Lắng nghe danh sách thành viên & cache localStorage
             const membersRefCol = collection(db, 'members');
             unsubMembers = onSnapshot(membersRefCol, (snapshot) => {
                 const map = new Map();
@@ -181,78 +206,120 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
+            // 2. Shifts: Giới hạn đọc từ ngày 01 của tháng trước đến nay (giảm 85%+ lượt đọc)
             const shiftsRefCol = collection(db, 'shifts');
-            unsubShifts = onSnapshot(shiftsRefCol, (snapshot) => {
-                const list = [];
-                snapshot.forEach((docSnap) => list.push(docSnap.data()));
-                list.sort((a, b) => new Date(b.date) - new Date(a.date));
-                if (shiftsRef) shiftsRef.value = list;
+            const shiftsQuery = (query && where) ? query(shiftsRefCol, where('date', '>=', minDate)) : shiftsRefCol;
+            unsubShifts = onSnapshot(shiftsQuery, (snapshot) => {
+                const incoming = [];
+                snapshot.forEach((docSnap) => incoming.push(docSnap.data()));
+
+                // Merge ca trực từ server với các ca trực cũ hơn đã có trong bộ nhớ / localStorage
+                const existing = Array.isArray(shiftsRef.value) ? shiftsRef.value : [];
+                const older = existing.filter(s => s && s.date && s.date < minDate);
+                const map = new Map();
+                older.forEach(s => map.set(s.id || `${s.date}_${s.shiftType}_${s.memberId}`, s));
+                incoming.forEach(s => map.set(s.id || `${s.date}_${s.shiftType}_${s.memberId}`, s));
+                const merged = Array.from(map.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                if (shiftsRef) shiftsRef.value = merged;
+                try { localStorage.setItem('local_shifts', JSON.stringify(merged)); } catch (e) {}
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
+            // 3. Registrations: Giới hạn đọc từ ngày 01 của tháng trước đến nay
             const regsRefCol = collection(db, 'registrations');
-            unsubRegistrations = onSnapshot(regsRefCol, (snapshot) => {
-                const list = [];
-                snapshot.forEach((docSnap) => list.push(docSnap.data()));
-                list.sort((a, b) => new Date(b.date) - new Date(a.date));
-                if (registrationsRef) registrationsRef.value = list;
+            const regsQuery = (query && where) ? query(regsRefCol, where('date', '>=', minDate)) : regsRefCol;
+            unsubRegistrations = onSnapshot(regsQuery, (snapshot) => {
+                const incoming = [];
+                snapshot.forEach((docSnap) => incoming.push(docSnap.data()));
+
+                const existing = Array.isArray(registrationsRef.value) ? registrationsRef.value : [];
+                const older = existing.filter(r => r && r.date && r.date < minDate);
+                const map = new Map();
+                older.forEach(r => map.set(r.id || `${r.date}_${r.shiftType}_${r.memberId}`, r));
+                incoming.forEach(r => map.set(r.id || `${r.date}_${r.shiftType}_${r.memberId}`, r));
+                const merged = Array.from(map.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                if (registrationsRef) registrationsRef.value = merged;
+                try { localStorage.setItem('local_registrations', JSON.stringify(merged)); } catch (e) {}
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
+            // 4. Leave Requests: Giới hạn theo ngày gần đây
             const leaveRefCol = collection(db, 'leave_requests');
-            unsubLeaveRequests = onSnapshot(leaveRefCol, (snapshot) => {
-                const list = [];
-                snapshot.forEach((docSnap) => list.push(docSnap.data()));
-                list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                if (leaveRequestsRef) leaveRequestsRef.value = list;
-                try { localStorage.setItem('local_leave_requests', JSON.stringify(list)); } catch (e) {}
+            const leaveQuery = (query && where) ? query(leaveRefCol, where('date', '>=', minDate)) : leaveRefCol;
+            unsubLeaveRequests = onSnapshot(leaveQuery, (snapshot) => {
+                const incoming = [];
+                snapshot.forEach((docSnap) => incoming.push(docSnap.data()));
+
+                const existing = Array.isArray(leaveRequestsRef.value) ? leaveRequestsRef.value : [];
+                const older = existing.filter(l => l && l.date && l.date < minDate);
+                const map = new Map();
+                older.forEach(l => map.set(l.id, l));
+                incoming.forEach(l => map.set(l.id, l));
+                const merged = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+
+                if (leaveRequestsRef) leaveRequestsRef.value = merged;
+                try { localStorage.setItem('local_leave_requests', JSON.stringify(merged)); } catch (e) {}
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
+            // 5. Admin Accounts: Dùng getDocs đọc 1 lần duy nhất khi khởi tạo, không duy trì listener real-time tốn reads
             const adminsRefCol = collection(db, 'admin_accounts');
-            unsubAdmins = onSnapshot(adminsRefCol, (snapshot) => {
-                const list = [];
-                snapshot.forEach((docSnap) => {
-                    const admData = docSnap.data();
-                    list.push(admData);
-                    const rawId = admData.id || admData.mssv || docSnap.id;
-                    const canonicalId = String(rawId).trim().toUpperCase();
-                    const admName = admData.name || admData.fullName || admData.hoTen;
+            if (getDocs) {
+                getDocs(adminsRefCol).then((snapshot) => {
+                    const list = [];
+                    snapshot.forEach((docSnap) => {
+                        const admData = docSnap.data();
+                        list.push(admData);
+                        const rawId = admData.id || admData.mssv || docSnap.id;
+                        const canonicalId = String(rawId).trim().toUpperCase();
+                        const admName = admData.name || admData.fullName || admData.hoTen;
 
-                    if (admName && admName !== canonicalId && !admName.startsWith('Thành viên [')) {
-                        // Sync in memory members list (removed setDoc to prevent write storm)
-                        if (membersRef && Array.isArray(membersRef.value)) {
-                            const foundIndex = membersRef.value.findIndex(m => m && String(m.id || m.mssv).trim().toUpperCase() === canonicalId);
-                            if (foundIndex !== -1) {
-                                membersRef.value[foundIndex].name = admName;
-                                membersRef.value[foundIndex].department = admData.department || membersRef.value[foundIndex].department || 'Ban Điều hành';
-                                membersRef.value[foundIndex].role = 'admin';
-                            } else {
-                                membersRef.value.push({
-                                    id: canonicalId,
-                                    mssv: canonicalId,
-                                    name: admName,
-                                    department: admData.department || 'Ban Điều hành',
-                                    role: 'admin',
-                                    targetShifts: 10
-                                });
+                        if (admName && admName !== canonicalId && !admName.startsWith('Thành viên [')) {
+                            if (membersRef && Array.isArray(membersRef.value)) {
+                                const foundIndex = membersRef.value.findIndex(m => m && String(m.id || m.mssv).trim().toUpperCase() === canonicalId);
+                                if (foundIndex !== -1) {
+                                    membersRef.value[foundIndex].name = admName;
+                                    membersRef.value[foundIndex].department = admData.department || membersRef.value[foundIndex].department || 'Ban Điều hành';
+                                    membersRef.value[foundIndex].role = 'admin';
+                                } else {
+                                    membersRef.value.push({
+                                        id: canonicalId,
+                                        mssv: canonicalId,
+                                        name: admName,
+                                        department: admData.department || 'Ban Điều hành',
+                                        role: 'admin',
+                                        targetShifts: 10
+                                    });
+                                }
                             }
                         }
-                    }
-                });
-                if (list.length > 0 && adminAccounts) adminAccounts.value = list;
-            }, (err) => { /* ignore if admin_accounts collection absent */ });
+                    });
+                    if (list.length > 0 && adminAccounts) adminAccounts.value = list;
+                }).catch(() => {});
+            }
 
+            // 6. Activities: Giới hạn theo ngày cửa sổ hiện tại
             const actRefCol = collection(db, 'activities');
-            unsubActivities = onSnapshot(actRefCol, (snapshot) => {
-                const list = [];
-                snapshot.forEach((docSnap) => list.push(docSnap.data()));
-                list.sort((a, b) => new Date(b.date) - new Date(a.date));
-                if (activitiesRef) activitiesRef.value = list;
-                try { localStorage.setItem('local_activities', JSON.stringify(list)); } catch (e) {}
+            const actQuery = (query && where) ? query(actRefCol, where('date', '>=', minDate)) : actRefCol;
+            unsubActivities = onSnapshot(actQuery, (snapshot) => {
+                const incoming = [];
+                snapshot.forEach((docSnap) => incoming.push(docSnap.data()));
+
+                const existing = Array.isArray(activitiesRef.value) ? activitiesRef.value : [];
+                const older = existing.filter(a => a && a.date && a.date < minDate);
+                const map = new Map();
+                older.forEach(a => map.set(a.id, a));
+                incoming.forEach(a => map.set(a.id, a));
+                const merged = Array.from(map.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                if (activitiesRef) activitiesRef.value = merged;
+                try { localStorage.setItem('local_activities', JSON.stringify(merged)); } catch (e) {}
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
+            // 7. Activity CheckIns
             const chkRefCol = collection(db, 'activity_checkins');
             unsubCheckIns = onSnapshot(chkRefCol, (snapshot) => {
                 const list = [];
@@ -263,16 +330,26 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
+            // 8. Activity Registrations: Giới hạn theo ngày cửa sổ hiện tại
             const actRegRefCol = collection(db, 'activity_registrations');
-            unsubActivityRegistrations = onSnapshot(actRegRefCol, (snapshot) => {
-                const list = [];
-                snapshot.forEach((docSnap) => list.push(docSnap.data()));
-                list.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-                if (activityRegistrationsRef) activityRegistrationsRef.value = list;
-                try { localStorage.setItem('local_activity_registrations', JSON.stringify(list)); } catch (e) {}
+            const actRegQuery = (query && where) ? query(actRegRefCol, where('date', '>=', minDate)) : actRegRefCol;
+            unsubActivityRegistrations = onSnapshot(actRegQuery, (snapshot) => {
+                const incoming = [];
+                snapshot.forEach((docSnap) => incoming.push(docSnap.data()));
+
+                const existing = Array.isArray(activityRegistrationsRef.value) ? activityRegistrationsRef.value : [];
+                const older = existing.filter(r => r && r.date && r.date < minDate);
+                const map = new Map();
+                older.forEach(r => map.set(r.id, r));
+                incoming.forEach(r => map.set(r.id, r));
+                const merged = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+
+                if (activityRegistrationsRef) activityRegistrationsRef.value = merged;
+                try { localStorage.setItem('local_activity_registrations', JSON.stringify(merged)); } catch (e) {}
                 isCloudConnected.value = true;
             }, handleSnapshotError);
 
+            // 9. App Config: Semesters
             const semRefDoc = doc(db, 'app_config', 'semesters');
             unsubSemesters = onSnapshot(semRefDoc, (snapshot) => {
                 if (snapshot.exists()) {
@@ -287,6 +364,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 }
             }, (err) => {});
 
+            // 10. App Config: Departments
             const deptRefDoc = doc(db, 'app_config', 'departments');
             unsubDepartments = onSnapshot(deptRefDoc, (snapshot) => {
                 if (snapshot.exists()) {
@@ -301,6 +379,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                 }
             }, (err) => {});
 
+            // 11. App Config: Shift Settings
             const shiftSettingsDoc = doc(db, 'app_config', 'shift_settings');
             unsubShiftSettings = onSnapshot(shiftSettingsDoc, (snapshot) => {
                 if (snapshot.exists()) {
@@ -320,12 +399,59 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
                     }
                 }
             }, (err) => {});
+
             hasInitializedListeners = true;
             isInitializingCloud = false;
         } catch (e) {
             console.warn("Lỗi kết nối Cloud:", e);
             isCloudConnected.value = false;
             isInitializingCloud = false;
+        }
+    };
+
+    // Tải dữ liệu các tháng lưu trữ cũ hơn khi người dùng chọn trong bộ lọc tháng (On-Demand Fetching)
+    const fetchArchiveMonthShifts = async (monthStr) => {
+        if (!monthStr || !window.firebaseDb || !window.FirebaseSDK) return;
+        const { collection, query, where, getDocs } = window.FirebaseSDK;
+        if (!query || !where || !getDocs) return;
+
+        // Nếu tháng đang nằm trong cửa sổ active (tháng này hoặc tháng trước), active listener đã quản lý
+        const minDate = getActiveWindowMinDate();
+        if (monthStr >= minDate.substring(0, 7)) return;
+
+        // Nếu đã có dữ liệu của tháng này trong cache, không cần đọc server lại
+        const hasShiftsLocally = shiftsRef && Array.isArray(shiftsRef.value) && shiftsRef.value.some(s => s && s.date && s.date.startsWith(monthStr));
+        if (hasShiftsLocally) return;
+
+        try {
+            const start = `${monthStr}-01`;
+            const end = `${monthStr}-31`;
+            const [snapS, snapR] = await Promise.all([
+                getDocs(query(collection(window.firebaseDb, 'shifts'), where('date', '>=', start), where('date', '<=', end))),
+                getDocs(query(collection(window.firebaseDb, 'registrations'), where('date', '>=', start), where('date', '<=', end)))
+            ]);
+
+            const newShifts = [];
+            snapS.forEach(d => newShifts.push(d.data()));
+            const newRegs = [];
+            snapR.forEach(d => newRegs.push(d.data()));
+
+            if (newShifts.length > 0 && shiftsRef) {
+                const map = new Map();
+                shiftsRef.value.forEach(s => map.set(s.id || `${s.date}_${s.shiftType}_${s.memberId}`, s));
+                newShifts.forEach(s => map.set(s.id || `${s.date}_${s.shiftType}_${s.memberId}`, s));
+                shiftsRef.value = Array.from(map.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+                try { localStorage.setItem('local_shifts', JSON.stringify(shiftsRef.value)); } catch (e) {}
+            }
+            if (newRegs.length > 0 && registrationsRef) {
+                const map = new Map();
+                registrationsRef.value.forEach(r => map.set(r.id || `${r.date}_${r.shiftType}_${r.memberId}`, r));
+                newRegs.forEach(r => map.set(r.id || `${r.date}_${r.shiftType}_${r.memberId}`, r));
+                registrationsRef.value = Array.from(map.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+                try { localStorage.setItem('local_registrations', JSON.stringify(registrationsRef.value)); } catch (e) {}
+            }
+        } catch (e) {
+            console.warn("Lỗi tải ca trực lưu trữ cho tháng " + monthStr, e);
         }
     };
 
@@ -338,6 +464,7 @@ export function useCloud(membersRef, shiftsRef, registrationsRef, leaveRequestsR
         openConfigModal,
         resetConfigToDefault,
         saveFirebaseConfig,
-        initCloudRealtime
+        initCloudRealtime,
+        fetchArchiveMonthShifts
     };
 }

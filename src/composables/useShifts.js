@@ -5,8 +5,43 @@ import { useHaptics } from './useHaptics.js';
 import { useNotifications } from './useNotifications.js';
 import { exportExcelFile } from '../utils/fileExport.js';
 
-const shifts = ref([]);
-const registrations = ref([]);
+const getSavedShifts = () => {
+    try {
+        const saved = localStorage.getItem('local_shifts');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) return parsed;
+        }
+    } catch (e) {}
+    return [];
+};
+
+const getSavedRegistrations = () => {
+    try {
+        const saved = localStorage.getItem('local_registrations');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) return parsed;
+        }
+    } catch (e) {}
+    return [];
+};
+
+const shifts = ref(getSavedShifts());
+const registrations = ref(getSavedRegistrations());
+
+// Auto-sync shifts and registrations to localStorage
+watch(shifts, (val) => {
+    try {
+        localStorage.setItem('local_shifts', JSON.stringify(val));
+    } catch (e) {}
+}, { deep: true });
+
+watch(registrations, (val) => {
+    try {
+        localStorage.setItem('local_registrations', JSON.stringify(val));
+    } catch (e) {}
+}, { deep: true });
 
 const getSavedLeaveRequests = () => {
     try {

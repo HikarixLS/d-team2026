@@ -399,7 +399,7 @@ const {
 const cloudModule = useCloud(members, shifts, registrations, leaveRequests, adminAccounts, activities, activityCheckIns, semesters, departments, shiftSettings, activityRegistrations);
 const {
   isCloudConnected, hasFirebaseConfig, showConfigModal, configInput, cloudStatusText,
-  openConfigModal, resetConfigToDefault, saveFirebaseConfig, initCloudRealtime
+  openConfigModal, resetConfigToDefault, saveFirebaseConfig, initCloudRealtime, fetchArchiveMonthShifts
 } = cloudModule;
 
 // Modal States for Activities
@@ -822,6 +822,12 @@ watch(currentTab, () => {
   });
 });
 
+watch(selectedMonth, (newMonth) => {
+  if (newMonth && typeof fetchArchiveMonthShifts === 'function') {
+    fetchArchiveMonthShifts(newMonth);
+  }
+});
+
 onMounted(() => {
   applyTheme();
   setupNotifications();
@@ -844,7 +850,7 @@ onMounted(() => {
 
   initNetworkListener(() => {
     if (!isCloudConnected.value) {
-      initCloudRealtime(true);
+      initCloudRealtime(false);
     }
   });
 });
