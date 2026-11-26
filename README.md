@@ -18,7 +18,7 @@ Hệ thống quản lý toàn diện dành cho **Đội Văn Phòng Đoàn - H�
 - **Frontend Core**: Vue 3 (`^3.4.0`, Composition API / `<script setup>`), Tailwind CSS (Dark/Light Mode), Anime.js (`^4.5.0`), FontAwesome 6.4, Google Fonts (Inter).
 - **Database & Realtime Sync**: Google Firebase Cloud Firestore (Real-time `onSnapshot`, IndexedDB offline persistence, tối ưu lượt đọc theo cửa sổ 60 ngày gần nhất & tải lưu trữ theo yêu cầu).
 - **Visualization & Export**: Chart.js (`^4.4.1`), SheetJS / XLSX (`^0.18.5`).
-- **Notifications & Mobile UX**: Service Worker (`/sw.js`) hỗ trợ Web Notifications, phản hồi rung (Vibration/Haptics API), phát hiện trạng thái mạng & tệp cài đặt Android (`public/HeThongQuanLyDVP.apk`).
+- **Notifications & Mobile UX**: Service Worker (`/sw.js`) hỗ trợ Web Notifications, phản hồi rung (Vibration/Haptics API) và phát hiện trạng thái mạng.
 - **CI/CD**: GitHub Actions tự động build và triển khai lên **GitHub Pages** khi push vào nhánh `main`.
 
 ---
@@ -62,7 +62,6 @@ VUE/
 ├── vite.config.js                   # Cấu hình Vite (port 3000, build ./dist)
 ├── public/                          # Static Assets & Service Worker
 │   ├── app-bg.jpg
-│   ├── HeThongQuanLyDVP.apk         # Gói cài đặt Android
 │   ├── logo.jpg / logo.png
 │   └── sw.js                        # Service Worker cho Web Notifications
 └── src/
